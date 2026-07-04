@@ -1,4 +1,5 @@
 import { createSupabaseRestClient } from './supabaseClient.js';
+import { pagePath } from './path.js';
 
 const MOBILE_SCANNER_MEDIA_QUERY = '(max-width: 767px)';
 const operatorProfileSelect = [
@@ -15,7 +16,7 @@ export function isMobileScannerOnly() {
 }
 
 export function operatorHomePath() {
-  return '/dashboard.html';
+  return pagePath('dashboard.html');
 }
 
 export async function getOwnProfile(client, session) {
@@ -39,14 +40,14 @@ export async function requireLogin({ requireUnlock = false } = {}) {
   const session = await client.ensureSession();
 
   if (!session) {
-    window.location.replace('/index.html');
+    window.location.replace(pagePath('index.html'));
     return null;
   }
 
   const profile = await getOwnProfile(client, session);
 
   if (requireUnlock && !profile?.unlock) {
-    window.location.replace('/wait.html');
+    window.location.replace(pagePath('wait.html'));
     return null;
   }
 
@@ -61,5 +62,5 @@ export async function redirectAfterLogin(client, session) {
     return;
   }
 
-  window.location.replace('/wait.html');
+  window.location.replace(pagePath('wait.html'));
 }

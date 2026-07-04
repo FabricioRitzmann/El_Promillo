@@ -1,7 +1,8 @@
 import { cardFeatureRows, featureEnabled, normalizeTemplateType, templateTypeLabel, templateSettings } from './templateFeatures.js';
 import { cardEmblemImageUrl, cardEmblemMeta } from './cardEmblems.js';
+import { assetPath } from './path.js';
 
-const appBrandMarkUrl = '/assets/el-promillo-emblem-cutout.png';
+const appBrandMarkUrl = assetPath('assets/el-promillo-emblem-cutout.png');
 
 export function byId(id) {
   return document.getElementById(id);

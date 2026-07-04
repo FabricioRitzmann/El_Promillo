@@ -29,6 +29,7 @@ const packageJson = read('package.json');
 
 const requiredFunctions = [
   'claim-card',
+  'get-public-template',
   'claim-apple-pass',
   'create-topup-payment-session',
   'confirm-topup-payment',

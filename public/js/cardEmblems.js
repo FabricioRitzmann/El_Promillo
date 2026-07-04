@@ -1,10 +1,12 @@
+import { assetPath } from './path.js';
+
 export const WALLET_CARD_EMBLEMS = {
   neutral: {
     key: 'neutral_couple',
     label: 'Mann und Frau',
     description: 'Standard-Emblem vor dem Initial-Scan',
     fileName: 'neutral-couple.png',
-    publicPath: '/assets/wallet-emblems/default/neutral-couple.png',
+    publicPath: assetPath('assets/wallet-emblems/default/neutral-couple.png'),
     storagePath: 'default/neutral-couple.png'
   },
   male: {
@@ -12,7 +14,7 @@ export const WALLET_CARD_EMBLEMS = {
     label: 'Mann',
     description: 'Emblem für männliche Karteninhaber',
     fileName: 'male-gentleman.png',
-    publicPath: '/assets/wallet-emblems/default/male-gentleman.png',
+    publicPath: assetPath('assets/wallet-emblems/default/male-gentleman.png'),
     storagePath: 'default/male-gentleman.png'
   },
   female: {
@@ -20,7 +22,7 @@ export const WALLET_CARD_EMBLEMS = {
     label: 'Frau',
     description: 'Emblem für weibliche Karteninhaber',
     fileName: 'female-lady.png',
-    publicPath: '/assets/wallet-emblems/default/female-lady.png',
+    publicPath: assetPath('assets/wallet-emblems/default/female-lady.png'),
     storagePath: 'default/female-lady.png'
   }
 };

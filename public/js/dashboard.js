@@ -1,5 +1,6 @@
 import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
+import { pagePath } from './path.js';
 import { businessLogoUrl, byId, cardTypeLabel, escapeHtml, renderBusinessHeader, showMessage } from './ui.js';
 import { cardFeatureRows, featureEnabled, templateFeatureSummary } from './templateFeatures.js';
 
@@ -307,7 +308,7 @@ function renderTemplates() {
 
   const rows = state.templates.map((template) => {
     const claimUrl = appUrl(`/claim.html?template=${template.id}`);
-    const editorUrl = `/editor.html?template=${encodeURIComponent(template.id)}`;
+    const editorUrl = pagePath(`editor.html?template=${encodeURIComponent(template.id)}`);
     const qrUrl = apiUrl(`/api/qrcode?text=${encodeURIComponent(claimUrl)}`);
     const pdfA4Url = apiUrl(`/api/templates/${encodeURIComponent(template.id)}/qr.pdf?format=a4`);
     const pdfA5Url = apiUrl(`/api/templates/${encodeURIComponent(template.id)}/qr.pdf?format=a5`);
@@ -404,7 +405,7 @@ function renderCustomerCards() {
     const featureSummary = cardFeatureRows(template, card)
       .map((row) => `${row.label}: ${row.value}`)
       .join(' · ');
-    const scannerUrl = `/scanner.html?code=${encodeURIComponent(cardNumber)}`;
+    const scannerUrl = pagePath(`scanner.html?code=${encodeURIComponent(cardNumber)}`);
 
     return `
       <tr class="cards-table-row" data-scanner-url="${escapeHtml(scannerUrl)}">

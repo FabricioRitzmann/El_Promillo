@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo</title>
+    <meta http-equiv="refresh" content="0; url=public/index.html">
+    <script>
+      const target = new URL('public/index.html', window.location.href);
+      target.search = window.location.search;
+      target.hash = window.location.hash;
+      window.location.replace(target);
+    </script>
+  </head>
+  <body>
+    <p><a href="public/index.html">El Promillo öffnen</a></p>
+  </body>
+</html>

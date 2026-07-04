@@ -210,6 +210,18 @@ bash scripts/start-local.sh
 
 [http://localhost:3000](http://localhost:3000)
 
+## GitHub Pages Veröffentlichung
+
+Das Repository enthält zusätzlich eine statische GitHub-Pages-Veröffentlichung der App. GitHub Pages kann keinen lokalen Node-/Express-Server ausführen; deshalb leitet die Root-Datei `index.html` auf `public/index.html` weiter und die Frontend-Dateien nutzen relative Pfade statt harter `/...`-Links. Die Seite lädt ihre Browser-Konfiguration aus `public/config.public.json`. Diese Datei enthält nur öffentliche Browserwerte wie Supabase URL und Supabase Anon Key, aber keine Service Role, Zertifikate oder privaten Wallet-Secrets.
+
+Für öffentliche Claim-Vorschauen nutzt GitHub Pages die Supabase Edge Function `get-public-template`. Diese Function muss zusammen mit den anderen Wallet-Functions deployed sein:
+
+```bash
+bash scripts/deploy-wallet-functions.sh --only get-public-template
+```
+
+Danach liefert GitHub Pages die App statt der README aus. Wenn GitHub Pages auf Branch-Root zeigt, öffnet `index.html` automatisch die statische App unter `public/index.html`.
+
 Optionaler Projektcheck:
 
 ```bash
@@ -353,7 +365,8 @@ Eine `supabase/functions/passkit` Function existiert im aktiven Projekt nicht me
 Weitere vorbereitete Edge Functions:
 
 - `claim-card`: erstellt öffentlich aus einem aktiven Template eine individuelle `customer_card` plus `card_instance`; die Function verlangt einen stabilen `walletObjectId` aus dem Browser, damit Claims idempotent bleiben und spätere Apple-/Google-Downloads zur richtigen Karte passen. Das aktive Template wird mit einer expliziten internen Feldliste statt `*` geladen. Der `card_instances`-Insert und die Claim-Events werden geprüft; Fehler liefern `CLAIM_CARD_INSTANCE_SAVE_FAILED` oder `CLAIM_CARD_EVENT_SAVE_FAILED` statt einen unvollständigen Claim als Erfolg zu melden. Die Antwort enthält nur das für die mobile Claim-Seite nötige Kartenminimum, keine internen Betreiber-/Business-IDs und keinen Apple-`pass_authentication_token`. Die Claim-Seite nutzt lokal automatisch `/api/cards/claim` als Fallback, falls die Edge Function noch nicht deployed ist.
-- Öffentliche Claim-/Installations-Edge-Pfade (`claim-card`, `claim-apple-pass`, `google-wallet-save-link`, `create-topup-payment-session`) verbrauchen vor dem Datenzugriff ein serverseitiges Rate Limit über `public_edge_rate_limits` und `consume_public_edge_rate_limit(...)`. Gespeichert wird nur ein Hash aus Route und Client-Fingerprint, keine IP-Adresse im Klartext.
+- `get-public-template`: liefert für öffentliche GitHub-Pages-/Claim-Seiten nur aktive Template-Vorschau-Daten aus. Die Function nutzt die Service Role ausschliesslich serverseitig, rate-limitiert öffentliche Requests und gibt keine Betreiber-/Business-IDs oder Secrets an den Browser zurück.
+- Öffentliche Claim-/Installations-Edge-Pfade (`get-public-template`, `claim-card`, `claim-apple-pass`, `google-wallet-save-link`, `create-topup-payment-session`) verbrauchen vor dem Datenzugriff ein serverseitiges Rate Limit über `public_edge_rate_limits` und `consume_public_edge_rate_limit(...)`. Gespeichert wird nur ein Hash aus Route und Client-Fingerprint, keine IP-Adresse im Klartext.
 - Der lokale Claim-Fallback `/api/cards/claim` gibt für Apple keine aktive `/api/passes`-Download-URL mehr zurück. Er speichert nur die Karte, verweist auf den direkten Edge-Download über `claim-apple-pass`, nutzt für Google denselben `metadata.google_wallet_claim_key` wie die Edge-Function und prüft ebenfalls `card_instances`- sowie `card_events`-Writes auf `CLAIM_CARD_INSTANCE_SAVE_FAILED` bzw. `CLAIM_CARD_EVENT_SAVE_FAILED`. Für lokale Tests nutzt der Fallback dasselbe nicht-sensitive Claim-Limit aus `config.json -> deliveryRules` als In-Memory-Schutz.
 - `claim-apple-pass`: liefert für eine frisch geclaimte Apple-Karte eine signierte `.pkpass` aus dem direkten Apple-Edge-Pfad; die Claim-Seite fällt für Apple-Wallet-Dateien nicht mehr auf den lokalen PassKit-Endpunkt zurück
 - `scanner-actions`: matrixbasierte Scanner-Aktionen; prüft den eingeloggten Betreiber, blockiert unpassende Aktionen mit `403`, fragt beim ersten Scan die Demografie für Statistik ab, aktualisiert Kundenkarten/Card-Instances und schreibt `scan_events`, `card_events` sowie Guthaben-Transaktionen. Karten und Templates werden intern mit expliziten Select-Listen geladen, und die Antwortkarte wird nur über `publicOperatorCard(...)` ausgeliefert. Card-Instance-Sync, Guthabenbuchung, Scan-Event und Audit-Event müssen erfolgreich gespeichert werden; sonst liefern Edge Function und lokaler Fallback strukturierte Fehler wie `SCANNER_CARD_INSTANCE_SYNC_FAILED`, `SCANNER_BALANCE_TRANSACTION_SAVE_FAILED`, `SCANNER_SCAN_EVENT_SAVE_FAILED` oder `SCANNER_CARD_EVENT_SAVE_FAILED`. Die Scanner-UI ruft diese Function zuerst auf und fällt nur bei nicht deployter/nicht konfigurierter Function auf den lokalen Node-Endpunkt zurück. Der Apple-Wallet-Dateidownload im Scanner läuft dagegen direkt über `issue-apple-pass`.
@@ -720,6 +733,7 @@ Einzelbefehle, falls du bewusst manuell deployen willst:
 
 ```bash
 supabase functions deploy claim-card
+supabase functions deploy get-public-template
 supabase functions deploy claim-apple-pass
 supabase functions deploy create-topup-payment-session
 supabase functions deploy confirm-topup-payment
@@ -747,6 +761,7 @@ Die Datei `supabase/config.toml` ist Teil des Projekts und setzt `verify_jwt = f
 
 ```text
 claim-card
+get-public-template
 claim-apple-pass
 google-wallet-save-link
 create-topup-payment-session
@@ -756,7 +771,7 @@ process-scheduled-wallet-notifications
 process-wallet-update-queue
 ```
 
-Das ist notwendig, weil Supabase Edge Functions mit aktivem `verify_jwt` Requests ohne gültigen User-JWT bereits vor deinem Code mit `401` blockieren. Diese Functions prüfen stattdessen im eigenen Code den passenden Zugriff: Apple `Authorization: ApplePass <authenticationToken>`, Claim-Schlüssel aus der Karteninstanz, `PAYMENT_WEBHOOK_SECRET` für Zahlungsbestätigungen oder `WALLET_CRON_SECRET`. Betreiber-Functions wie `create-wallet-notification-campaign`, `send-wallet-notification`, `scanner-actions`, `get-business-scan-statistics`, `issue-apple-pass`, `update-apple-pass`, `send-apple-wallet-update`, `issue-google-wallet-pass`, `update-google-wallet-pass` und `send-google-wallet-message` bleiben mit normaler Supabase-Auth abgesichert. `pnpm check` prüft diese Grenze mit `scripts/verify-supabase-edge-jwt-policy.js`, damit keine Operator-Function versehentlich `verify_jwt = false` bekommt.
+Das ist notwendig, weil Supabase Edge Functions mit aktivem `verify_jwt` Requests ohne gültigen User-JWT bereits vor deinem Code mit `401` blockieren. Diese Functions prüfen stattdessen im eigenen Code den passenden Zugriff: Apple `Authorization: ApplePass <authenticationToken>`, Claim-Schlüssel aus der Karteninstanz, öffentlich rate-limitierte Template-Vorschau, `PAYMENT_WEBHOOK_SECRET` für Zahlungsbestätigungen oder `WALLET_CRON_SECRET`. Betreiber-Functions wie `create-wallet-notification-campaign`, `send-wallet-notification`, `scanner-actions`, `get-business-scan-statistics`, `issue-apple-pass`, `update-apple-pass`, `send-apple-wallet-update`, `issue-google-wallet-pass`, `update-google-wallet-pass` und `send-google-wallet-message` bleiben mit normaler Supabase-Auth abgesichert. `pnpm check` prüft diese Grenze mit `scripts/verify-supabase-edge-jwt-policy.js`, damit keine Operator-Function versehentlich `verify_jwt = false` bekommt.
 
 Nach dem Deploy muss `config.json -> supabase.url` weiterhin auf dein Supabase-Projekt zeigen. Die Claim-Seite ruft Edge Functions über `https://<PROJECT_REF>.supabase.co/functions/v1/...` auf; für echte Apple-Updates muss `APPLE_WEB_SERVICE_BASE_URL` exakt auf die deployte `apple-wallet-webservice` Function zeigen.
 

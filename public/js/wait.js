@@ -1,4 +1,5 @@
 import { operatorHomePath, requireLogin } from './guards.js';
+import { pagePath } from './path.js';
 import { byId, setText, showMessage } from './ui.js';
 
 const waitMessage = byId('waitMessage');
@@ -26,7 +27,7 @@ async function refreshStatus() {
 
   logoutButton?.addEventListener('click', async () => {
     await client.signOut();
-    window.location.replace('/index.html');
+    window.location.replace(pagePath('index.html'));
   }, { once: true });
 }
 

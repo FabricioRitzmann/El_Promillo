@@ -10,6 +10,7 @@ const config = fs.readFileSync(configPath, 'utf8');
 
 const expectedNoJwtFunctions = new Set([
   'claim-card',
+  'get-public-template',
   'claim-apple-pass',
   'google-wallet-save-link',
   'create-topup-payment-session',
@@ -39,6 +40,12 @@ const publicClaimGuards = {
     'CLAIM_WALLET_OBJECT_ID_INVALID',
     'CLAIM_WALLET_OBJECT_ID_CONFLICT',
     'publicClaimCard(card)'
+  ],
+  'get-public-template': [
+    'enforcePublicClaimRateLimit(supabaseAdmin, request, \'get-public-template\')',
+    'publicCardTemplateResponse(template)',
+    ".eq('is_active', true)",
+    'TEMPLATE_ID_REQUIRED'
   ],
   'claim-apple-pass': [
     'walletObjectId',

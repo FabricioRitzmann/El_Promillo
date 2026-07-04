@@ -8,6 +8,9 @@ project_id = "el-promillo"
 [functions.claim-card]
 verify_jwt = false
 
+[functions.get-public-template]
+verify_jwt = false
+
 [functions.claim-apple-pass]
 verify_jwt = false
 

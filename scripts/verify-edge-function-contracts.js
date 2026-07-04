@@ -53,6 +53,11 @@ const publicServiceRoleFunctions = {
     'CLAIM_WALLET_OBJECT_ID_REQUIRED',
     'publicClaimCard(card)'
   ],
+  'get-public-template': [
+    'publicCardTemplateResponse(template)',
+    'TEMPLATE_ID_REQUIRED',
+    'get-public-template'
+  ],
   'claim-apple-pass': [
     'walletObjectId',
     'APPLE_CLAIM_TOKEN_MISMATCH',

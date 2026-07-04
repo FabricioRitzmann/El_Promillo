@@ -18,6 +18,7 @@ const webChecks = [
 
 const publicFunctionChecks = [
   'claim-card',
+  'get-public-template',
   'claim-apple-pass',
   'google-wallet-save-link',
   'create-topup-payment-session',

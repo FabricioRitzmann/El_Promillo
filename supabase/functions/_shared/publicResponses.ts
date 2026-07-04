@@ -236,6 +236,8 @@ export function publicCardTemplateResponse(template: Row = {}) {
     streak_goal: template.streak_goal,
     vip_tier: template.vip_tier,
     settings: sanitizeMetadata(template.settings || {}),
+    club_features: sanitizeMetadata(template.club_features || {}),
+    club_settings: sanitizeMetadata(template.club_settings || {}),
     is_active: template.is_active
   };
 }

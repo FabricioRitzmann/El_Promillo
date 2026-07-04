@@ -1441,6 +1441,8 @@ function publicCardTemplateResponse(template = {}) {
     streak_goal: template.streak_goal,
     vip_tier: template.vip_tier,
     settings: sanitizeBrowserMetadata(template.settings || {}),
+    club_features: sanitizeBrowserMetadata(template.club_features || {}),
+    club_settings: sanitizeBrowserMetadata(template.club_settings || {}),
     is_active: template.is_active
   };
 }

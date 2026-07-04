@@ -1,4 +1,5 @@
 import { requireLogin } from './guards.js';
+import { pagePath } from './path.js';
 import {
   businessDisplayName,
   businessInitials,
@@ -361,7 +362,7 @@ async function initAccount() {
 
   byId('logoutButton')?.addEventListener('click', async () => {
     await state.client.signOut();
-    window.location.replace('/index.html');
+    window.location.replace(pagePath('index.html'));
   });
 }
 

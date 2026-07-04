@@ -7,6 +7,7 @@ const strict = argSet.has('--strict');
 
 const publicFunctions = [
   'claim-card',
+  'get-public-template',
   'claim-apple-pass',
   'google-wallet-save-link',
   'create-topup-payment-session',

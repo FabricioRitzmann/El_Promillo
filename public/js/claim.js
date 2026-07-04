@@ -1,4 +1,5 @@
-import { apiUrl, loadPublicConfig } from './config.js';
+import { apiUrl, edgeFunctionUrl, loadPublicConfig } from './config.js';
+import { isPublishedStaticPage } from './path.js';
 import { byId, escapeHtml, showMessage, walletPreviewHtml } from './ui.js';
 import { featureEnabled } from './templateFeatures.js';
 
@@ -64,7 +65,23 @@ async function loadTemplate() {
 
   publicConfig = await loadPublicConfig();
 
-  const response = await fetch(apiUrl(`/api/templates/${templateId}`));
+  let response = null;
+
+  if (!isPublishedStaticPage()) {
+    response = await fetch(apiUrl(`/api/templates/${templateId}`)).catch(() => null);
+  }
+
+  if (!response?.ok) {
+    const edgeUrl = new URL(edgeFunctionUrl('get-public-template'));
+    edgeUrl.searchParams.set('template', templateId);
+    response = await fetch(edgeUrl, {
+      headers: {
+        apikey: publicConfig.supabase.anonKey,
+        Authorization: `Bearer ${publicConfig.supabase.anonKey}`
+      }
+    });
+  }
+
   template = await response.json();
 
   if (!response.ok || !template) {

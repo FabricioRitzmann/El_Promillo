@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "El_Promillo",
+    "baseUrl": "https://fabricioritzmann.github.io/El_Promillo/",
+    "apiBaseUrl": ""
+  },
+  "supabase": {
+    "url": "https://mfyltmjzofahbavrwpac.supabase.co",
+    "anonKey": "sb_publishable_kdVjHwNc1X2AbZnV9txDPw_CQ5xjlQq"
+  },
+  "deliveryRules": {
+    "businessDailyLimit": 500,
+    "customerDailyLimit": 12,
+    "cardDailyLimit": 6,
+    "googleTextAndNotifyLimitPerPass24h": 3,
+    "duplicateWindowMinutes": 10,
+    "publicClaimRateLimit": 80,
+    "publicClaimRateLimitWindowSeconds": 900,
+    "defaultTitle": "",
+    "defaultMessage": "",
+    "allowedTargets": [
+      "all_active",
+      "template",
+      "platform_apple",
+      "platform_google",
+      "stamp_count",
+      "streak_count",
+      "vip_level",
+      "balance_range",
+      "cloakroom_open",
+      "event",
+      "coupon_unredeemed",
+      "membership_status"
+    ]
+  }
+}

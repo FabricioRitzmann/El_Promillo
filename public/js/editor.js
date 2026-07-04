@@ -1,5 +1,6 @@
 import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
+import { pagePath } from './path.js';
 import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
 import {
   CLUB_FEATURE_DEFAULTS,
@@ -1852,7 +1853,7 @@ async function saveTemplate(event) {
       createdTemplate,
       ...state.notificationTemplates.filter((template) => template.id !== createdTemplate.id)
     ];
-    window.history.replaceState({}, '', `/editor.html?template=${encodeURIComponent(createdTemplate.id)}`);
+    window.history.replaceState({}, '', pagePath(`editor.html?template=${encodeURIComponent(createdTemplate.id)}`));
     updateEditorModeUi();
     loadTemplateIntoForm(createdTemplate);
     updateConditionalTemplateFields();
