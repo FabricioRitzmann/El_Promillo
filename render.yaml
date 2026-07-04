@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: el-promillo
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 20
+      - key: HOST
+        value: 0.0.0.0
+      - key: APP_PUBLIC_BASE_URL
+        sync: false
+      - key: APP_API_BASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_FUNCTION_BASE_URL
+        sync: false
+      - key: WALLET_BUSINESS_DAILY_LIMIT
+        value: 500
+      - key: WALLET_CUSTOMER_DAILY_LIMIT
+        value: 12
+      - key: WALLET_CARD_DAILY_LIMIT
+        value: 6
+      - key: WALLET_GOOGLE_TEXT_AND_NOTIFY_LIMIT_PER_PASS_24H
+        value: 3
+      - key: WALLET_DUPLICATE_WINDOW_MINUTES
+        value: 10
+      - key: WALLET_PUBLIC_CLAIM_RATE_LIMIT
+        value: 80
+      - key: WALLET_PUBLIC_CLAIM_RATE_LIMIT_WINDOW_SECONDS
+        value: 900
+      - key: WALLET_RECIPIENT_PROCESSING_TIMEOUT_MINUTES
+        value: 15
+      - key: WALLET_QUEUE_PROCESSING_TIMEOUT_MINUTES
+        value: 15

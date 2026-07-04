@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Wartet auf Freischaltung</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="center-layout">
+      <section class="panel narrow">
+        <p class="eyebrow">Freischaltung</p>
+        <h1>Dein Account wartet</h1>
+        <p class="muted" id="operatorEmail"></p>
+        <div id="waitMessage" class="message" hidden></div>
+        <div class="button-row">
+          <button id="retryUnlock" class="primary" type="button">Status prüfen</button>
+          <button id="logoutButton" class="secondary" type="button">Ausloggen</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/wait.js"></script>
+  </body>
+</html>

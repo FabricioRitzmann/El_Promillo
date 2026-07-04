@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Konto</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="business-brand-link" href="/dashboard.html" aria-label="Dashboard">
+        <span class="business-brand-logo" data-business-logo>MU</span>
+        <span class="business-brand-name" data-business-name>Mein Unternehmen</span>
+      </a>
+      <span class="app-brand-mark" aria-label="El Promillo Wallet & Loyalty App">
+        <span class="app-brand-emblem" aria-hidden="true"></span>
+        <img class="app-brand-lockup" src="/assets/el-promillo-title-lockup-new-cutout.png" alt="" aria-hidden="true">
+      </span>
+    </header>
+
+    <nav class="app-tabbar" aria-label="Hauptbereiche">
+      <a class="app-tab" href="/dashboard.html#dashboardOverview">Dashboard</a>
+      <a class="app-tab" href="/dashboard.html#visitorStatistics">Besucherstatistik</a>
+      <a class="app-tab" href="/scanner.html">Scanner</a>
+      <a class="app-tab app-tab-account is-active" href="/account.html" aria-current="page" aria-label="Konto">
+        <svg class="account-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 21a8 8 0 0 1 16 0"></path>
+        </svg>
+      </a>
+    </nav>
+
+    <main class="page-shell account-shell">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">Konto</p>
+          <h1>Konto & Geschäft</h1>
+        </div>
+      </section>
+
+      <div id="accountMessage" class="message" hidden></div>
+
+      <section class="account-grid">
+        <article class="panel account-panel">
+          <h2>Login-Daten</h2>
+          <dl id="loginDataList" class="account-detail-list"></dl>
+        </article>
+
+        <article class="panel account-panel">
+          <h2>Abmeldung</h2>
+          <p class="muted">Beendet die lokale Sitzung auf diesem Gerät.</p>
+          <button id="logoutButton" class="secondary" type="button">Logout</button>
+        </article>
+      </section>
+
+      <form id="accountBusinessForm" class="panel account-form">
+        <div class="section-title">
+          <div>
+            <h2>Firmendaten</h2>
+            <p class="muted">Diese Daten werden für Templates, Vorschauen und Wallet-Karten als Standardwerte verwendet.</p>
+          </div>
+          <button class="primary" type="submit">Speichern</button>
+        </div>
+
+        <div class="account-form-grid">
+          <label>Firmenname
+            <input name="name" required autocomplete="organization">
+          </label>
+          <label>Telefon
+            <input name="phone" autocomplete="tel">
+          </label>
+          <label>Website
+            <input name="website" type="url" autocomplete="url">
+          </label>
+          <input name="logo_url" type="hidden">
+          <input name="company_logo_path" type="hidden">
+          <label class="full-span">Beschreibung
+            <textarea name="description" rows="3"></textarea>
+          </label>
+        </div>
+
+        <div class="account-logo-block">
+          <div id="companyLogoPreview" class="account-logo-preview">MU</div>
+          <div class="account-logo-controls">
+            <h3>Firmenlogo</h3>
+            <p class="muted">Dieses Logo erscheint im Header, in Kartenvorschauen, Wallet-Karten, QR/PDF-Dateien und auf der öffentlichen Claim-Seite.</p>
+            <input id="companyLogoUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+            <div class="button-row wrap">
+              <button id="uploadCompanyLogoButton" class="secondary" type="button">Logo hochladen</button>
+              <button id="removeCompanyLogoButton" class="secondary danger-soft" type="button">Logo entfernen</button>
+            </div>
+            <p id="companyLogoHint" class="muted">PNG, JPG, JPEG oder WEBP. Maximal 2 MB, quadratisch empfohlen.</p>
+          </div>
+        </div>
+
+        <div class="account-location-block">
+          <h2>Standortangaben</h2>
+          <label>Adresse / Standort
+            <input name="address" autocomplete="street-address">
+          </label>
+          <div class="split-row">
+            <label>Latitude
+              <input name="location_lat" type="number" step="0.000001" min="-90" max="90" placeholder="47.376887">
+            </label>
+            <label>Longitude
+              <input name="location_lng" type="number" step="0.000001" min="-180" max="180" placeholder="8.541694">
+            </label>
+          </div>
+          <p class="muted">Diese Koordinaten werden für standortbasierte Wallet-Benachrichtigungen im Editor automatisch übernommen.</p>
+        </div>
+      </form>
+    </main>
+
+    <script type="module" src="/js/account.js"></script>
+  </body>
+</html>

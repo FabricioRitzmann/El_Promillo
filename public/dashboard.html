@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Dashboard</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="business-brand-link" href="/dashboard.html" aria-label="Dashboard">
+        <span class="business-brand-logo" data-business-logo>MU</span>
+        <span class="business-brand-name" data-business-name>Mein Unternehmen</span>
+      </a>
+      <span class="app-brand-mark" aria-label="El Promillo Wallet & Loyalty App">
+        <span class="app-brand-emblem" aria-hidden="true"></span>
+        <img class="app-brand-lockup" src="/assets/el-promillo-title-lockup-new-cutout.png" alt="" aria-hidden="true">
+      </span>
+    </header>
+
+    <nav class="app-tabbar" aria-label="Hauptbereiche">
+      <a class="app-tab is-active" href="/dashboard.html#dashboardOverview" data-dashboard-tab="dashboard" aria-current="page">Dashboard</a>
+      <a class="app-tab" href="/dashboard.html#visitorStatistics" data-dashboard-tab="statistics">Besucherstatistik</a>
+      <a class="app-tab" href="/scanner.html">Scanner</a>
+      <a class="app-tab app-tab-account" href="/account.html" aria-label="Konto">
+        <svg class="account-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 21a8 8 0 0 1 16 0"></path>
+        </svg>
+      </a>
+    </nav>
+
+    <main class="page-shell">
+      <section id="dashboardOverview" class="page-heading" data-dashboard-page="dashboard">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="view-subtitle">Karten, QR-Codes und Kundenkarten zentral verwalten.</p>
+        </div>
+        <a class="button primary" href="/scanner.html">Kundenkarte scannen</a>
+      </section>
+
+      <div id="dashboardMessage" class="message" hidden></div>
+
+      <section id="visitorStatistics" class="section-block stats-section" data-dashboard-page="statistics">
+        <div class="section-title">
+          <div>
+            <h2>Besucherstatistik</h2>
+            <p class="muted">Scans nach Zeitraum, Kartentyp, Clubkarten-Modul, Geschlecht, Altersgruppe, Uhrzeit und Aktion auswerten.</p>
+          </div>
+          <button id="refreshStatsButton" class="secondary" type="button">Aktualisieren</button>
+        </div>
+        <form id="statsFilterForm" class="panel stats-filter-panel">
+          <div class="stats-filter-grid">
+            <label>Zeitraum
+              <select name="period" id="statsPeriod">
+                <option value="today">Heute</option>
+                <option value="yesterday">Gestern</option>
+                <option value="last_7_days" selected>Letzte 7 Tage</option>
+                <option value="last_30_days">Letzte 30 Tage</option>
+                <option value="this_month">Dieser Monat</option>
+                <option value="last_month">Letzter Monat</option>
+                <option value="custom">Benutzerdefiniert</option>
+              </select>
+            </label>
+            <label data-stats-custom-date hidden>Von
+              <input name="date_from" type="date">
+            </label>
+            <label data-stats-custom-date hidden>Bis
+              <input name="date_to" type="date">
+            </label>
+            <label>Kartentyp
+              <select name="template_type" id="statsTemplateType">
+                <option value="all">Alle Karten</option>
+                <option value="club_card">Clubkarte</option>
+                <option value="stamp_card">Stempelkarte</option>
+                <option value="streak_card">Streakkarte</option>
+                <option value="vip_card">VIP-Karte</option>
+                <option value="balance_card">Guthabenkarte</option>
+                <option value="cloakroom_card">Garderobenkarte</option>
+                <option value="coupon_card">Couponkarte</option>
+                <option value="membership_card">Mitgliedskarte</option>
+                <option value="event_card">Eventkarte</option>
+                <option value="generic_card">Generische Karte</option>
+              </select>
+            </label>
+            <label id="statsClubFeatureField">Clubkarten-Modul
+              <select name="club_feature">
+                <option value="all">Alle Clubkarten</option>
+                <option value="vip">Clubkarten mit VIP</option>
+                <option value="balance">Clubkarten mit Guthaben</option>
+                <option value="cloakroom">Clubkarten mit Garderobe</option>
+                <option value="coupon">Clubkarten mit Coupon</option>
+                <option value="membership">Clubkarten mit Mitgliedschaft</option>
+                <option value="multiple">Mehrere aktive Module</option>
+              </select>
+            </label>
+            <label>Geschlecht
+              <select name="gender">
+                <option value="all">Alle</option>
+                <option value="male">Männlich</option>
+                <option value="female">Weiblich</option>
+              </select>
+            </label>
+            <label>Altersgruppe
+              <select name="age_group">
+                <option value="all">Alle</option>
+                <option value="18_plus">18+</option>
+                <option value="25_plus">25+</option>
+                <option value="30_plus">30+</option>
+              </select>
+            </label>
+            <label>Scan-Typ
+              <select name="scan_type">
+                <option value="all">Alle Scans</option>
+                <option value="first_scan">Nur Erstscans</option>
+                <option value="repeat_scan">Nur Wiederholungsscans</option>
+              </select>
+            </label>
+            <label>Uhrzeit
+              <select name="hour_range" id="statsHourRange">
+                <option value="all">Ganzer Tag</option>
+                <option value="0-6">00:00-06:00</option>
+                <option value="6-12">06:00-12:00</option>
+                <option value="12-18">12:00-18:00</option>
+                <option value="18-24">18:00-24:00</option>
+                <option value="custom">Benutzerdefiniert</option>
+              </select>
+            </label>
+            <label data-stats-custom-hour hidden>Von Stunde
+              <input name="hour_from" type="number" min="0" max="23">
+            </label>
+            <label data-stats-custom-hour hidden>Bis Stunde
+              <input name="hour_to" type="number" min="1" max="24">
+            </label>
+            <label>Aktion
+              <select name="action_type">
+                <option value="all">Alle Aktionen</option>
+                <option value="visit">Besuch erfasst</option>
+                <option value="vip-update">VIP-Aktion</option>
+                <option value="balance-redeem">Guthaben-Aktion</option>
+                <option value="cloakroom-toggle">Garderobe</option>
+                <option value="redeem">Coupon eingelöst</option>
+                <option value="membership-check">Mitgliedschaft geprüft</option>
+                <option value="checkin">Event Check-in</option>
+                <option value="stamp-plus">Stempel hinzugefügt</option>
+                <option value="streak-plus">Streak erhöht</option>
+              </select>
+            </label>
+          </div>
+          <p class="privacy-note">Hinweis: Diese Erfassung dient der anonymisierten Besucherstatistik. Bitte stelle sicher, dass die Nutzung den geltenden Datenschutzregeln und deinen lokalen Informationspflichten entspricht.</p>
+        </form>
+        <div id="statsMessage" class="message" hidden></div>
+        <div id="statsKpiGrid" class="stats-kpi-grid"></div>
+        <div id="statsCharts" class="stats-chart-grid"></div>
+        <div id="lastScansTable" class="table-panel"></div>
+      </section>
+
+      <section class="section-block" data-dashboard-page="dashboard">
+        <div class="section-title">
+          <div>
+            <h2>Kartenübersicht</h2>
+            <p class="muted">Alle Karten-Templates mit eigenem QR-Code. Eine Zeile anklicken, um die Karte im Editor zu bearbeiten.</p>
+          </div>
+          <a id="newTemplateButton" class="button primary" href="/editor.html">Neue Karte erstellen</a>
+        </div>
+        <div id="templateList" class="template-list"></div>
+      </section>
+
+      <section class="section-block" data-dashboard-page="dashboard">
+        <div class="section-title">
+          <div>
+            <h2>Ausgestellte Kundenkarten</h2>
+            <p class="muted">Karteninstanzen mit aktuellem Status und matrixbasierten Werten wie Guthaben, Stempel oder VIP.</p>
+          </div>
+          <a class="button secondary" href="/scanner.html">Scanner öffnen</a>
+        </div>
+        <div id="customerCardList" class="template-list"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,87 @@
+{
+  "app": {
+    "name": "El_Promillo",
+    "baseUrl": "http://localhost:3000",
+    "apiBaseUrl": "http://localhost:3000"
+  },
+  "publicUrls": {
+    "webAppDomain": "http://localhost:3000",
+    "supabaseFunctionBaseUrl": "https://YOUR_PROJECT_REF.supabase.co/functions/v1",
+    "walletInstallPage": "http://localhost:3000/claim.html",
+    "appPublicBaseUrl": "SET_AS_SUPABASE_EDGE_SECRET_APP_PUBLIC_BASE_URL"
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 3000,
+    "corsOrigin": "http://localhost:3000"
+  },
+  "automation": {
+    "walletCronSecret": "SET_AS_SUPABASE_EDGE_SECRET_WALLET_CRON_SECRET",
+    "scheduledNotificationsFunction": "process-scheduled-wallet-notifications",
+    "walletUpdateQueueFunction": "process-wallet-update-queue"
+  },
+  "supabase": {
+    "url": "YOUR_SUPABASE_URL",
+    "anonKey": "YOUR_SUPABASE_ANON_KEY",
+    "serviceRoleKey": "YOUR_SUPABASE_SERVICE_ROLE_KEY_SERVER_ONLY"
+  },
+  "payment": {
+    "provider": "manual",
+    "checkoutBaseUrl": "",
+    "webhookSecret": "SET_AS_SUPABASE_EDGE_SECRET_NOT_FRONTEND"
+  },
+  "googleWallet": {
+    "enabled": false,
+    "issuerId": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_ISSUER_ID",
+    "classSuffix": "wallet_cards_mvp",
+    "serviceAccountEmail": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL",
+    "privateKey": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_PRIVATE_KEY",
+    "serviceAccountJson": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_SERVICE_ACCOUNT_JSON",
+    "origins": "http://localhost:3000",
+    "desiredPassTypes": [
+      "generic",
+      "loyalty",
+      "offer",
+      "eventTicket"
+    ]
+  },
+  "appleWalletDirect": {
+    "teamId": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_TEAM_ID",
+    "passTypeId": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_PASS_TYPE_ID",
+    "wwdrCert": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_WWDR_CERT",
+    "passCert": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_PASS_CERT",
+    "passKey": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_PASS_KEY",
+    "passKeyPassword": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_PASS_KEY_PASSWORD",
+    "webServiceBaseUrl": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_WEB_SERVICE_BASE_URL",
+    "apnsKeyId": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_APNS_KEY_ID",
+    "apnsTeamId": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_APNS_TEAM_ID",
+    "apnsAuthKey": "SET_AS_SUPABASE_EDGE_SECRET_APPLE_APNS_AUTH_KEY"
+  },
+  "deliveryRules": {
+    "businessDailyLimit": 500,
+    "customerDailyLimit": 12,
+    "cardDailyLimit": 6,
+    "googleTextAndNotifyLimitPerPass24h": 3,
+    "duplicateWindowMinutes": 10,
+    "publicClaimRateLimit": 80,
+    "publicClaimRateLimitWindowSeconds": 900,
+    "recipientProcessingTimeoutMinutes": 15,
+    "queueProcessingTimeoutMinutes": 15,
+    "defaultTitle": "",
+    "defaultMessage": "",
+    "allowedTargets": [
+      "all_active",
+      "template",
+      "platform_apple",
+      "platform_google",
+      "stamp_count",
+      "streak_count",
+      "vip_level",
+      "balance_range",
+      "cloakroom_open",
+      "event",
+      "coupon_unredeemed",
+      "membership_status"
+    ]
+  }
+}

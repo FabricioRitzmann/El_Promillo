@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Karte hinzufügen</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="claim-layout">
+      <section class="claim-panel">
+        <p class="eyebrow">Digitale Karte</p>
+        <div id="claimPreview" class="preview-slot"></div>
+        <div id="claimMessage" class="message" hidden></div>
+        <button id="claimButton" class="primary wide" type="button" disabled>Zu Apple Wallet hinzufügen</button>
+        <button id="googleWalletButton" class="secondary wide" type="button" disabled>Zu Google Wallet hinzufügen</button>
+        <div id="claimResult" class="panel compact" hidden></div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/claim.js"></script>
+  </body>
+</html>

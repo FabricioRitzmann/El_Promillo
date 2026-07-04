@@ -30,6 +30,9 @@ elpromillo-*.json
 Google_Wallet_Issuer_ID*
 supabase token*
 *supabase*token*
+github_token*
+GitHub_Token*
+GITHUB_TOKEN*
 dist/
 build/
 .next/

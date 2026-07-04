@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Karten-Editor</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="business-brand-link" href="/dashboard.html" aria-label="Dashboard">
+        <span class="business-brand-logo" data-business-logo>MU</span>
+        <span class="business-brand-name" data-business-name>Mein Unternehmen</span>
+      </a>
+      <span class="app-brand-mark" aria-label="El Promillo Wallet & Loyalty App">
+        <span class="app-brand-emblem" aria-hidden="true"></span>
+        <img class="app-brand-lockup" src="/assets/el-promillo-title-lockup-new-cutout.png" alt="" aria-hidden="true">
+      </span>
+    </header>
+
+    <nav class="app-tabbar" aria-label="Hauptbereiche">
+      <a class="app-tab" href="/dashboard.html#dashboardOverview">Dashboard</a>
+      <a class="app-tab" href="/dashboard.html#visitorStatistics">Besucherstatistik</a>
+      <a class="app-tab" href="/scanner.html">Scanner</a>
+      <a class="app-tab app-tab-account" href="/account.html" aria-label="Konto">
+        <svg class="account-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 21a8 8 0 0 1 16 0"></path>
+        </svg>
+      </a>
+    </nav>
+
+    <main class="page-shell">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">Karten-Editor</p>
+          <h1 id="editorPageTitle">Neue Karte erstellen</h1>
+        </div>
+        <a class="button secondary" href="/dashboard.html">Zurück zur Übersicht</a>
+      </section>
+
+      <div id="editorMessage" class="message" hidden></div>
+
+      <form id="templateForm" class="panel editor-panel">
+        <div class="panel-heading">
+          <div>
+            <h2 id="editorModeTitle">Neue Karte erstellen</h2>
+            <p class="muted" id="editorModeText">Jedes gespeicherte Template bekommt automatisch seinen eigenen Claim-Link und QR-Code.</p>
+          </div>
+          <a class="button secondary" href="/editor.html">Neue Karte</a>
+        </div>
+
+        <div class="editor-grid">
+          <div class="editor-fields">
+            <label>Geschäftsname
+              <input name="business_name" required>
+            </label>
+            <label>Kartenname
+              <input name="card_name" required>
+            </label>
+            <label>Kartentyp
+              <select id="templateType" name="template_type">
+                <option value="generic_card">Generische Basiskarte</option>
+                <option value="stamp_card">Stempelkarte</option>
+                <option value="streak_card">Streak-Karte</option>
+                <option value="event_card">Eventkarte</option>
+                <option value="club_card">Clubkarte</option>
+              </select>
+            </label>
+            <label>Beschreibung
+              <textarea name="description" rows="3"></textarea>
+            </label>
+            <div class="split-row">
+              <label>Hauptfarbe
+                <input name="primary_color" type="color" value="#fffdf9">
+              </label>
+              <label>Textfarbe
+                <input name="text_color" type="color" value="#8b4f2f">
+              </label>
+            </div>
+            <label data-reward-field hidden>Belohnungstext
+              <input name="reward_text">
+            </label>
+
+            <div class="feature-fields" data-feature-group="notifications">
+              <label class="check-row">
+                <input name="notifications_enabled" type="checkbox">
+                <span>Push-Benachrichtigungen vorbereiten</span>
+              </label>
+              <label>Push-Standardtext
+                <input name="notification_message" placeholder="Kurze Nachricht für spätere Wallet-Updates">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="customFields" hidden>
+              <label>Freifelder / Infotext
+                <textarea name="custom_fields_text" rows="3" placeholder="z. B. Mitgliedsnummer, Kategorie, Hinweise"></textarea>
+              </label>
+            </div>
+
+            <div id="optionalFeaturePanel" class="feature-fields optional-feature-panel" hidden>
+              <h3 class="optional-feature-title">Optionale Zusatzfunktionen</h3>
+              <p id="clubFeatureSpaceWarning" class="message warning" hidden>Es sind viele Funktionen aktiv. Auf Wallet-Karten ist der Platz begrenzt.</p>
+              <div id="optionalFeatureToggles" class="optional-feature-toggles"></div>
+            </div>
+
+            <div class="feature-fields" data-feature-group="stamps">
+              <label>Benötigte Stempel
+                <input name="stamps_required" type="number" min="1" value="10">
+              </label>
+              <label>Stempel-Icon hochladen
+                <input id="stampIconUpload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <label>Stempel-Icon-URL
+                <input name="stamp_icon_url" type="url" placeholder="Optionales Icon für die Vorschau">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="streak" hidden>
+              <label>Streak-Ziel
+                <input name="streak_goal" type="number" min="1">
+              </label>
+              <label>Streak-Icon hochladen
+                <input id="streakIconUpload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <label>Streak-Icon-URL
+                <input name="streak_icon_url" type="url" placeholder="Optionales Icon für die Vorschau">
+              </label>
+              <label>Streak-Notiz
+                <input name="streak_note">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="vip" hidden>
+              <label class="check-row" data-optional-toggle="vip">
+                <input name="vip_enabled" type="checkbox">
+                <span>VIP-Funktion aktivieren</span>
+              </label>
+              <label data-feature-setting="vip">VIP-Stufe
+                <input name="vip_tier">
+              </label>
+              <label data-feature-setting="vip">VIP-Level-Namen
+                <input name="vip_level_names" placeholder="Bronze, Silber, Gold, Platin">
+              </label>
+              <label data-feature-setting="vip">VIP-Notiz
+                <input name="vip_note">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="balance" hidden>
+              <label class="check-row" data-optional-toggle="balance">
+                <input name="balance_enabled" type="checkbox">
+                <span>Guthabenfunktion aktivieren</span>
+              </label>
+              <label data-feature-setting="balance">Währung
+                <input name="currency" value="CHF">
+              </label>
+              <div class="split-row" data-feature-setting="balance">
+                <label>Mindestbetrag
+                  <input name="min_balance_amount" type="number" min="0" step="0.01">
+                </label>
+                <label>Maximalbetrag
+                  <input name="max_balance_amount" type="number" min="0" step="0.01">
+                </label>
+              </div>
+              <label data-feature-setting="balance">Zahlungsanbieter-Hinweis
+                <input name="payment_note" placeholder="Stripe, Payrexx, Datatrans ...">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="cloakroom" hidden>
+              <label class="check-row" data-optional-toggle="cloakroom">
+                <input name="cloakroom_enabled" type="checkbox">
+                <span>Garderobenfunktion aktivieren</span>
+              </label>
+              <label data-feature-setting="cloakroom">Nachricht um 12:00 nach letzter Abgabe
+                <textarea name="cloakroom_noon_message" rows="3" placeholder="z. B. Vergiss nicht, deine Garderobe abzuholen."></textarea>
+              </label>
+              <label data-feature-setting="cloakroom">Nachricht beim nächsten Besuch in Standortnähe
+                <textarea name="cloakroom_location_message" rows="3" placeholder="z. B. Willkommen zurück. Deine Garderobe kann hier gescannt werden."></textarea>
+              </label>
+              <label data-feature-setting="cloakroom">Standortname
+                <input name="cloakroom_location_name" placeholder="z. B. Hauptfiliale">
+              </label>
+              <div class="split-row" data-feature-setting="cloakroom">
+                <label>Latitude
+                  <input name="cloakroom_location_latitude" type="number" step="0.000001" min="-90" max="90" placeholder="47.376887">
+                </label>
+                <label>Longitude
+                  <input name="cloakroom_location_longitude" type="number" step="0.000001" min="-180" max="180" placeholder="8.541694">
+                </label>
+              </div>
+              <label data-feature-setting="cloakroom">Radius in Metern
+                <input name="cloakroom_location_radius_meters" type="number" min="50" step="10" placeholder="150">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="checkin" hidden>
+              <label>Eventname
+                <input name="event_name">
+              </label>
+              <label>Eventdatum
+                <input name="event_date" type="date">
+              </label>
+              <div class="split-row">
+                <label>Startzeit
+                  <input name="event_start_time" type="time">
+                </label>
+                <label>Endzeit
+                  <input name="event_end_time" type="time">
+                </label>
+              </div>
+              <label>Standort
+                <input name="event_location">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="eventBackgroundImage" hidden>
+              <label>Event-Hintergrundbild hochladen
+                <input id="eventBackgroundUpload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <label>Event-Hintergrundbild-URL
+                <input name="event_background_image_url" type="url" placeholder="Wird nach dem Upload automatisch gefüllt">
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="redemption" hidden>
+              <label class="check-row" data-optional-toggle="redemption">
+                <input name="redemption_enabled" type="checkbox">
+                <span>Coupon-Funktion aktivieren</span>
+              </label>
+              <label data-feature-setting="redemption">Coupon-Titel
+                <input name="coupon_title">
+              </label>
+              <label data-feature-setting="redemption">Rabattwert
+                <input name="discount_value" placeholder="z. B. 20% oder CHF 10">
+              </label>
+              <label data-feature-setting="redemption">Gültig bis
+                <input name="coupon_valid_until" type="date">
+              </label>
+              <label data-feature-setting="redemption">Einlösebedingungen
+                <textarea name="redemption_terms" rows="3"></textarea>
+              </label>
+            </div>
+
+            <div class="feature-fields" data-feature-group="membership" hidden>
+              <label class="check-row" data-optional-toggle="membership">
+                <input name="membership_enabled" type="checkbox">
+                <span>Mitgliedschafts-Funktion aktivieren</span>
+              </label>
+              <label data-feature-setting="membership">Mitgliedsstatus
+                <input name="membership_status" placeholder="aktiv">
+              </label>
+              <label data-feature-setting="membership">Ablaufdatum
+                <input name="membership_expires_at" type="date">
+              </label>
+              <label data-feature-setting="membership">Vorteile
+                <textarea name="membership_benefits" rows="3"></textarea>
+              </label>
+            </div>
+
+            <div class="button-row wrap">
+              <button id="templateSubmitButton" class="primary" type="submit">Template speichern</button>
+              <a class="button secondary" href="/dashboard.html">Zur Übersicht</a>
+            </div>
+          </div>
+
+          <aside class="editor-preview-panel" aria-live="polite">
+            <p class="eyebrow">Live-Vorschau</p>
+            <div id="editorPreview" class="preview-slot"></div>
+            <div id="editorQrPanel" class="qr-download-panel" hidden>
+              <p class="eyebrow">Claim-QR</p>
+              <p id="editorFeatureSummary" class="muted"></p>
+              <img id="editorQrImage" class="editor-qr" alt="QR-Code für diese Karte">
+              <input id="editorClaimUrl" class="copy-input" type="text" readonly>
+              <div class="button-row wrap">
+                <a id="editorPdfA4" class="button secondary" href="#">PDF A4</a>
+                <a id="editorPdfA5" class="button secondary" href="#">PDF A5</a>
+              </div>
+            </div>
+            <p id="editorQrHint" class="muted">Nach dem Speichern erscheint hier der Claim-QR mit PDF-Downloads.</p>
+          </aside>
+        </div>
+      </form>
+
+      <section id="walletNotificationsPanel" class="panel wallet-notification-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <h2>Wallet Benachrichtigungen</h2>
+            <p class="muted">Nachrichten werden als Apple-Wallet-Pass-Update oder Google-Wallet-Message verarbeitet.</p>
+          </div>
+          <span id="walletNotificationTemplateLabel" class="pill">Aktuelles Template</span>
+        </div>
+
+        <div id="walletNotificationMessage" class="message" hidden></div>
+
+        <div class="wallet-notification-grid">
+          <form id="walletNotificationForm" class="wallet-notification-form">
+            <label>Template
+              <select id="walletNotificationTemplate" name="template_id"></select>
+            </label>
+            <label>Zielgruppe
+              <select id="walletNotificationTarget" name="target_type"></select>
+            </label>
+            <div id="walletNotificationTargetFilters" class="target-filter-fields" hidden>
+              <div class="split-row" data-target-filter="stamp_count streak_count" hidden>
+                <label>Minimum
+                  <input name="target_min" type="number" min="0" step="1">
+                </label>
+                <label>Maximum
+                  <input name="target_max" type="number" min="0" step="1">
+                </label>
+              </div>
+              <label data-target-filter="vip_level" hidden>VIP-Level
+                <input name="target_vip_level" placeholder="z. B. Gold">
+              </label>
+              <div class="split-row" data-target-filter="balance_range" hidden>
+                <label>Guthaben ab
+                  <input name="target_min_amount" type="number" min="0" step="0.01">
+                </label>
+                <label>Guthaben bis
+                  <input name="target_max_amount" type="number" min="0" step="0.01">
+                </label>
+              </div>
+              <label data-target-filter="membership_status" hidden>Mitgliedsstatus
+                <input name="target_membership_status" placeholder="aktiv">
+              </label>
+              <div class="split-row" data-target-filter="event" hidden>
+                <label>Event-ID
+                  <input name="target_event_id" placeholder="Optional">
+                </label>
+                <label>Eventname
+                  <input name="target_event_name" placeholder="Optional">
+                </label>
+              </div>
+              <fieldset class="target-window-fields">
+                <legend>Optionaler Zeitraum</legend>
+                <div class="split-row">
+                  <label>Zielkarten ab
+                    <input name="target_active_from" type="date">
+                  </label>
+                  <label>Zielkarten bis
+                    <input name="target_active_until" type="date">
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+            <label>Titel
+              <input name="title" maxlength="120" placeholder="Kurzer Wallet-Hinweis" required>
+            </label>
+            <label>Nachricht
+              <textarea name="message" rows="4" maxlength="500" placeholder="Text für Apple Wallet und Google Wallet" required></textarea>
+            </label>
+            <div class="split-row">
+              <label>Versand
+                <select id="walletNotificationSendType" name="send_type">
+                  <option value="now">Sofort senden</option>
+                  <option value="scheduled">Planen</option>
+                  <option value="location_based">Standortbasiert vorbereiten</option>
+                </select>
+              </label>
+              <label id="walletNotificationScheduledAtField" hidden>Zeitpunkt
+                <input name="scheduled_at" type="datetime-local">
+              </label>
+            </div>
+            <div id="walletNotificationLocationFields" class="split-row" hidden>
+              <label>Latitude
+                <input name="location_lat" type="number" step="0.000001" min="-90" max="90">
+              </label>
+              <label>Longitude
+                <input name="location_lng" type="number" step="0.000001" min="-180" max="180">
+              </label>
+              <label>Radius Meter
+                <input name="location_radius_m" type="number" min="50" max="100000" step="10" value="150">
+              </label>
+              <p class="muted full-span">Latitude und Longitude werden automatisch aus dem Konto übernommen, solange diese Felder leer sind.</p>
+            </div>
+            <div id="walletNotificationRuleSummary" class="message warning visible-message">
+              Google Wallet erlaubt maximal 3 notification-triggering Messages pro Pass innerhalb von 24 Stunden. Apple zeigt Pushs nur als Pass-Update an, wenn das iPhone den Pass registriert hat.
+            </div>
+            <div id="walletNotificationLimitWarnings" class="message warning visible-message" hidden></div>
+            <button class="primary" type="submit">Wallet-Benachrichtigung erstellen</button>
+          </form>
+
+          <div class="wallet-notification-preview">
+            <h3>Vorschau</h3>
+            <div class="notification-preview-card">
+              <p class="eyebrow">Apple Wallet</p>
+              <strong id="appleNotificationPreviewTitle">Titel</strong>
+              <span id="appleNotificationPreviewText">Nachricht</span>
+            </div>
+            <div class="notification-preview-card">
+              <p class="eyebrow">Google Wallet</p>
+              <strong id="googleNotificationPreviewTitle">Titel</strong>
+              <span id="googleNotificationPreviewText">Nachricht</span>
+            </div>
+            <dl class="detail-grid compact">
+              <div>
+                <dt>Erreichbar</dt>
+                <dd id="walletReachableCount">-</dd>
+              </div>
+              <div>
+                <dt>Nicht erreichbar</dt>
+                <dd id="walletUnreachableCount">-</dd>
+              </div>
+              <div>
+                <dt>Apple</dt>
+                <dd id="walletAppleCount">-</dd>
+              </div>
+              <div>
+                <dt>Google</dt>
+                <dd id="walletGoogleCount">-</dd>
+              </div>
+              <div>
+                <dt>Limitiert</dt>
+                <dd id="walletLimitedCount">-</dd>
+              </div>
+              <div>
+                <dt>Apple ohne Gerät</dt>
+                <dd id="walletAppleUnregisteredCount">-</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <div>
+          <h3>Versandhistorie</h3>
+          <div id="walletNotificationHistory" class="history-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/editor.js"></script>
+  </body>
+</html>
