@@ -34,6 +34,7 @@
   --brand-emblem: url("assets/el-promillo-header-logo-couple-cutout.png");
   --brand-title-lockup: url("assets/el-promillo-title-lockup-new-cutout.png");
   --brand-mark: var(--brand-emblem);
+  --page-max-width: 1180px;
   --font-ui: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   font-family: var(--font-ui);
@@ -458,7 +459,7 @@ textarea {
 
 .topbar {
   height: 5.1rem;
-  padding: 0 1rem;
+  padding: 0 max(1rem, calc((100vw - var(--page-max-width)) / 2 + 1rem));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -568,7 +569,7 @@ textarea {
   align-items: center;
   width: 100%;
   overflow-x: auto;
-  padding: 0.52rem max(1rem, calc((100vw - 1180px) / 2 + 1rem));
+  padding: 0.52rem max(1rem, calc((100vw - var(--page-max-width)) / 2 + 1rem));
   border-bottom: 0;
   background: rgba(255, 253, 249, 0.94);
   backdrop-filter: blur(18px);
@@ -647,7 +648,7 @@ textarea {
 }
 
 .page-shell {
-  width: min(1180px, 100%);
+  width: min(var(--page-max-width), 100%);
   margin: 0 auto;
   padding: 1.65rem 1rem 4rem;
 }
