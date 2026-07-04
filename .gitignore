@@ -33,6 +33,8 @@ supabase token*
 github_token*
 GitHub_Token*
 GITHUB_TOKEN*
+RENDER_API_KEY*
+Supabase_CLI*
 dist/
 build/
 .next/
