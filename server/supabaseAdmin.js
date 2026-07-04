@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 import { looksConfigured } from './config.js';
 
 export function createSupabaseAdmin(config) {
@@ -12,6 +13,9 @@ export function createSupabaseAdmin(config) {
     auth: {
       persistSession: false,
       autoRefreshToken: false
+    },
+    realtime: {
+      transport: WebSocket
     }
   });
 }
