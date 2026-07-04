@@ -458,8 +458,10 @@ textarea {
 }
 
 .topbar {
+  width: min(var(--page-max-width), 100%);
   height: 5.1rem;
-  padding: 0 max(1rem, calc((100vw - var(--page-max-width)) / 2 + 1rem));
+  margin: 0 auto;
+  padding: 0 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -567,9 +569,10 @@ textarea {
   display: flex;
   gap: 0.45rem;
   align-items: center;
-  width: 100%;
+  width: min(var(--page-max-width), 100%);
+  margin: 0 auto;
   overflow-x: auto;
-  padding: 0.52rem max(1rem, calc((100vw - var(--page-max-width)) / 2 + 1rem));
+  padding: 0.52rem 1rem;
   border-bottom: 0;
   background: rgba(255, 253, 249, 0.94);
   backdrop-filter: blur(18px);
