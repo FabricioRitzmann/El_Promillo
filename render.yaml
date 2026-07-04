@@ -15,19 +15,19 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: APP_PUBLIC_BASE_URL
-        sync: false
+        value: https://fabricioritzmann.github.io/El_Promillo/public/
       - key: APP_API_BASE_URL
-        sync: false
+        value: https://el-promillo.onrender.com
       - key: CORS_ORIGIN
-        sync: false
+        value: https://fabricioritzmann.github.io
       - key: SUPABASE_URL
-        sync: false
+        value: https://mfyltmjzofahbavrwpac.supabase.co
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_FUNCTION_BASE_URL
-        sync: false
+        value: https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
       - key: WALLET_BUSINESS_DAILY_LIMIT
         value: 500
       - key: WALLET_CUSTOMER_DAILY_LIMIT

@@ -55,7 +55,8 @@ function withPath(baseUrl, pathname) {
     return undefined;
   }
 
-  return new URL(pathname, String(baseUrl).replace(/\/?$/, '/')).toString();
+  const relativePath = String(pathname || '').replace(/^\/+/, '');
+  return new URL(relativePath, String(baseUrl).replace(/\/?$/, '/')).toString();
 }
 
 function functionsBaseUrl(supabaseUrl) {

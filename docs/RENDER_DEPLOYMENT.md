@@ -17,7 +17,7 @@ Wichtige Dateien:
 - `server/index.js`: Express Server, API-Routen, statische Auslieferung, Health Check
 - `server/config.js`: Konfiguration aus `config.example.json`, optional `config.json` und Render Env Vars
 - `server/supabaseAdmin.js`: serverseitiger Supabase Client mit Service Role Key
-- `public/js/config.js`: Browser lädt nur `/api/config`
+- `public/js/config.js`: Browser lädt lokal `/api/config` und auf GitHub Pages `config.public.json`
 - `public/js/supabaseClient.js`: Browser nutzt Supabase URL und Anon Key
 - `supabase/schema.sql`: Tabellen, RLS Policies, Grants, Storage Policies
 - `supabase/config.toml`: Edge Function JWT-Policy
@@ -27,7 +27,19 @@ Wichtige Dateien:
 
 ## Render Empfehlung
 
-Dieses Projekt braucht einen Render Web Service, weil `server/index.js` eigene API-Routen bereitstellt und serverseitig `SUPABASE_SERVICE_ROLE_KEY` nutzt. Ein Static Site Deployment waere nicht passend, weil `/api/config`, QR/PDF, lokale Fallback-Claims, Scanner-Fallbacks und serverseitige Supabase-Admin-Abfragen nicht laufen wuerden.
+Die öffentliche Webapp läuft über GitHub Pages:
+
+```text
+https://fabricioritzmann.github.io/El_Promillo/
+```
+
+Die eigentlichen HTML-Dateien liegen dort unter:
+
+```text
+https://fabricioritzmann.github.io/El_Promillo/public/
+```
+
+Render wird in diesem Setup als Node Web Service für API-/Server-Fallbacks genutzt, weil `server/index.js` eigene API-Routen bereitstellt und serverseitig `SUPABASE_SERVICE_ROLE_KEY` nutzt. Ein Render Static Site Deployment waere nicht passend, weil `/api/config`, QR/PDF, lokale Fallback-Claims, Scanner-Fallbacks und serverseitige Supabase-Admin-Abfragen nicht laufen wuerden.
 
 `render.yaml` definiert:
 
@@ -43,16 +55,22 @@ Dieses Projekt braucht einen Render Web Service, weil `server/index.js` eigene A
 In Render setzen:
 
 ```text
-APP_PUBLIC_BASE_URL=https://<render-service>.onrender.com
-APP_API_BASE_URL=https://<render-service>.onrender.com
-CORS_ORIGIN=https://<render-service>.onrender.com
-SUPABASE_URL=https://<PROJECT_REF>.supabase.co
+APP_PUBLIC_BASE_URL=https://fabricioritzmann.github.io/El_Promillo/public/
+APP_API_BASE_URL=https://el-promillo.onrender.com
+CORS_ORIGIN=https://fabricioritzmann.github.io
+SUPABASE_URL=https://mfyltmjzofahbavrwpac.supabase.co
 SUPABASE_ANON_KEY=<anon key>
 SUPABASE_SERVICE_ROLE_KEY=<service role key>
-SUPABASE_FUNCTION_BASE_URL=https://<PROJECT_REF>.supabase.co/functions/v1
+SUPABASE_FUNCTION_BASE_URL=https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
 ```
 
-Render setzt `PORT` automatisch. `HOST=0.0.0.0`, `NODE_ENV=production` und die nicht-sensitiven Wallet-Limits sind bereits in `render.yaml` vorbereitet.
+Render setzt `PORT` automatisch. `HOST=0.0.0.0`, `NODE_ENV=production`, die GitHub-Pages-URLs und die nicht-sensitiven Wallet-Limits sind bereits in `render.yaml` vorbereitet.
+
+Wichtig:
+
+- `APP_PUBLIC_BASE_URL` enthaelt den GitHub-Pages-Pfad mit `/public/`, damit QR- und Claim-Links direkt auf echte HTML-Dateien zeigen.
+- `APP_API_BASE_URL` ist die Render-Backend-URL.
+- `CORS_ORIGIN` ist nur der Browser-Origin `https://fabricioritzmann.github.io`, ohne Pfad. CORS-Header duerfen keinen Pfad enthalten.
 
 Nicht in Render setzen, sofern die Wallet-Logik weiter in Supabase Edge Functions laeuft:
 
@@ -132,13 +150,15 @@ Lokale Credential-Dateien sind vorhanden und duerfen nicht versioniert werden:
 
 Im Supabase Dashboard nach dem Render Deploy setzen:
 
-- Site URL: `https://<render-service>.onrender.com`
+- Site URL: `https://fabricioritzmann.github.io/El_Promillo/public/`
 - Redirect URLs:
-  - `https://<render-service>.onrender.com`
-  - `https://<render-service>.onrender.com/*`
-- Bei Custom Domain zusaetzlich:
-  - `https://<deine-domain.ch>`
-  - `https://<deine-domain.ch>/*`
+  - `https://fabricioritzmann.github.io/El_Promillo/`
+  - `https://fabricioritzmann.github.io/El_Promillo/*`
+  - `https://fabricioritzmann.github.io/El_Promillo/public/`
+  - `https://fabricioritzmann.github.io/El_Promillo/public/*`
+  - `https://el-promillo.onrender.com`
+  - `https://el-promillo.onrender.com/*`
+- Bei Custom Domain zusaetzlich die Custom Domain und `/*` eintragen.
 
 Danach testen:
 
@@ -163,17 +183,27 @@ Danach testen:
 10. Health Check Path: `/api/health`.
 11. Render Env Vars setzen.
 12. Deploy starten und Logs pruefen.
-13. `https://<render-service>.onrender.com/api/health` pruefen.
+13. `https://el-promillo.onrender.com/api/health` pruefen.
 14. Supabase Auth Redirect URLs aktualisieren.
 15. Edge Functions deployen und Supabase Secrets setzen.
 16. Smoke Test gegen die Render URL ausfuehren:
 
 ```bash
-node scripts/wallet-smoke-test.js --base-url https://<render-service>.onrender.com --strict
+node scripts/wallet-smoke-test.js --base-url https://el-promillo.onrender.com --strict
 ```
 
-17. Produktiv testen: Login, Firmenlogo, Dashboard, Editor, Scanner, Besucherstatistik, QR/PDF, Claim-Seite, Apple Wallet, Google Wallet und Topup/Payment.
+17. Produktiv testen: GitHub Pages öffnen, Login, Firmenlogo, Dashboard, Editor, Scanner, Besucherstatistik, QR/PDF, Claim-Seite, Apple Wallet, Google Wallet und Topup/Payment.
 
-## Aktuelle Einschraenkung
+## Aktuelle Veroeffentlichung
 
-Der lokale Ordner ist aktuell kein Git-Repository. Render Blueprint Deployments lesen `render.yaml` aus einem Git-Remote. Vor dem echten Deploy muss das Projekt daher in ein GitHub/GitLab/Bitbucket Repo gepusht werden.
+Das Projekt ist auf GitHub gepusht:
+
+```text
+https://github.com/FabricioRitzmann/El_Promillo
+```
+
+GitHub Pages:
+
+```text
+https://fabricioritzmann.github.io/El_Promillo/
+```

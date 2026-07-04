@@ -1,8 +1,8 @@
 {
   "app": {
     "name": "El_Promillo",
-    "baseUrl": "https://fabricioritzmann.github.io/El_Promillo/",
-    "apiBaseUrl": ""
+    "baseUrl": "https://fabricioritzmann.github.io/El_Promillo/public/",
+    "apiBaseUrl": "https://el-promillo.onrender.com"
   },
   "supabase": {
     "url": "https://mfyltmjzofahbavrwpac.supabase.co",
