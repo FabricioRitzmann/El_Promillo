@@ -1,8 +1,8 @@
 # Missing Information - Samsung Wallet Integration
 
-Status: Implementation stopped by project rule 4.
+Status: Implementation still stopped by project rule 4.
 
-The Samsung Wallet integration cannot be implemented safely yet. The current repository has enough Apple and Google Wallet structure to identify the integration points, but the Samsung runtime credentials and a few portal decisions are incomplete or ambiguous. No Apple Wallet, Google Wallet, Supabase schema, Edge Function or frontend logic has been changed for Samsung.
+The Samsung Wallet integration cannot be implemented safely yet. The current repository has enough Apple and Google Wallet structure to identify the integration points, and the newly added local Samsung key folder now contains a real private key matching the CSR. However, Samsung button/server-flow values are still incomplete. No Apple Wallet, Google Wallet, Supabase schema, Edge Function or frontend logic has been changed for Samsung.
 
 ## What Is Missing
 
@@ -12,20 +12,21 @@ Summary of blockers:
 
 | Missing item | Why it is required | Required format | File or secret to add |
 | --- | --- | --- | --- |
-| Real Samsung partner private key | Signs Samsung REST Authorization JWT/JWS and cdata JWS. The local `samsung_wallet_private.key.txt` is a CSR, not a private key. | PEM private key, preferably PKCS#8: `-----BEGIN PRIVATE KEY-----` | Supabase secret `SAMSUNG_WALLET_PRIVATE_KEY_PEM` or non-versioned local secret file |
-| Samsung `certificateId` | Required in Samsung cdata and REST Authorization token headers. | String from Samsung onboarding certificate registration | Supabase secret `SAMSUNG_WALLET_CERTIFICATE_ID` |
-| Samsung `partnerCode` confirmation | The web Add to Wallet button requires `partnercode`; docs also map `partnerId` to partnerCode, but the exact portal value must be confirmed. | Partner Portal string | Supabase secret `SAMSUNG_WALLET_PARTNER_CODE` |
 | Samsung RD click/impression URLs | Required by Samsung web button script for click/impression logging. | HTTPS URLs from Partner Portal Wallet Card page | Supabase secrets `SAMSUNG_WALLET_RD_CLICK_URL`, `SAMSUNG_WALLET_RD_IMPRESSION_URL` |
 | Samsung partner server URL registration | Samsung must call our Partner Server API for Get Card Data and Send Card State. | Public HTTPS Supabase Edge Function base/path registered in Partner Portal | Samsung Partner Portal plus future Edge Function config |
 | Add flow decision | The prompt requires QR codes to contain only `wallet_instance_id` or secure token. Samsung supports Data Transmit and Data Fetch; Data Fetch is safer here, but the configured portal flow must be confirmed. | `data_fetch` or `data_transmit` | Supabase secret/config `SAMSUNG_WALLET_ADD_FLOW` |
 | Server API authorization verification details | Incoming Samsung callbacks and outgoing Samsung Server API requests require Bearer JWT/JWS validation/generation bound to method/path. | Samsung portal/security artifact details | Supabase secrets and future Samsung Edge Function code |
+| Samsung card schema confirmation | Existing values include a card type, but the exact Wallet Card template/spec fields must match the created Samsung loyalty card. | Portal card spec/template confirmation | Future provider mapping and docs |
 
 ## Current Evidence
 
 Local files found:
 
 - `env Samsung wallet.txt` contains only these keys: `SAMSUNG_WALLET_PARTNER_ID`, `SAMSUNG_WALLET_CARD_ID`, `SAMSUNG_WALLET_CARD_TYPE`, `SAMSUNG_WALLET_TEMPLATE_ID`, `SAMSUNG_WALLET_ENV`.
-- `samsung_wallet_private.key.txt` has file type `PEM certificate request` and starts with `-----BEGIN CERTIFICATE REQUEST-----`. This is not a private key and cannot be used to sign Samsung tokens.
+- `samsung-wallet-keys/samsung_wallet_private.key` is a real PEM RSA private key.
+- `samsung-wallet-keys/samsung_wallet.csr` is a CSR, and its public modulus matches the private key.
+- `samsung_wallet_private.key.txt` still has file type `PEM certificate request` and starts with `-----BEGIN CERTIFICATE REQUEST-----`; it remains the wrong file for signing.
+- `:Users:fabricio:Desktop:pornwheel:samsung_env_values.txt.rtf` contains additional redacted Samsung key names: `SAMSUNG_WALLET_PARTNER_ID`, `SAMSUNG_WALLET_PARTNER_CODE`, `SAMSUNG_WALLET_CARD_ID`, `SAMSUNG_WALLET_CERTIFICATE_ID`, `SAMSUNG_WALLET_ENV`, `SAMSUNG_WALLET_CARD_TYPE`, `SAMSUNG_WALLET_COUNTRY_CODE`. Its `SAMSUNG_WALLET_PRIVATE_KEY` field appears to contain CSR text, so the usable signing key is the separate file in `samsung-wallet-keys/`.
 
 Existing architecture found:
 
@@ -67,7 +68,7 @@ Official Samsung documentation used:
 ## What To Do Next
 
 1. Open `SAMSUNG_MISSING_DATA.md`.
-2. Collect each missing value from the Samsung Wallet Partners Portal.
-3. Replace the CSR-only local file with the real private key or provide the private key as a Supabase secret.
+2. Collect the remaining missing values from the Samsung Wallet Partners Portal: RD click URL, RD impression URL, partner server URL/API registration, add-flow decision and server authorization verification inputs.
+3. Keep the real private key in `samsung-wallet-keys/` or move it into Supabase Secrets; do not commit it.
 4. Keep all Samsung credentials out of Git.
-5. Resume implementation only after these values are present and verified.
+5. Resume implementation only after the remaining values are present and verified.

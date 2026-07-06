@@ -35,6 +35,11 @@ GitHub_Token*
 GITHUB_TOKEN*
 RENDER_API_KEY*
 Supabase_CLI*
+samsung-wallet-keys/
+samsung_env_values*
+*samsung_env_values*
+env Samsung wallet.txt
+samsung_wallet_private.key.txt
 dist/
 build/
 .next/
