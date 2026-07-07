@@ -35,6 +35,7 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 ## 2. Neue Dateien
 
 - `supabase/functions/_shared/samsungWalletProvider.ts`
+- `supabase/functions/_shared/walletProviderRegistry.ts`
 - `supabase/functions/samsung-wallet-add-link/index.ts`
 - `supabase/functions/samsung-wallet-server/index.ts`
 - `supabase/functions/update-samsung-wallet-pass/index.ts`
@@ -57,6 +58,7 @@ Additiv in `supabase/schema.sql`:
 - RLS für Betreiber-Lesezugriff
 - keine Änderung an bestehenden Apple-/Google-Tabellen
 - keine Änderung an bestehenden `wallet_platform` Constraints
+- gemeinsame Provider-Registry mit internem `walletCardModel`
 
 ## 4. Neue ENV Variablen
 

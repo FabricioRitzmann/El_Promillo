@@ -7,6 +7,22 @@ Die App hält Wallet-Provider serverseitig in Supabase Edge Functions. Secrets b
 - Apple: `supabase/functions/_shared/appleWalletProvider.ts`
 - Google: `supabase/functions/_shared/googleWalletProvider.ts`
 - Samsung: `supabase/functions/_shared/samsungWalletProvider.ts`
+- Gemeinsame Adapter-Schicht: `supabase/functions/_shared/walletProviderRegistry.ts`
+
+`walletProviderRegistry.ts` stellt Apple, Google und Samsung unter einer einheitlichen Oberfläche bereit:
+
+- `create()`
+- `update()`
+- `delete()`
+- `revoke()`
+- `generateAddLink()`
+- `generateQRCode()`
+- `detectSupport()`
+- `serialize()`
+- `deserialize()`
+- `mapping()`
+
+`mapping()` liefert für alle Provider dasselbe interne `walletCardModel` mit Business, Customer, Card, Template, Branding, Codes, Loyalty, Notifications, Geo Locations, Dynamic Fields und Custom Fields. Provider-spezifische Samsung Card Data bleibt zusätzlich über `providerMapping()` bzw. `cardDataForInstance()` verfügbar.
 
 ## Samsung Provider Methoden
 

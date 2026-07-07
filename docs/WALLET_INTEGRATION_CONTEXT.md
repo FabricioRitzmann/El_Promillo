@@ -332,6 +332,7 @@ Benötigte Supabase Secrets:
 Serverseitige Dateien:
 
 - `supabase/functions/_shared/samsungWalletProvider.ts`
+- `supabase/functions/_shared/walletProviderRegistry.ts`
 - `supabase/functions/samsung-wallet-add-link/index.ts`
 - `supabase/functions/samsung-wallet-server/index.ts`
 - `supabase/functions/update-samsung-wallet-pass/index.ts`

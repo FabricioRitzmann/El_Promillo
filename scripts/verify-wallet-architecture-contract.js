@@ -48,6 +48,8 @@ function assertObjectMethods(relativePath, exportName, methods) {
   'supabase/functions/send-google-wallet-message/index.ts',
   'supabase/functions/samsung-wallet-add-link/index.ts',
   'supabase/functions/samsung-wallet-server/index.ts',
+  'supabase/functions/update-samsung-wallet-pass/index.ts',
+  'supabase/functions/_shared/walletProviderRegistry.ts',
   'supabase/functions/create-wallet-notification-campaign/index.ts',
   'supabase/functions/send-wallet-notification/index.ts',
   'supabase/functions/process-scheduled-wallet-notifications/index.ts',
@@ -99,6 +101,19 @@ assertObjectMethods('supabase/functions/_shared/samsungWalletProvider.ts', 'sams
   'mapping'
 ]);
 
+assertObjectMethods('supabase/functions/_shared/walletProviderRegistry.ts', 'walletProviders', [
+  'create',
+  'update',
+  'delete',
+  'revoke',
+  'generateAddLink',
+  'generateQRCode',
+  'detectSupport',
+  'serialize',
+  'deserialize',
+  'mapping'
+]);
+
 const appleWebService = read('supabase/functions/apple-wallet-webservice/index.ts');
 
 [
@@ -121,6 +136,7 @@ const appleWebService = read('supabase/functions/apple-wallet-webservice/index.t
 
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
+const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry.ts');
 
 [
   'TEXT_AND_NOTIFY',
@@ -142,6 +158,23 @@ const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.t
   'signAuthorizationToken'
 ].forEach((needle) => {
   assert(samsungProvider.includes(needle), `Samsung Wallet Provider Vertrag fehlt: ${needle}`);
+});
+
+[
+  'walletCardModel',
+  'business',
+  'customer',
+  'branding',
+  'codes',
+  'loyalty',
+  'notifications',
+  'geoLocations',
+  'dynamicFields',
+  'customFields',
+  'providerMapping',
+  'walletProviderFor'
+].forEach((needle) => {
+  assert(providerRegistry.includes(needle), `Wallet Provider Registry Vertrag fehlt: ${needle}`);
 });
 
 console.log('Wallet-Architekturvertrag für Service, Provider und Edge Functions ist vorhanden.');
