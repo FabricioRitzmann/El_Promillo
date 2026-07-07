@@ -22,8 +22,11 @@ Status: Samsung Backend ist live vorbereitet und geprüft. Die automatische Clai
 - `scripts/verify-prepare-supabase-secrets-local.js`
 - `scripts/wallet-remote-schema-check.js`
 - `scripts/verify-wallet-remote-schema-check.js`
+- `public/js/walletDeviceDetection.js`
+- `scripts/verify-wallet-device-detection.js`
 - `docs/WALLET_EXTERNAL_ACCEPTANCE.md`
 - `docs/WALLET_INTEGRATION_CONTEXT.md`
+- `docs/SAMSUNG_CLAIM_UI_CHANGE_REQUEST.md`
 - `SAMSUNG_MISSING_DATA.md`
 
 ## 2. Neue Dateien
@@ -98,6 +101,7 @@ Lokal geprüft:
 - `scripts/verify-samsung-wallet-contract.js`
 - `scripts/verify-prepare-supabase-secrets-local.js`
 - `scripts/samsung-wallet-smoke-test.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 --strict`
+- `scripts/verify-wallet-device-detection.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
@@ -108,6 +112,8 @@ Lokal geprüft:
 Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Samsung-Werte mehr.
 
 Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
+
+Die Device Detection ist isoliert vorbereitet und getestet, aber noch nicht in `public/js/claim.js` eingebunden. Die Claim-Integration bleibt wegen Regel 3 bis zur expliziten Freigabe offen; Details stehen in `docs/SAMSUNG_CLAIM_UI_CHANGE_REQUEST.md`.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 
