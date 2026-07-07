@@ -43,6 +43,7 @@ const packageJson = read('package.json');
   'operator_profiles',
   'businesses',
   'card_templates',
+  'public_claim_token',
   'customer_cards',
   'card_instances',
   'apple_wallet_devices',

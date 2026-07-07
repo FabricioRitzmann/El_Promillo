@@ -55,7 +55,7 @@ const publicServiceRoleFunctions = {
   ],
   'get-public-template': [
     'publicCardTemplateResponse(template)',
-    'TEMPLATE_ID_REQUIRED',
+    'CLAIM_LINK_REQUIRED',
     'get-public-template'
   ],
   'claim-apple-pass': [

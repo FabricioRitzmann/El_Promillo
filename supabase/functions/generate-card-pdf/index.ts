@@ -68,6 +68,7 @@ const pdfTemplateSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active'
 ].join(',');
 
@@ -390,6 +391,15 @@ function safeFileName(value: unknown) {
     .replace(/(^-|-$)/g, '') || 'karte';
 }
 
+function claimUrlForTemplate(template: Row, appBaseUrl: string) {
+  const token = String(template.public_claim_token || '').trim();
+  const path = /^[a-f0-9]{36}$/.test(token)
+    ? `/claim.html?token=${encodeURIComponent(token)}`
+    : `/claim.html?template=${encodeURIComponent(String(template.id || ''))}`;
+
+  return `${appBaseUrl.replace(/\/$/, '')}${path}`;
+}
+
 async function requireAuthenticatedOperator(supabaseAdmin: any, request: Request) {
   const authHeader = request.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
@@ -513,7 +523,7 @@ Deno.serve(async (request) => {
       };
     }
 
-    const claimUrl = `${appBaseUrl.replace(/\/$/, '')}/claim.html?template=${encodeURIComponent(template.id)}`;
+    const claimUrl = claimUrlForTemplate(template, appBaseUrl);
     const normalizedFormat = String(format).toLowerCase() === 'a5' ? 'a5' : 'a4';
     const pdf = buildTemplateQrPdf(template, claimUrl, normalizedFormat);
     const fileName = `qr-${safeFileName(template.card_name)}-${normalizedFormat}.pdf`;

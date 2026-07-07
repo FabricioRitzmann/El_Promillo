@@ -64,6 +64,7 @@ const templateEditorSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active',
   'created_at',
   'updated_at'
@@ -120,6 +121,14 @@ const allowedAssetMimeTypes = new Map([
   ['image/jpeg', 'jpg'],
   ['image/webp', 'webp']
 ]);
+
+function templateClaimUrl() {
+  const claimToken = String(state.template?.public_claim_token || '').trim();
+
+  return claimToken
+    ? appUrl(`/claim.html?token=${encodeURIComponent(claimToken)}`)
+    : appUrl(`/claim.html?template=${encodeURIComponent(state.templateId)}`);
+}
 const retiredEditorTemplateTypes = new Set([
   'vip_card',
   'balance_card',
@@ -513,7 +522,7 @@ function renderEditorQrPanel() {
     return;
   }
 
-  const claimUrl = appUrl(`/claim.html?template=${state.templateId}`);
+  const claimUrl = templateClaimUrl();
   const qrUrl = apiUrl(`/api/qrcode?text=${encodeURIComponent(claimUrl)}`);
   const pdfA4Url = apiUrl(`/api/templates/${encodeURIComponent(state.templateId)}/qr.pdf?format=a4`);
   const pdfA5Url = apiUrl(`/api/templates/${encodeURIComponent(state.templateId)}/qr.pdf?format=a5`);

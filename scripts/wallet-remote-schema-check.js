@@ -17,7 +17,7 @@ const requiredSchema = [
   },
   {
     table: 'card_templates',
-    columns: ['id', 'owner_id', 'business_id', 'card_name', 'template_type', 'settings', 'created_at', 'updated_at']
+    columns: ['id', 'owner_id', 'business_id', 'card_name', 'template_type', 'settings', 'public_claim_token', 'created_at', 'updated_at']
   },
   {
     table: 'customer_cards',

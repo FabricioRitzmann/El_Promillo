@@ -35,6 +35,7 @@ const claimTemplateSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active'
 ].join(',');
 
@@ -76,6 +77,12 @@ function errorJson(error: any) {
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
+}
+
+function claimToken(value: unknown) {
+  const token = stringValue(value).toLowerCase();
+
+  return /^[a-f0-9]{36}$/.test(token) ? token : '';
 }
 
 function templateBusiness(template: Row) {
@@ -443,21 +450,26 @@ Deno.serve(async (request) => {
 
     const body = await request.json().catch(() => ({})) as Row;
     const templateId = stringValue(body.templateId || body.template_id);
+    const token = claimToken(body.token || body.claimToken || body.claim_token);
 
-    if (!templateId) {
+    if (!templateId && !token) {
       throw createStructuredError(
         400,
-        'TEMPLATE_ID_REQUIRED',
+        'CLAIM_LINK_REQUIRED',
         'Template fehlt.',
-        'Der Claim-Link enthält keine gültige Template-ID.'
+        'Der Claim-Link enthält weder einen gültigen Claim-Token noch eine Template-ID.'
       );
     }
 
-    const { data: template, error: templateError } = await supabaseAdmin
+    const templateQuery = supabaseAdmin
       .from('card_templates')
       .select(claimTemplateSelect)
-      .eq('id', templateId)
-      .eq('is_active', true)
+      .eq('is_active', true);
+
+    const { data: template, error: templateError } = await (token
+      ? templateQuery.eq('public_claim_token', token)
+      : templateQuery.eq('id', templateId)
+    )
       .maybeSingle();
 
     if (templateError) {

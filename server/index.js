@@ -39,6 +39,7 @@ const localTemplatePublicSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active',
   'businesses(name,logo_url)'
 ].join(',');
@@ -109,6 +110,38 @@ function generateSerialNumber() {
 
 function generateWalletAuthenticationToken() {
   return crypto.randomBytes(24).toString('hex');
+}
+
+function claimToken(value) {
+  const token = String(value || '').trim().toLowerCase();
+
+  return /^[a-f0-9]{36}$/.test(token) ? token : '';
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
+}
+
+function claimUrlForTemplate(template, baseUrl) {
+  const token = claimToken(template?.public_claim_token);
+  const path = token
+    ? `/claim.html?token=${encodeURIComponent(token)}`
+    : `/claim.html?template=${encodeURIComponent(template.id)}`;
+
+  return `${baseUrl.replace(/\/$/, '')}${path}`;
+}
+
+async function selectPublicTemplateByClaimKey(key, selectColumns = localTemplatePublicSelect) {
+  const value = String(key || '').trim();
+  const token = claimToken(value);
+  const query = supabaseAdmin
+    .from('card_templates')
+    .select(selectColumns)
+    .eq('is_active', true);
+
+  return token && !isUuid(value)
+    ? await query.eq('public_claim_token', token).single()
+    : await query.eq('id', value).single();
 }
 
 function createStructuredError(statusCode, errorCode, message, reason) {
@@ -1289,12 +1322,7 @@ app.get('/api/templates/:templateId/qr.pdf', async (req, res) => {
   try {
     requireSupabaseAdmin(supabaseAdmin);
 
-    const { data: template, error } = await supabaseAdmin
-      .from('card_templates')
-      .select(localTemplatePublicSelect)
-      .eq('id', req.params.templateId)
-      .eq('is_active', true)
-      .single();
+    const { data: template, error } = await selectPublicTemplateByClaimKey(req.params.templateId);
 
     if (error || !template) {
       res.status(404).json({ error: 'Template nicht gefunden oder inaktiv.' });
@@ -1302,7 +1330,7 @@ app.get('/api/templates/:templateId/qr.pdf', async (req, res) => {
     }
 
     const baseUrl = config.app.baseUrl || `http://${host}:${port}`;
-    const claimUrl = `${baseUrl.replace(/\/$/, '')}/claim.html?template=${encodeURIComponent(template.id)}`;
+    const claimUrl = claimUrlForTemplate(template, baseUrl);
     const format = String(req.query.format || 'a4').toLowerCase();
     const pdfBuffer = buildTemplateQrPdf({ template: publicCardTemplateResponse(template), claimUrl, format });
     const safeName = String(template.card_name || 'karte')
@@ -1323,12 +1351,7 @@ app.get('/api/templates/:templateId', async (req, res) => {
   try {
     requireSupabaseAdmin(supabaseAdmin);
 
-    const { data: template, error } = await supabaseAdmin
-      .from('card_templates')
-      .select(localTemplatePublicSelect)
-      .eq('id', req.params.templateId)
-      .eq('is_active', true)
-      .single();
+    const { data: template, error } = await selectPublicTemplateByClaimKey(req.params.templateId);
 
     if (error || !template) {
       res.status(404).json({ error: 'Template nicht gefunden oder inaktiv.' });
@@ -1617,9 +1640,13 @@ app.post('/api/cards/claim', async (req, res) => {
     requireSupabaseAdmin(supabaseAdmin);
 
     const templateId = req.body?.templateId;
+    const token = claimToken(req.body?.token || req.body?.claimToken || req.body?.claim_token);
 
-    if (!templateId) {
-      res.status(400).json({ error: 'templateId fehlt.' });
+    if (!templateId && !token) {
+      res.status(400).json({
+        error: 'templateId oder claimToken fehlt.',
+        error_code: 'CLAIM_LINK_REQUIRED'
+      });
       return;
     }
 
@@ -1627,12 +1654,20 @@ app.post('/api/cards/claim', async (req, res) => {
     const walletObjectId = String(req.body?.walletObjectId || req.body?.wallet_object_id || '').trim();
     validateWalletObjectId(walletObjectId);
 
-    const { data: template, error: templateError } = await supabaseAdmin
-      .from('card_templates')
-      .select(localTemplateInternalSelect)
-      .eq('id', templateId)
-      .eq('is_active', true)
-      .single();
+    const { data: template, error: templateError } = await (token
+      ? supabaseAdmin
+        .from('card_templates')
+        .select(localTemplateInternalSelect)
+        .eq('public_claim_token', token)
+        .eq('is_active', true)
+        .single()
+      : supabaseAdmin
+        .from('card_templates')
+        .select(localTemplateInternalSelect)
+        .eq('id', templateId)
+        .eq('is_active', true)
+        .single()
+    );
 
     if (templateError || !template) {
       res.status(404).json({ error: 'Template nicht gefunden oder inaktiv.' });

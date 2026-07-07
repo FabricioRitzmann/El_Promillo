@@ -97,3 +97,5 @@ node scripts/wallet-edge-functions-report.js --functions-base-url https://<PROJE
 ## Bekannte sichere Grenze
 
 Samsung bleibt additiv: Die Claim-Seite priorisiert Samsung nur auf erkannten Samsung-Android-Geräten, Apple/Google bleiben manuell verfügbar und die bestehenden Apple-/Google-Datenmodelle werden nicht umgestellt.
+
+Neue QR-Codes und QR-PDFs verwenden `card_templates.public_claim_token` in `/claim.html?token=...`. Alte `/claim.html?template=...` Links bleiben gültig, damit bereits gedruckte oder geteilte QR-Codes nicht kaputtgehen.

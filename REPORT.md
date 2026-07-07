@@ -26,6 +26,13 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-wallet-device-detection.js`
 - `public/claim.html`
 - `public/js/claim.js`
+- `public/js/dashboard.js`
+- `public/js/editor.js`
+- `server/index.js`
+- `supabase/functions/get-public-template/index.ts`
+- `supabase/functions/claim-card/index.ts`
+- `supabase/functions/generate-card-pdf/index.ts`
+- `supabase/functions/_shared/samsungWalletProvider.ts`
 - `scripts/verify-claim-page-output-safety.js`
 - `docs/WALLET_EXTERNAL_ACCEPTANCE.md`
 - `docs/WALLET_INTEGRATION_CONTEXT.md`
@@ -43,6 +50,7 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/samsung-wallet-smoke-test.js`
 - `scripts/verify-samsung-wallet-smoke-test.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
+- `scripts/verify-claim-token-links.js`
 - `docs/samsung-wallet.md`
 - `docs/provider-architecture.md`
 - `docs/wallet.md`
@@ -60,6 +68,7 @@ Additiv in `supabase/schema.sql`:
 - keine Änderung an bestehenden Apple-/Google-Tabellen
 - keine Änderung an bestehenden `wallet_platform` Constraints
 - gemeinsame Provider-Registry mit internem `walletCardModel`
+- `card_templates.public_claim_token` für neue tokenisierte Claim-/QR-Links; bestehende Template-ID-Links bleiben als Fallback gültig
 
 ## 4. Neue ENV Variablen
 
@@ -88,6 +97,7 @@ Additiv in `supabase/schema.sql`:
 ## 6. Sicherheitsprüfung
 
 - Samsung-Links enthalten nur `refId`.
+- Neue QR-/Claim-Links enthalten `public_claim_token` statt interner Template-ID; öffentliche Template-Responses geben den Token nicht zurück.
 - Private Keys und Partner Secrets bleiben serverseitig in Supabase Secrets.
 - `samsung-wallet-add-link` nutzt das bestehende Public-Rate-Limit.
 - `samsung-wallet-server` prüft Samsung Bearer-JWS gegen `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`.
@@ -112,6 +122,7 @@ Lokal geprüft:
 - `scripts/samsung-wallet-smoke-test.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 --strict`
 - `scripts/verify-wallet-device-detection.js`
 - `scripts/verify-claim-page-output-safety.js`
+- `scripts/verify-claim-token-links.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
@@ -124,7 +135,7 @@ Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Sams
 
 Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
 
-Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar.
+Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar. Neue QR-Codes und QR-PDFs öffnen `/claim.html?token=<public_claim_token>`; alte `/claim.html?template=<template_id>` Links bleiben weiterhin gültig.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 

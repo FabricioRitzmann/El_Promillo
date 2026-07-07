@@ -47,7 +47,7 @@ assertIncludesAll('Samsung Missing Partner/Auth', provider, [
 ]);
 
 assertIncludesAll('Samsung Add-Link Missing Card/Template', addLink, [
-  'TEMPLATE_ID_REQUIRED',
+  'CLAIM_LINK_REQUIRED',
   'TEMPLATE_NOT_FOUND',
   'SAMSUNG_INSTANCE_SAVE_FAILED',
   'SAMSUNG_EVENT_SAVE_FAILED',

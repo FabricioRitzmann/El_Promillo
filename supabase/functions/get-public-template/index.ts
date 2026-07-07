@@ -24,6 +24,7 @@ const templateSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active'
 ].join(',');
 
@@ -45,6 +46,12 @@ function json(body: Row, status = 200) {
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
+}
+
+function claimToken(value: unknown) {
+  const token = stringValue(value).toLowerCase();
+
+  return /^[a-f0-9]{36}$/.test(token) ? token : '';
 }
 
 function createStructuredError(statusCode: number, code: string, message: string, reason: string) {
@@ -104,13 +111,14 @@ Deno.serve(async (request) => {
     const url = new URL(request.url);
     const body = await requestBody(request) as Row;
     const templateId = stringValue(body.templateId || body.template_id || url.searchParams.get('templateId') || url.searchParams.get('template'));
+    const token = claimToken(body.token || body.claimToken || body.claim_token || url.searchParams.get('token') || url.searchParams.get('claim_token'));
 
-    if (!templateId) {
+    if (!templateId && !token) {
       throw createStructuredError(
         400,
-        'TEMPLATE_ID_REQUIRED',
+        'CLAIM_LINK_REQUIRED',
         'Template fehlt.',
-        'Der Claim-Link enthält keine gültige Template-ID.'
+        'Der Claim-Link enthält weder einen gültigen Claim-Token noch eine Template-ID.'
       );
     }
 
@@ -123,11 +131,15 @@ Deno.serve(async (request) => {
 
     await enforcePublicClaimRateLimit(supabaseAdmin, request, 'get-public-template');
 
-    const { data: template, error } = await supabaseAdmin
+    const query = supabaseAdmin
       .from('card_templates')
       .select(templateSelect)
-      .eq('id', templateId)
-      .eq('is_active', true)
+      .eq('is_active', true);
+
+    const { data: template, error } = await (token
+      ? query.eq('public_claim_token', token)
+      : query.eq('id', templateId)
+    )
       .maybeSingle();
 
     if (error) {

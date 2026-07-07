@@ -52,6 +52,7 @@ const templateDashboardSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active',
   'created_at',
   'updated_at'
@@ -126,6 +127,14 @@ const CHART_VIEW_LABELS = {
   heatmap: 'Heatmap',
   table: 'Tabelle'
 };
+
+function templateClaimUrl(template) {
+  const claimToken = String(template?.public_claim_token || '').trim();
+
+  return claimToken
+    ? appUrl(`/claim.html?token=${encodeURIComponent(claimToken)}`)
+    : appUrl(`/claim.html?template=${encodeURIComponent(template.id)}`);
+}
 const CHART_VIEW_OPTIONS = {
   gender_distribution: {
     default: 'donut',
@@ -307,7 +316,7 @@ function renderTemplates() {
   const logoUrl = businessLogoUrl(state.business || {});
 
   const rows = state.templates.map((template) => {
-    const claimUrl = appUrl(`/claim.html?template=${template.id}`);
+    const claimUrl = templateClaimUrl(template);
     const editorUrl = pagePath(`editor.html?template=${encodeURIComponent(template.id)}`);
     const qrUrl = apiUrl(`/api/qrcode?text=${encodeURIComponent(claimUrl)}`);
     const pdfA4Url = apiUrl(`/api/templates/${encodeURIComponent(template.id)}/qr.pdf?format=a4`);

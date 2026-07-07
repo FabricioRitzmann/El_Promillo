@@ -16,6 +16,7 @@ let template = null;
 let publicConfig = null;
 let currentClaimResult = null;
 let detectedDeviceWallet = 'choice';
+let currentClaimToken = '';
 
 function configureWalletButtons() {
   detectedDeviceWallet = detectWalletDevice().wallet;
@@ -23,9 +24,13 @@ function configureWalletButtons() {
 }
 
 async function loadTemplate() {
-  const templateId = new URLSearchParams(window.location.search).get('template');
+  const params = new URLSearchParams(window.location.search);
+  const templateId = params.get('template');
+  const claimToken = params.get('token') || params.get('claim_token');
+  const templateKey = templateId || claimToken;
+  currentClaimToken = claimToken || '';
 
-  if (!templateId) {
+  if (!templateKey) {
     throw new Error('Template fehlt im Link.');
   }
 
@@ -34,12 +39,16 @@ async function loadTemplate() {
   let response = null;
 
   if (!isPublishedStaticPage()) {
-    response = await fetch(apiUrl(`/api/templates/${templateId}`)).catch(() => null);
+    response = await fetch(apiUrl(`/api/templates/${encodeURIComponent(templateKey)}`)).catch(() => null);
   }
 
   if (!response?.ok) {
     const edgeUrl = new URL(edgeFunctionUrl('get-public-template'));
-    edgeUrl.searchParams.set('template', templateId);
+    if (claimToken) {
+      edgeUrl.searchParams.set('token', claimToken);
+    } else {
+      edgeUrl.searchParams.set('template', templateId);
+    }
     response = await fetch(edgeUrl, {
       headers: {
         apikey: publicConfig.supabase.anonKey,
@@ -105,6 +114,7 @@ async function downloadApplePass(result) {
     },
     body: JSON.stringify({
       templateId: template.id,
+      claimToken: currentClaimToken || undefined,
       cardId: result.card?.id,
       walletObjectId: result.card?.wallet_object_id
     })
@@ -499,7 +509,8 @@ async function createSamsungWalletAddLink() {
       Authorization: `Bearer ${anonKey}`
     },
     body: JSON.stringify({
-      templateId: template.id
+      templateId: template.id,
+      claimToken: currentClaimToken || undefined
     })
   });
 
@@ -532,6 +543,7 @@ async function claimCardViaEdge(walletPlatform, walletObjectId) {
       },
       body: JSON.stringify({
         templateId: template.id,
+        claimToken: currentClaimToken || undefined,
         walletPlatform,
         walletObjectId
       })
@@ -567,6 +579,7 @@ async function claimCardViaLocalApi(walletPlatform, walletObjectId) {
     },
     body: JSON.stringify({
       templateId: template.id,
+      claimToken: currentClaimToken || undefined,
       walletPlatform,
       walletObjectId
     })

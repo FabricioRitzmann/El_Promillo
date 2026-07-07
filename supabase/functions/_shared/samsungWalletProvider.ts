@@ -207,7 +207,12 @@ function appLinkUrl(template: Row = {}) {
     return '';
   }
 
-  return `${baseUrl}/claim.html?template=${encodeURIComponent(stringValue(template.id))}`;
+  const claimToken = stringValue(template.public_claim_token);
+  const claimPath = /^[a-f0-9]{36}$/.test(claimToken)
+    ? `/claim.html?token=${encodeURIComponent(claimToken)}`
+    : `/claim.html?template=${encodeURIComponent(stringValue(template.id))}`;
+
+  return `${baseUrl}${claimPath}`;
 }
 
 function samsungCardType(value: unknown) {

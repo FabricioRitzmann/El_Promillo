@@ -4,11 +4,12 @@ Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
 
 ## Flow
 
-1. Die öffentliche Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js`. Der Hauptbutton `Zu Wallet hinzufügen` öffnet dann Samsung Wallet; Apple, Google und Samsung bleiben zusätzlich als manuelle Buttons sichtbar.
-2. Die App erzeugt über `samsung-wallet-add-link` eine `refId`.
-3. Die Function speichert diese `refId` in `samsung_wallet_instances`.
-4. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
-5. Samsung ruft danach `samsung-wallet-server` auf:
+1. Die öffentliche Claim-Seite wird bei neuen QR-Codes über `/claim.html?token=<public_claim_token>` geöffnet. Alte `/claim.html?template=<template_id>` Links bleiben als Fallback gültig.
+2. Die Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js`. Der Hauptbutton `Zu Wallet hinzufügen` öffnet dann Samsung Wallet; Apple, Google und Samsung bleiben zusätzlich als manuelle Buttons sichtbar.
+3. Die App erzeugt über `samsung-wallet-add-link` eine `refId`; bei Token-Claims validiert die Function serverseitig `public_claim_token`.
+4. Die Function speichert diese `refId` in `samsung_wallet_instances`.
+5. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
+6. Samsung ruft danach `samsung-wallet-server` auf:
    - `GET /cards/{cardId}/{refId}` für aktuelle Kartendaten
    - `POST /cards/{cardId}/{refId}?cc2=CH&event=ADDED` für Status-Callbacks
 
@@ -74,6 +75,7 @@ Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Lo
 ## Security
 
 - Browser bekommt keine Service Role, keine privaten Keys und kein Samsung-Zertifikat.
+- Neue QR-/Claim-Links enthalten nur `public_claim_token`, nicht die interne Template-ID; öffentliche Responses geben diesen Token nicht erneut aus.
 - Der öffentliche Samsung-Link enthält nur `refId`.
 - `samsung-wallet-server` prüft standardmässig die Samsung Bearer-JWS-Signatur.
 - `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur für Sandbox-Debugging und darf produktiv nicht gesetzt werden.

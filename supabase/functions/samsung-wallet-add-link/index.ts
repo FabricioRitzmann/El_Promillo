@@ -30,6 +30,7 @@ const templateSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active'
 ].join(',');
 
@@ -51,6 +52,12 @@ function json(body: Row, status = 200) {
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
+}
+
+function claimToken(value: unknown) {
+  const token = stringValue(value).toLowerCase();
+
+  return /^[a-f0-9]{36}$/.test(token) ? token : '';
 }
 
 function createStructuredError(statusCode: number, errorCode: string, message: string, reason: string) {
@@ -137,13 +144,14 @@ Deno.serve(async (request) => {
 
     const body = await request.json().catch(() => ({})) as Row;
     const templateId = stringValue(body.templateId || body.template_id);
+    const token = claimToken(body.token || body.claimToken || body.claim_token);
 
-    if (!templateId) {
+    if (!templateId && !token) {
       throw createStructuredError(
         400,
-        'TEMPLATE_ID_REQUIRED',
+        'CLAIM_LINK_REQUIRED',
         'Template fehlt.',
-        'Die öffentliche Wallet-Seite muss eine gültige Template-ID senden.'
+        'Die öffentliche Wallet-Seite muss einen gültigen Claim-Token oder eine Template-ID senden.'
       );
     }
 
@@ -158,11 +166,15 @@ Deno.serve(async (request) => {
       );
     }
 
-    const { data: template, error: templateError } = await supabaseAdmin
+    const templateQuery = supabaseAdmin
       .from('card_templates')
       .select(templateSelect)
-      .eq('id', templateId)
-      .eq('is_active', true)
+      .eq('is_active', true);
+
+    const { data: template, error: templateError } = await (token
+      ? templateQuery.eq('public_claim_token', token)
+      : templateQuery.eq('id', templateId)
+    )
       .maybeSingle();
 
     if (templateError) {

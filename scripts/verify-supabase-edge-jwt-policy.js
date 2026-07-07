@@ -47,7 +47,7 @@ const publicClaimGuards = {
     'enforcePublicClaimRateLimit(supabaseAdmin, request, \'get-public-template\')',
     'publicCardTemplateResponse(template)',
     ".eq('is_active', true)",
-    'TEMPLATE_ID_REQUIRED'
+    'CLAIM_LINK_REQUIRED'
   ],
   'claim-apple-pass': [
     'walletObjectId',

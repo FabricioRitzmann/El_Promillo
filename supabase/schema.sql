@@ -102,6 +102,7 @@ create table if not exists public.card_templates (
     "membership": false
   }'::jsonb,
   club_settings jsonb not null default '{}'::jsonb,
+  public_claim_token text not null default encode(gen_random_bytes(18), 'hex'),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -109,6 +110,24 @@ create table if not exists public.card_templates (
 
 alter table public.card_templates
 add column if not exists template_type text;
+
+alter table public.card_templates
+add column if not exists public_claim_token text;
+
+update public.card_templates
+set public_claim_token = encode(gen_random_bytes(18), 'hex')
+where coalesce(public_claim_token, '') = '';
+
+alter table public.card_templates
+alter column public_claim_token set default encode(gen_random_bytes(18), 'hex'),
+alter column public_claim_token set not null;
+
+alter table public.card_templates
+drop constraint if exists card_templates_public_claim_token_format_check;
+
+alter table public.card_templates
+add constraint card_templates_public_claim_token_format_check
+check (public_claim_token ~ '^[a-f0-9]{36}$') not valid;
 
 update public.card_templates
 set template_type = case card_type
@@ -1294,6 +1313,7 @@ check (customer_age_group is null or customer_age_group in ('18_plus', '25_plus'
 create index if not exists businesses_owner_id_idx on public.businesses(owner_id);
 create index if not exists card_templates_owner_id_idx on public.card_templates(owner_id);
 create index if not exists card_templates_business_id_idx on public.card_templates(business_id);
+create unique index if not exists card_templates_public_claim_token_idx on public.card_templates(public_claim_token);
 create index if not exists customer_cards_owner_id_idx on public.customer_cards(owner_id);
 create index if not exists customer_cards_template_id_idx on public.customer_cards(template_id);
 create index if not exists customer_cards_customer_code_idx on public.customer_cards(customer_code);

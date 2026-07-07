@@ -208,7 +208,8 @@ assertIncludes(localServer, [
   'const localTemplatePublicSelect = [',
   'const localTemplateInternalSelect = [',
   'const localOperatorCardSelect = [',
-  '.select(localTemplatePublicSelect)',
+  'function selectPublicTemplateByClaimKey(key, selectColumns = localTemplatePublicSelect)',
+  '.select(selectColumns)',
   '.select(localTemplateInternalSelect)',
   '.select(localOperatorCardSelect)'
 ], 'Lokaler Fallback muss explizite sichere Select-Listen verwenden');

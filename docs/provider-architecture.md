@@ -53,5 +53,6 @@ Samsung ist zunächst additiv umgesetzt:
 - eigene Functions: `samsung-wallet-add-link`, `samsung-wallet-server`, `update-samsung-wallet-pass`
 - keine Änderung an bestehenden `wallet_platform` Constraints für Apple/Google
 - Claim-UI ist nach Freigabe additiv angebunden: Samsung Android wird priorisiert, Apple/Google bleiben verfügbar
+- neue Dashboard-, Editor- und PDF-QR-Links nutzen `public_claim_token`; alte Template-ID-Links bleiben nur Fallback
 
 So bleibt Apple/Google stabil, während Samsung serverseitig vorbereitet ist.
