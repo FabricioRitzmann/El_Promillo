@@ -141,6 +141,107 @@ function readGoogleIssuerIdFile() {
   return '';
 }
 
+function readTextFileMaybeRtf(relativePath) {
+  const resolved = resolveProjectPath(relativePath);
+
+  if (!fs.existsSync(resolved)) {
+    return '';
+  }
+
+  if (relativePath.endsWith('.rtf')) {
+    try {
+      return execFileSync('textutil', ['-convert', 'txt', '-stdout', resolved], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      });
+    } catch {
+      return fs.readFileSync(resolved, 'utf8');
+    }
+  }
+
+  return fs.readFileSync(resolved, 'utf8');
+}
+
+function stripRtfControlText(value) {
+  return String(value || '')
+    .replace(/\\par[d]?/g, '\n')
+    .replace(/\\line/g, '\n')
+    .replace(/\\'[0-9a-fA-F]{2}/g, '')
+    .replace(/\\[a-zA-Z]+-?\d* ?/g, ' ')
+    .replace(/[{}]/g, ' ')
+    .replace(/\\/g, '\n');
+}
+
+function extractEnvAssignments(text) {
+  const assignments = new Map();
+  const normalized = stripRtfControlText(text)
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r/g, '\n');
+  const keyPattern = /([A-Z0-9_]+)=/g;
+  const matches = [...normalized.matchAll(keyPattern)];
+
+  for (let index = 0; index < matches.length; index += 1) {
+    const match = matches[index];
+    const key = match[1];
+    const valueStart = match.index + match[0].length;
+    const valueEnd = index + 1 < matches.length ? matches[index + 1].index : normalized.length;
+    const rawValue = normalized.slice(valueStart, valueEnd)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join('');
+    const cleaned = rawValue
+      .replace(/^["']|["']$/g, '')
+      .replace(/\s+\([^)]+\)$/g, '')
+      .trim();
+
+    if (key && cleaned) {
+      assignments.set(key, cleaned);
+    }
+  }
+
+  return assignments;
+}
+
+function readSamsungEnvValues() {
+  const candidates = [
+    ':Users:fabricio:Desktop:pornwheel:samsung_env_values.txt',
+    'samsung_env_values.txt',
+    'samsung_env_values.txt.rtf',
+    'env Samsung wallet.txt',
+    'env Samsung wallet.txt.rtf'
+  ];
+  const merged = new Map();
+
+  for (const candidate of candidates) {
+    const text = readTextFileMaybeRtf(candidate);
+
+    if (!text) {
+      continue;
+    }
+
+    for (const [key, value] of extractEnvAssignments(text)) {
+      if (!merged.has(key)) {
+        merged.set(key, value);
+      }
+    }
+  }
+
+  return merged;
+}
+
+function normalizeSamsungCardType(value) {
+  const text = String(value || '').toLowerCase();
+
+  if (text.includes('generic')) return 'generic';
+  if (text.includes('loyalty')) return 'loyalty';
+  if (text.includes('coupon')) return 'coupon';
+  if (text.includes('gift')) return 'giftcard';
+  if (text.includes('ticket')) return 'ticket';
+
+  return '';
+}
+
 function deriveFunctionsBaseUrl(supabaseUrl) {
   if (!configured(supabaseUrl)) {
     return '';
@@ -212,6 +313,7 @@ function buildEntries(config) {
   const appleDirect = config.appleWalletDirect || {};
   const googleWallet = config.googleWallet || {};
   const deliveryRules = config.deliveryRules || {};
+  const samsungWallet = readSamsungEnvValues();
 
   add(entries, 'SUPABASE_URL', supabaseUrl, 'config.supabase.url');
   add(entries, 'SUPABASE_ANON_KEY', getPath(config, ['supabase', 'anonKey']), 'config.supabase.anonKey');
@@ -260,6 +362,55 @@ function buildEntries(config) {
   add(entries, 'GOOGLE_WALLET_CLASS_SUFFIX', firstConfigured(googleWallet.classSuffix, 'wallet_cards_mvp'), 'config/default');
   add(entries, 'GOOGLE_WALLET_ORIGINS', firstConfigured(googleWallet.origins, appPublicBaseUrl), 'config/default');
 
+  const samsungPartnerId = samsungWallet.get('SAMSUNG_WALLET_PARTNER_ID') || '';
+  const samsungPrivateKey = readTextFileMaybeRtf('samsung-wallet-keys/samsung_wallet_private.key');
+  const samsungPublicKey = firstConfigured(
+    readTextFileMaybeRtf('samsung-wallet-keys/samsung_public_cert.pem'),
+    readTextFileMaybeRtf('samsung-wallet-keys/samsung_public_key.pem'),
+    readTextFileMaybeRtf('samsung-wallet-keys/samsung_wallet_public.pem')
+  );
+
+  add(entries, 'SAMSUNG_WALLET_PARTNER_ID', samsungPartnerId, 'Samsung Wallet Partner Portal / local samsung env file');
+  add(entries, 'SAMSUNG_WALLET_PARTNER_CODE', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_PARTNER_CODE'),
+    samsungPartnerId
+  ), 'Samsung Wallet Add to Wallet Script Guide');
+  add(entries, 'SAMSUNG_WALLET_CARD_ID', samsungWallet.get('SAMSUNG_WALLET_CARD_ID') || '', 'Samsung Wallet Add to Wallet Script Guide');
+  add(entries, 'SAMSUNG_WALLET_CARD_TYPE', firstConfigured(
+    normalizeSamsungCardType(samsungWallet.get('SAMSUNG_WALLET_CARD_TYPE')),
+    'loyalty'
+  ), 'Samsung Wallet Card Type');
+  add(entries, 'SAMSUNG_WALLET_CARD_SUB_TYPE', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_CARD_SUB_TYPE'),
+    'others'
+  ), 'Samsung Wallet Card Sub Type');
+  add(entries, 'SAMSUNG_WALLET_CERTIFICATE_ID', samsungWallet.get('SAMSUNG_WALLET_CERTIFICATE_ID') || '', 'Samsung Wallet Certificate ID');
+  add(entries, 'SAMSUNG_WALLET_COUNTRY_CODE', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_COUNTRY_CODE'),
+    'CH'
+  ), 'Samsung Wallet country code');
+  add(entries, 'SAMSUNG_WALLET_ENV', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_ENV'),
+    'sandbox'
+  ), 'Samsung Wallet environment');
+  add(entries, 'SAMSUNG_WALLET_ADD_FLOW', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_ADD_FLOW'),
+    'data_fetch'
+  ), 'Samsung Wallet Data Fetch Link flow');
+  add(entries, 'SAMSUNG_WALLET_PRIVATE_KEY_PEM', samsungPrivateKey, 'samsung-wallet-keys/samsung_wallet_private.key', {
+    hint: 'Place the matching Samsung private key at samsung-wallet-keys/samsung_wallet_private.key'
+  });
+  add(entries, 'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM', samsungPublicKey, 'samsung-wallet-keys/samsung_public_cert.pem', {
+    hint: 'Download/extract Samsung public key or certificate from Samsung Wallet Partner Portal'
+  });
+  add(entries, 'SAMSUNG_WALLET_RD_CLICK_URL', samsungWallet.get('SAMSUNG_WALLET_RD_CLICK_URL') || '', 'Samsung Wallet Add to Wallet Script Guide');
+  add(entries, 'SAMSUNG_WALLET_RD_IMPRESSION_URL', samsungWallet.get('SAMSUNG_WALLET_RD_IMPRESSION_URL') || '', 'Samsung Wallet Add to Wallet Script Guide');
+  add(entries, 'SAMSUNG_WALLET_PARTNER_SERVER_URL', firstConfigured(
+    samsungWallet.get('SAMSUNG_WALLET_PARTNER_SERVER_URL'),
+    functionsBaseUrl ? `${functionsBaseUrl}/samsung-wallet-server` : ''
+  ), 'Samsung Wallet Partner Server URL');
+  add(entries, 'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH', 'false', 'Samsung Wallet production default');
+
   add(entries, 'PAYMENT_PROVIDER', firstConfigured(getPath(config, ['payment', 'provider']), 'manual'), 'config/default');
   add(entries, 'PAYMENT_CHECKOUT_BASE_URL', getPath(config, ['payment', 'checkoutBaseUrl']) || '', 'config/payment', { allowEmpty: true });
   add(entries, 'PAYMENT_WEBHOOK_SECRET', firstConfigured(getPath(config, ['payment', 'webhookSecret']), randomSecret()), 'generated/local');
@@ -280,7 +431,7 @@ function buildEntries(config) {
 
 function renderEnvFile(entries) {
   const lines = [
-    '# Local Supabase Secrets for direct Apple/Google Wallet.',
+    '# Local Supabase Secrets for direct Apple/Google/Samsung Wallet.',
     '# Generated by scripts/prepare-supabase-secrets-local.js.',
     '# This file is ignored by git. Do not paste it into chat or commit it.',
     '# Apply ready values with: supabase secrets set --env-file supabase/secrets.local.env',

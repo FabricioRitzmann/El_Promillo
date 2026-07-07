@@ -46,6 +46,8 @@ function assertObjectMethods(relativePath, exportName, methods) {
   'supabase/functions/issue-google-wallet-pass/index.ts',
   'supabase/functions/update-google-wallet-pass/index.ts',
   'supabase/functions/send-google-wallet-message/index.ts',
+  'supabase/functions/samsung-wallet-add-link/index.ts',
+  'supabase/functions/samsung-wallet-server/index.ts',
   'supabase/functions/create-wallet-notification-campaign/index.ts',
   'supabase/functions/send-wallet-notification/index.ts',
   'supabase/functions/process-scheduled-wallet-notifications/index.ts',
@@ -84,6 +86,19 @@ assertObjectMethods('supabase/functions/_shared/googleWalletProvider.ts', 'googl
   'sendTextAndNotify'
 ]);
 
+assertObjectMethods('supabase/functions/_shared/samsungWalletProvider.ts', 'samsungWalletProvider', [
+  'create',
+  'update',
+  'delete',
+  'revoke',
+  'generateAddLink',
+  'generateQRCode',
+  'detectSupport',
+  'serialize',
+  'deserialize',
+  'mapping'
+]);
+
 const appleWebService = read('supabase/functions/apple-wallet-webservice/index.ts');
 
 [
@@ -105,6 +120,7 @@ const appleWebService = read('supabase/functions/apple-wallet-webservice/index.t
 });
 
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
+const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
 
 [
   'TEXT_AND_NOTIFY',
@@ -115,6 +131,17 @@ const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts'
   'walletobjects.googleapis.com/walletobjects/v1'
 ].forEach((needle) => {
   assert(googleProvider.includes(needle), `Google Wallet Provider Vertrag fehlt: ${needle}`);
+});
+
+[
+  'https://a.swallet.link/atw/v3/',
+  'pdata=',
+  'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM',
+  'verifyPartnerServerAuthorization',
+  'cardDataForInstance',
+  'signAuthorizationToken'
+].forEach((needle) => {
+  assert(samsungProvider.includes(needle), `Samsung Wallet Provider Vertrag fehlt: ${needle}`);
 });
 
 console.log('Wallet-Architekturvertrag für Service, Provider und Edge Functions ist vorhanden.');

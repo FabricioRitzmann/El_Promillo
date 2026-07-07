@@ -12,5 +12,6 @@ Die aktuelle Detaildoku liegt hier:
 - Apple/Google Kontext: `docs/WALLET_INTEGRATION_CONTEXT.md`
 - Samsung Setup: `docs/samsung-wallet.md`
 - Provider-Struktur: `docs/provider-architecture.md`
+- Setup: `docs/setup.md`
 
 Für produktive Wallet-Aktionen müssen Supabase Secrets gesetzt, `supabase/schema.sql` ausgeführt und die Edge Functions deployed sein.
