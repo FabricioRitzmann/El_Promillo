@@ -141,7 +141,12 @@ Limits:
 2. `SAMSUNG_WALLET_PARTNER_SERVER_URL` exakt auf `https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server` setzen.
 3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen und sicherstellen, dass `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passt. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH` muss produktiv `false` bleiben.
 4. Edge Functions deployen: `bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server`.
-5. Per HTTPS einen Samsung Add-Link über `samsung-wallet-add-link` erzeugen.
+5. Per HTTPS einen Samsung Add-Link über `samsung-wallet-add-link` erzeugen oder automatisiert prüfen:
+
+```bash
+node scripts/samsung-wallet-smoke-test.js --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 --strict
+```
+
 6. In Supabase prüfen:
    - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
    - `samsung_wallet_events` enthält `add_link_created`.

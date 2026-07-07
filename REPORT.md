@@ -1,6 +1,6 @@
 # Samsung Wallet Integration Report
 
-Status: Backend vorbereitet, Live-Aktivierung noch nicht abgeschlossen.
+Status: Samsung Backend ist live vorbereitet und geprüft. Die automatische Claim-UI-/Device-Routing-Erweiterung bleibt wegen Regel 3 separat.
 
 ## 1. Geänderte Dateien
 
@@ -20,6 +20,8 @@ Status: Backend vorbereitet, Live-Aktivierung noch nicht abgeschlossen.
 - `scripts/verify-wallet-edge-functions-report.js`
 - `scripts/prepare-supabase-secrets-local.js`
 - `scripts/verify-prepare-supabase-secrets-local.js`
+- `scripts/wallet-remote-schema-check.js`
+- `scripts/verify-wallet-remote-schema-check.js`
 - `docs/WALLET_EXTERNAL_ACCEPTANCE.md`
 - `docs/WALLET_INTEGRATION_CONTEXT.md`
 - `SAMSUNG_MISSING_DATA.md`
@@ -30,6 +32,8 @@ Status: Backend vorbereitet, Live-Aktivierung noch nicht abgeschlossen.
 - `supabase/functions/samsung-wallet-add-link/index.ts`
 - `supabase/functions/samsung-wallet-server/index.ts`
 - `scripts/verify-samsung-wallet-contract.js`
+- `scripts/samsung-wallet-smoke-test.js`
+- `scripts/verify-samsung-wallet-smoke-test.js`
 - `docs/samsung-wallet.md`
 - `docs/provider-architecture.md`
 - `docs/wallet.md`
@@ -93,12 +97,17 @@ Lokal geprüft:
 - `pnpm check`
 - `scripts/verify-samsung-wallet-contract.js`
 - `scripts/verify-prepare-supabase-secrets-local.js`
+- `scripts/samsung-wallet-smoke-test.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 --strict`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
 - Supabase Schema Sanity
+- Remote Edge Function CORS/Availability
+- Remote Samsung Tabellen `samsung_wallet_instances` und `samsung_wallet_events`
 
 Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Samsung-Werte mehr.
+
+Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 
