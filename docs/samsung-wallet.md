@@ -4,10 +4,11 @@ Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
 
 ## Flow
 
-1. Die App erzeugt über `samsung-wallet-add-link` eine `refId`.
-2. Die Function speichert diese `refId` in `samsung_wallet_instances`.
-3. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
-4. Samsung ruft danach `samsung-wallet-server` auf:
+1. Die öffentliche Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js` und priorisiert den Samsung-Wallet-Button. Apple und Google bleiben als manuelle Buttons sichtbar.
+2. Die App erzeugt über `samsung-wallet-add-link` eine `refId`.
+3. Die Function speichert diese `refId` in `samsung_wallet_instances`.
+4. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
+5. Samsung ruft danach `samsung-wallet-server` auf:
    - `GET /cards/{cardId}/{refId}` für aktuelle Kartendaten
    - `POST /cards/{cardId}/{refId}?cc2=CH&event=ADDED` für Status-Callbacks
 
@@ -69,4 +70,4 @@ Danach `supabase/schema.sql` vollständig ausführen, falls die Tabellen `samsun
 
 ## Aktueller Stand
 
-Serverseitige Samsung-Vorbereitung ist implementiert. Die bestehende Apple-/Google-Claim-UI wurde bewusst nicht automatisch erweitert, weil dafür die gemeinsamen Wallet-Plattform-Constraints und die Geräteauswahl-UI berührt würden.
+Serverseitige Samsung-Vorbereitung ist implementiert und die öffentliche Claim-Seite ist angebunden. iPhone/iPad priorisiert Apple Wallet, Samsung Android priorisiert Samsung Wallet, andere Android-Geräte priorisieren Google Wallet. Desktop oder unbekannte Geräte zeigen alle Wallet-Buttons als manuelle Auswahl.

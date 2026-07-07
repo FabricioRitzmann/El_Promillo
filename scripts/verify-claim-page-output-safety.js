@@ -28,6 +28,7 @@ const packageJson = read('package.json');
 
 assertIncludes(claim, [
   'import { byId, escapeHtml, showMessage, walletPreviewHtml } from \'./ui.js\';',
+  'import { detectWalletDevice } from \'./walletDeviceDetection.js\';',
   'function safeGoogleWalletSaveUrl(saveUrl)',
   "url.origin === 'https://pay.google.com'",
   "url.pathname.startsWith('/gp/v/save/')",
@@ -35,10 +36,20 @@ assertIncludes(claim, [
 ], 'Google Save-Link Validierung');
 
 assertIncludes(claim, [
+  'function safeSamsungWalletAddUrl(addUrl)',
+  "url.origin === 'https://a.swallet.link'",
+  "url.pathname.startsWith('/atw/v3/')",
+  "clipParams.has('pdata')",
+  'throw new Error(\'Samsung-Wallet-Link ist ungültig.\')',
+  'samsung-wallet-add-link'
+], 'Samsung Add-Link Validierung');
+
+assertIncludes(claim, [
   'const cardCode = result.card?.card_instance_number || result.card?.customer_code || \'\';',
   '<p class="customer-code">${escapeHtml(cardCode)}</p>',
   'resultPanel.insertAdjacentHTML(\'beforeend\'',
-  '<a class="button primary" href="${escapeHtml(saveUrl)}">In Google Wallet speichern</a>'
+  '<a class="button primary" href="${escapeHtml(saveUrl)}">In Google Wallet speichern</a>',
+  '<a class="button primary" href="${escapeHtml(addUrl)}">In Samsung Wallet speichern</a>'
 ], 'Claim Result Escaping');
 
 assertIncludes(claim, [
@@ -55,9 +66,21 @@ assert(
   'Google Save-Link darf nicht ungeprüft und unescaped in href geschrieben werden.'
 );
 
+assert(
+  !claim.includes('href="${walletResult.addUrl}"'),
+  'Samsung Add-Link darf nicht ungeprüft und unescaped in href geschrieben werden.'
+);
+
+assertIncludes(read('public/claim.html'), [
+  'id="claimButton"',
+  'id="googleWalletButton"',
+  'id="samsungWalletButton"'
+], 'Claim Wallet Provider Buttons');
+
 assertIncludes(contextDoc, [
   'Claim-Seite',
   'safeGoogleWalletSaveUrl',
+  'safeSamsungWalletAddUrl',
   'escapeHtml'
 ], 'Kontextdoku Claim Output Safety');
 
@@ -71,4 +94,4 @@ assert(
   'package.json muss verify-claim-page-output-safety.js in pnpm check ausführen.'
 );
 
-console.log('Claim-Seite escaped öffentliche Ausgabe und validiert Google-Wallet-Save-Links.');
+console.log('Claim-Seite escaped öffentliche Ausgabe und validiert Google- und Samsung-Wallet-Links.');

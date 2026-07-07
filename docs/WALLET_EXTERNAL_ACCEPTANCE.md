@@ -147,11 +147,18 @@ Limits:
 node scripts/samsung-wallet-smoke-test.js --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 --strict
 ```
 
-6. In Supabase prüfen:
+6. Öffentliche Claim-Seite auf einem Samsung-Android-Gerät öffnen:
+
+```text
+https://<APP_PUBLIC_BASE_URL>/claim.html?template=<template_id>
+```
+
+Der Samsung-Wallet-Button muss primär erscheinen. Apple und Google bleiben als manuelle Alternativen sichtbar.
+7. In Supabase prüfen:
    - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
    - `samsung_wallet_events` enthält `add_link_created`.
-7. Samsung Test Tool oder Samsung-Gerät öffnen und den Data-Fetch-Link installieren.
-8. In Supabase prüfen:
+8. Samsung Test Tool oder Samsung-Gerät öffnen und den Data-Fetch-Link installieren.
+9. In Supabase prüfen:
    - `samsung_wallet_events` enthält `get_card_data`.
    - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
    - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.

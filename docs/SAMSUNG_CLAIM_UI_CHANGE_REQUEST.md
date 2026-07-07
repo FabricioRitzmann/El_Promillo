@@ -1,47 +1,13 @@
-# Samsung Claim UI Change Request
+# Samsung Claim UI Implementation
 
-Status: awaiting explicit confirmation under project rule 3.
+Status: implemented after explicit confirmation on 2026-07-07.
 
-Samsung backend, secrets, tables and Edge Functions are deployed and smoke-tested.
-The remaining end-to-end product step is to connect Samsung Wallet to the public
-claim page.
+The public claim page now connects Samsung Wallet without changing the existing
+Apple and Google wallet functions.
 
-## Why Confirmation Is Required
+## Confirmed Routing
 
-The public claim page is the shared Wallet Confirmation Page for Apple and
-Google. Adding Samsung there changes provider selection behavior for the same
-customer button flow.
-
-Project rule 3 says that changes affecting Apple or Google Wallet must stop,
-explain affected files and wait for confirmation.
-
-## Affected Files
-
-- `public/claim.html`
-  - Add a manual Samsung button next to Apple and Google.
-- `public/js/claim.js`
-  - Replace local Apple/Google-only detection with `walletDeviceDetection.js`.
-  - Route Samsung Android to `samsung-wallet-add-link`.
-  - Keep iPhone/iPad on Apple and non-Samsung Android on Google.
-  - Keep Desktop/unknown as manual provider choice.
-- `public/styles.css`
-  - Only if a third button needs spacing tweaks.
-- Optional verifier scripts
-  - Extend claim-output/static checks so Apple, Google and Samsung buttons stay present.
-
-## Already Prepared Safely
-
-- `public/js/walletDeviceDetection.js`
-  - Isolated browser-safe detection utility.
-  - Not imported by `claim.js` yet, so current Apple/Google behavior is unchanged.
-- `scripts/verify-wallet-device-detection.js`
-  - Tests iPhone, iPad desktop mode, Samsung Android, other Android and Desktop/manual choice.
-- `scripts/samsung-wallet-smoke-test.js`
-  - Verifies Samsung Add-Link, `pdata` flow, DB persistence and unauthorized Partner Server gate.
-
-## Intended Routing After Confirmation
-
-| Device | Default main button |
+| Device | Prioritized Wallet |
 | --- | --- |
 | iPhone | Apple Wallet |
 | iPad | Apple Wallet |
@@ -49,35 +15,45 @@ explain affected files and wait for confirmation.
 | Android other manufacturer | Google Wallet |
 | Desktop or unknown | Manual Wallet choice |
 
-Manual provider buttons should remain available:
+All provider buttons remain available manually:
 
 - Apple Wallet
 - Google Wallet
 - Samsung Wallet
 
-## Safer Implementation Plan
+## Implemented Files
 
-1. Import `detectWalletDevice` into `public/js/claim.js`.
-2. Add `samsungWalletButton` in `public/claim.html`.
-3. Keep existing Apple and Google functions unchanged.
-4. Add a new `createSamsungWalletAddLink(resultOrTemplate)` path that calls only:
+- `public/claim.html`
+  - Adds `samsungWalletButton` next to Apple and Google.
+- `public/js/claim.js`
+  - Imports `detectWalletDevice` from `walletDeviceDetection.js`.
+  - Routes Samsung Android to `samsung-wallet-add-link`.
+  - Keeps iPhone/iPad on Apple and non-Samsung Android on Google.
+  - Validates Samsung Add-Links before rendering or opening them.
+- `public/js/walletDeviceDetection.js`
+  - Detects Apple mobile, Samsung Android, other Android and manual/unknown devices.
+- `scripts/verify-claim-page-output-safety.js`
+  - Guards Apple, Google and Samsung output safety.
+- `scripts/verify-wallet-device-detection.js`
+  - Guards device routing.
+
+## Security Notes
+
+- Browser code never receives Samsung private keys, partner certificates or service role keys.
+- The Samsung browser path calls only:
 
 ```text
 https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-add-link
 ```
 
-5. Open the returned Samsung `addUrl`.
-6. Add static tests to ensure:
-   - Apple button still exists.
-   - Google button still exists.
-   - Samsung button exists.
-   - Samsung Add URL is opened only from the Samsung path.
-   - Samsung path does not expose Partner ID, private keys or certificates in browser code.
-
-## Required Confirmation Text
-
-Before implementing this shared claim-page change, confirm with:
+- The returned URL is only accepted when it matches:
 
 ```text
-Ja, du darfst die Claim-Seite und Device Detection erweitern, damit iPhone Apple, Samsung Android Samsung Wallet und andere Android Google Wallet bekommen.
+https://a.swallet.link/atw/v3/...#Clip?pdata=...
 ```
+
+## Data Model Note
+
+Samsung remains a separate Data-Fetch flow using `samsung_wallet_instances`.
+The existing Apple/Google `claim-card` flow and its `wallet_platform` constraints
+stay unchanged.
