@@ -334,6 +334,7 @@ Serverseitige Dateien:
 - `supabase/functions/_shared/samsungWalletProvider.ts`
 - `supabase/functions/samsung-wallet-add-link/index.ts`
 - `supabase/functions/samsung-wallet-server/index.ts`
+- `supabase/functions/update-samsung-wallet-pass/index.ts`
 - `supabase/schema.sql` mit `samsung_wallet_instances` und `samsung_wallet_events`
 
 Für Produktion muss `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole gesetzt sein. Zusätzlich muss `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur ein Sandbox-Debug-Fallback und darf nicht produktiv verwendet werden.

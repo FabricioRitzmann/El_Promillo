@@ -65,7 +65,7 @@ bash scripts/deploy-wallet-functions.sh
 Nur Samsung:
 
 ```bash
-bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server
+bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server,update-samsung-wallet-pass
 ```
 
 ## Samsung Wallet
@@ -96,4 +96,4 @@ node scripts/wallet-edge-functions-report.js --functions-base-url https://<PROJE
 
 ## Bekannte sichere Grenze
 
-Die bestehende Apple-/Google-Claim-UI ist noch nicht automatisch auf Samsung umgestellt. Das ist bewusst so, weil diese Änderung Device Detection, Provider-Auswahl und bestehende Apple-/Google-Claim-Flows berührt und nach Regel 3 separat bestätigt werden muss.
+Samsung bleibt additiv: Die Claim-Seite priorisiert Samsung nur auf erkannten Samsung-Android-Geräten, Apple/Google bleiben manuell verfügbar und die bestehenden Apple-/Google-Datenmodelle werden nicht umgestellt.

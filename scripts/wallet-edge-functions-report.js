@@ -27,6 +27,7 @@ const protectedFunctions = [
   'issue-google-wallet-pass',
   'update-google-wallet-pass',
   'send-google-wallet-message',
+  'update-samsung-wallet-pass',
   'generate-card-pdf',
   'create-wallet-notification-campaign',
   'send-wallet-notification',

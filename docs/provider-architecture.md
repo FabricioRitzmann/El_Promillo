@@ -34,8 +34,8 @@ Zusätzlich:
 Samsung ist zunächst additiv umgesetzt:
 
 - eigene Tabellen: `samsung_wallet_instances`, `samsung_wallet_events`
-- eigene Functions: `samsung-wallet-add-link`, `samsung-wallet-server`
+- eigene Functions: `samsung-wallet-add-link`, `samsung-wallet-server`, `update-samsung-wallet-pass`
 - keine Änderung an bestehenden `wallet_platform` Constraints für Apple/Google
-- keine Änderung an der bestehenden Claim-UI ohne separaten Freigabe-Schritt
+- Claim-UI ist nach Freigabe additiv angebunden: Samsung Android wird priorisiert, Apple/Google bleiben verfügbar
 
 So bleibt Apple/Google stabil, während Samsung serverseitig vorbereitet ist.

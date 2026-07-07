@@ -21,6 +21,7 @@ FUNCTIONS=(
   send-google-wallet-message
   samsung-wallet-add-link
   samsung-wallet-server
+  update-samsung-wallet-pass
   generate-card-pdf
   create-wallet-notification-campaign
   send-wallet-notification

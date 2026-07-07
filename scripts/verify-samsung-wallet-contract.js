@@ -47,11 +47,13 @@ function assertObjectMethods(relativePath, exportName, methods) {
 const providerPath = 'supabase/functions/_shared/samsungWalletProvider.ts';
 const addLinkPath = 'supabase/functions/samsung-wallet-add-link/index.ts';
 const serverPath = 'supabase/functions/samsung-wallet-server/index.ts';
+const updatePath = 'supabase/functions/update-samsung-wallet-pass/index.ts';
 
 [
   providerPath,
   addLinkPath,
   serverPath,
+  updatePath,
   'docs/samsung-wallet.md',
   'docs/provider-architecture.md',
   'docs/wallet.md',
@@ -62,6 +64,7 @@ const serverPath = 'supabase/functions/samsung-wallet-server/index.ts';
 const provider = read(providerPath);
 const addLink = read(addLinkPath);
 const server = read(serverPath);
+const update = read(updatePath);
 const schema = read('supabase/schema.sql');
 const config = read('supabase/config.toml');
 const deploy = read('scripts/deploy-wallet-functions.sh');
@@ -149,6 +152,25 @@ assertIncludesAll('Samsung Partner Server Function', server, [
   'samsung_callback_url'
 ]);
 
+assertIncludesAll('Samsung Update Function', update, [
+  'Deno.serve(async (request)',
+  "request.method === 'OPTIONS'",
+  'corsHeaders',
+  'walletNotificationService.context(request)',
+  ".from('samsung_wallet_instances')",
+  ".from('samsung_wallet_events')",
+  'samsungWalletProvider.update(instance, fields)',
+  'samsungWalletProvider.delete(instance)',
+  'samsungWalletProvider.revoke(instance)',
+  'manual_update_requested',
+  'manual_delete_requested',
+  'manual_cancel_requested',
+  'SAMSUNG_INSTANCE_NOT_FOUND',
+  'SAMSUNG_INSTANCE_STATE_SAVE_FAILED',
+  'publicWalletProviderResult',
+  'publicWalletOperationPayload'
+]);
+
 assertIncludesAll('Samsung SQL Tabellen und RLS', schema, [
   'create table if not exists public.samsung_wallet_instances',
   'create table if not exists public.samsung_wallet_events',
@@ -174,7 +196,8 @@ assertIncludesAll('Samsung Deploy und JWT Policy', config, [
 
 assertIncludesAll('Samsung Deploy Script', deploy, [
   'samsung-wallet-add-link',
-  'samsung-wallet-server'
+  'samsung-wallet-server',
+  'update-samsung-wallet-pass'
 ]);
 
 [
@@ -205,6 +228,7 @@ assertIncludesAll('Samsung Doku', `${setupDoc}\n${globalSetupDoc}\n${providerDoc
   'Rollback Strategie',
   'samsung-wallet-add-link',
   'samsung-wallet-server',
+  'update-samsung-wallet-pass',
   'samsung_wallet_instances',
   'samsung_wallet_events',
   'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM',

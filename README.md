@@ -777,6 +777,7 @@ supabase functions deploy send-apple-wallet-update
 supabase functions deploy google-wallet-save-link
 supabase functions deploy samsung-wallet-add-link
 supabase functions deploy samsung-wallet-server
+supabase functions deploy update-samsung-wallet-pass
 supabase functions deploy issue-google-wallet-pass
 supabase functions deploy update-google-wallet-pass
 supabase functions deploy send-google-wallet-message
@@ -800,6 +801,7 @@ claim-apple-pass
 google-wallet-save-link
 samsung-wallet-add-link
 samsung-wallet-server
+update-samsung-wallet-pass
 create-topup-payment-session
 confirm-topup-payment
 apple-wallet-webservice
@@ -875,7 +877,7 @@ GET /api/templates/:templateId/qr.pdf?format=a5
 8. Dashboard zeigt pro Template einen eigenen QR-Code zur Claim-Seite und PDF-Downloads für A4/A5.
 9. Bestehende Karten können in der Kartenübersicht angeklickt und auf `/editor.html?template=<template_id>` bearbeitet werden.
 10. Im Editor steht bei gespeicherten Templates die Kartenvorschau links und der separate Claim-QR rechts.
-11. Kunde scannt QR-Code, öffnet `/claim.html?template=<template_id>` und erhält je nach Gerät den passenden Wallet-Pfad: Apple über `claim-card` plus `claim-apple-pass`, Google über `claim-card` plus `google-wallet-save-link`, Samsung über `samsung-wallet-add-link`.
+11. Kunde scannt QR-Code, öffnet `/claim.html?template=<template_id>` und erhält je nach Gerät den passenden Wallet-Pfad: Apple über `claim-card` plus `claim-apple-pass`, Google über `claim-card` plus `google-wallet-save-link`, Samsung über `samsung-wallet-add-link`; spätere Samsung Update-/Cancel-Aktionen laufen geschützt über `update-samsung-wallet-pass`.
 12. Jede ausgestellte Karte bekommt eine sichtbare, eindeutige Karten-ID (`card_instance_number`).
 13. Betreiber scannt die Kundenkarte unter `/scanner.html` oder gibt Kundencode bzw. Karten-ID manuell ein.
 14. Betreiber sieht im Scanner nur Aktionen, die zur Matrix des Templates passen.

@@ -56,10 +56,20 @@ https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server
 ```bash
 bash scripts/set-supabase-secrets.sh --dry-run
 bash scripts/set-supabase-secrets.sh
-bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server
+bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server,update-samsung-wallet-pass
 ```
 
 Danach `supabase/schema.sql` vollständig ausführen, falls die Tabellen `samsung_wallet_instances` und `samsung_wallet_events` noch nicht in deinem Supabase-Projekt existieren.
+
+## Update und Cancel
+
+`update-samsung-wallet-pass` ist eine geschützte Betreiber-Function. Sie akzeptiert `samsungInstanceId`, `refId` oder `customerCode` und `action=update|delete|revoke`.
+
+- `update` ruft Samsung Update Notification auf und speichert `manual_update_requested`.
+- `delete` ruft Samsung Delete-State über den Update-Endpunkt auf und speichert `manual_delete_requested`.
+- `revoke` ruft Samsung Cancel Notification auf und speichert `manual_cancel_requested`.
+
+Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Login, `unlock=true` und Business-Zugehörigkeit Pflicht. Provider-Antworten werden redigiert zurückgegeben und in `samsung_wallet_events` auditiert.
 
 ## Security
 
