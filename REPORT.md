@@ -42,6 +42,7 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-samsung-wallet-contract.js`
 - `scripts/samsung-wallet-smoke-test.js`
 - `scripts/verify-samsung-wallet-smoke-test.js`
+- `scripts/verify-samsung-wallet-error-paths.js`
 - `docs/samsung-wallet.md`
 - `docs/provider-architecture.md`
 - `docs/wallet.md`
@@ -111,6 +112,7 @@ Lokal geprüft:
 - `scripts/samsung-wallet-smoke-test.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 --strict`
 - `scripts/verify-wallet-device-detection.js`
 - `scripts/verify-claim-page-output-safety.js`
+- `scripts/verify-samsung-wallet-error-paths.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
