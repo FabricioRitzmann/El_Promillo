@@ -95,6 +95,44 @@ const requiredSchema = [
     ]
   },
   {
+    table: 'samsung_wallet_instances',
+    columns: [
+      'id',
+      'owner_id',
+      'business_id',
+      'template_id',
+      'ref_id',
+      'customer_code',
+      'card_id',
+      'card_type',
+      'card_sub_type',
+      'country_code',
+      'add_flow',
+      'card_status',
+      'samsung_wallet_id',
+      'last_event',
+      'last_event_at',
+      'last_synced_at',
+      'created_at',
+      'updated_at'
+    ]
+  },
+  {
+    table: 'samsung_wallet_events',
+    columns: [
+      'id',
+      'samsung_wallet_instance_id',
+      'owner_id',
+      'business_id',
+      'template_id',
+      'ref_id',
+      'event_type',
+      'samsung_request_id',
+      'samsung_event',
+      'created_at'
+    ]
+  },
+  {
     table: 'wallet_notification_campaigns',
     columns: [
       'id',

@@ -49,6 +49,8 @@ const packageJson = read('package.json');
   'apple_wallet_registrations',
   'apple_pass_versions',
   'google_wallet_objects',
+  'samsung_wallet_instances',
+  'samsung_wallet_events',
   'wallet_notification_campaigns',
   'wallet_notification_recipients',
   'wallet_push_logs',
