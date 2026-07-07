@@ -167,3 +167,60 @@ https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server
 - Samsung Secrets aus Supabase entfernen.
 - Samsung Partner Server URL im Samsung Portal deaktivieren.
 - Da alle SQL-Änderungen additiv sind, bleiben Apple und Google weiter nutzbar.
+
+---
+
+# Render Backend-Only Migration Report
+
+Datum: 2026-07-07
+
+## Geänderte Dateien
+
+- `server/index.js`
+- `render.yaml`
+- `.env.example`
+- `config.example.json`
+- `public/config.public.json`
+- `docs/RENDER_DEPLOYMENT.md`
+- `REPORT.md`
+
+## Neue Dateien
+
+- `ARCHITECTURE_REPORT.md`
+- `FRONTEND_IMPACT.md`
+- `RENDER_BACKEND_MIGRATION.md`
+
+## Backend Änderungen
+
+- `server/index.js` kennt jetzt `SERVE_STATIC_FRONTEND`.
+- Wenn `SERVE_STATIC_FRONTEND=false` gesetzt ist, liefert der Server keine statischen Dateien aus `public/` und keinen `index.html`-Fallback mehr.
+- Bekannte Backend-Routen wie `/api/config`, `/api/health`, `/api/qrcode`, `/api/templates/:templateId`, `/api/cards/claim` und `/api/scanner/actions` bleiben aktiv.
+- Unbekannte Render-Frontend-Routen antworten mit `404 FRONTEND_NOT_HOSTED_ON_RENDER`.
+
+## Deployment Änderungen
+
+- `render.yaml` setzt `SERVE_STATIC_FRONTEND=false`.
+- `APP_PUBLIC_BASE_URL` zeigt auf GitHub Pages.
+- `APP_API_BASE_URL` zeigt auf das aktive Render-Backend `https://el-promillo-j1n0.onrender.com`.
+- `CORS_ORIGIN` erlaubt die GitHub-Pages-Origin.
+
+## Frontend Bestätigung
+
+Frontend-Code, UI, CSS, Routing und Build-Struktur wurden NICHT verändert.
+
+Die einzige Frontend-nahe Änderung ist `public/config.public.json`: Dort wurde ausschliesslich die öffentliche Backend-URL von der alten Render-URL auf das aktive Render-Backend geändert. Details stehen in `FRONTEND_IMPACT.md`.
+
+## Render Bestätigung
+
+Render hostet ausschliesslich das Backend, sobald der Blueprint deployed ist.
+
+## Funktionsbestätigung
+
+Keine bestehende Frontend-Funktion wurde absichtlich verändert. Die bestehende GitHub-Pages-App nutzt weiterhin ihre bisherige Struktur und ruft das Render-Backend über `app.apiBaseUrl` auf.
+
+## Rollback Plan
+
+1. In Render `SERVE_STATIC_FRONTEND=true` setzen oder die Env-Variable entfernen.
+2. Alternativ den letzten Commit der Backend-only-Migration revertieren.
+3. Render neu deployen.
+4. Optional `public/config.public.json` wieder auf die vorherige Backend-URL setzen, falls ein anderer Backend-Service aktiviert wird.

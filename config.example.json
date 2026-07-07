@@ -2,7 +2,7 @@
   "app": {
     "name": "El_Promillo",
     "baseUrl": "https://fabricioritzmann.github.io/El_Promillo/public/",
-    "apiBaseUrl": "https://el-promillo.onrender.com"
+    "apiBaseUrl": "https://el-promillo-j1n0.onrender.com"
   },
   "publicUrls": {
     "webAppDomain": "https://fabricioritzmann.github.io",

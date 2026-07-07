@@ -12,6 +12,7 @@ import { resolveCardEmblem, supabaseCardEmblemUrl } from './cardEmblems.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
+const serveStaticFrontend = process.env.SERVE_STATIC_FRONTEND !== 'false';
 const config = loadConfig();
 const supabaseAdmin = createSupabaseAdmin(config);
 const app = express();
@@ -1262,7 +1263,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(publicDir));
+if (serveStaticFrontend) {
+  app.use(express.static(publicDir));
+}
 
 app.get('/api/config', (req, res) => {
   res.json(getPublicConfig(config));
@@ -2359,9 +2362,19 @@ app.all('/api/passkit/*', (req, res) => {
   legacyWalletRouteDisabled(res);
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
-});
+if (serveStaticFrontend) {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+} else {
+  app.use((req, res) => {
+    res.status(404).json({
+      error_code: 'FRONTEND_NOT_HOSTED_ON_RENDER',
+      error_message: 'Render hostet fuer dieses Projekt nur das Backend.',
+      error_reason: 'Oeffne das Frontend ueber GitHub Pages und nutze Render nur fuer /api/* und /health.'
+    });
+  });
+}
 
 const port = Number(process.env.PORT || config.server.port || 3000);
 const host = process.env.HOST || (process.env.RENDER ? '0.0.0.0' : config.server.host) || '127.0.0.1';
