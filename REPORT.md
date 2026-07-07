@@ -80,7 +80,8 @@ Additiv in `supabase/schema.sql`:
 
 ## 7. Mögliche Risiken
 
-- Samsung Public Key/Zertifikat fehlt lokal noch als eigene Datei.
+- Samsung Public Key/Zertifikat wurde aus `X303/el_promillo_walletsvc.samsung.com.crt` lokal vorbereitet.
+- Der aktuelle Samsung Private Key passt nicht zum Partner-Zertifikat `X303/el_promillo.crt`.
 - Die bestehende Claim-UI ist noch nicht auf automatische Samsung-Geräteauswahl erweitert, weil das Apple-/Google-Claim-Flows berührt und nach Regel 3 separat bestätigt werden muss.
 - Die exakte Samsung-Kartenfeld-Spezifikation muss im Samsung Test Tool validiert werden.
 
@@ -96,7 +97,7 @@ Lokal geprüft:
 - Edge JWT Policy
 - Supabase Schema Sanity
 
-Lokale Samsung-Secret-Vorbereitung findet 14 Samsung-Werte. Es fehlt weiterhin `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`.
+Lokale Samsung-Secret-Vorbereitung findet 14 Samsung-Werte. Es fehlt weiterhin ein gültiges `SAMSUNG_WALLET_PRIVATE_KEY_PEM`, das zum Partner-Zertifikat `X303/el_promillo.crt` passt.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 

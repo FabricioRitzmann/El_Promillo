@@ -44,7 +44,7 @@ bash scripts/set-supabase-secrets.sh --dry-run
 bash scripts/set-supabase-secrets.sh
 ```
 
-`prepare-supabase-secrets-local.js` bereitet `supabase/secrets.local.env` aus vorhandener lokaler Config, PEM-Dateien in `certs/`, Google-Issuer-/Service-Account-Dateien, Samsung-Portalwerten aus lokalen Samsung-Env-Dateien, `samsung-wallet-keys/samsung_wallet_private.key`, abgeleiteter Supabase Functions URL und generierten Cron-/Payment-Secrets vor. Fehlende externe Werte wie Apple APNs Key ID/Auth Key, Google Wallet Service Account oder `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` bleiben Kommentare und werden nicht als Platzhalter gesetzt.
+`prepare-supabase-secrets-local.js` bereitet `supabase/secrets.local.env` aus vorhandener lokaler Config, PEM-Dateien in `certs/`, Google-Issuer-/Service-Account-Dateien, Samsung-Portalwerten aus lokalen Samsung-Env-Dateien, `samsung-wallet-keys/samsung_wallet_private.key`, `samsung-wallet-keys/samsung_public_cert.pem`, abgeleiteter Supabase Functions URL und generierten Cron-/Payment-Secrets vor. Fehlende externe Werte wie Apple APNs Key ID/Auth Key, Google Wallet Service Account oder ein Samsung Private Key, der nicht zum Partner-Zertifikat passt, bleiben Kommentare und werden nicht als Platzhalter gesetzt.
 
 `set-supabase-secrets.sh` setzt diese lokale Env-Datei redigiert in Supabase. Das Script gibt keine Secret-Werte aus, leitet die Project Ref aus `config.json -> supabase.url` ab, nutzt bei fehlendem globalem `supabase` automatisch `pnpm dlx supabase` oder `npx --yes supabase` und prüft Supabase-CLI-Auth vor echten Writes per `supabase projects list`.
 
@@ -336,7 +336,7 @@ Serverseitige Dateien:
 - `supabase/functions/samsung-wallet-server/index.ts`
 - `supabase/schema.sql` mit `samsung_wallet_instances` und `samsung_wallet_events`
 
-Für Produktion muss `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole gesetzt sein. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur ein Sandbox-Debug-Fallback und darf nicht produktiv verwendet werden.
+Für Produktion muss `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole gesetzt sein. Zusätzlich muss `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur ein Sandbox-Debug-Fallback und darf nicht produktiv verwendet werden.
 
 ## 5. Public URLs
 

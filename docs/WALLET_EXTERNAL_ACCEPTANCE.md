@@ -13,7 +13,7 @@ Diese Checkliste beschreibt die produktive Endabnahme für die direkte Apple-Wal
 - `APP_PUBLIC_BASE_URL` zeigt auf die öffentliche Webapp-Domain.
 - `APPLE_WEB_SERVICE_BASE_URL` zeigt exakt auf `https://<PROJECT_REF>.supabase.co/functions/v1/apple-wallet-webservice`, ohne weiteres `/v1`.
 - `WALLET_CRON_SECRET` und `PAYMENT_WEBHOOK_SECRET` sind mindestens 32 Zeichen lang.
-- Optional `node scripts/prepare-supabase-secrets-local.js --write` ausführen, um vorhandene lokale Supabase-/Apple-Werte, PEM-Dateien aus `certs/`, Google-Issuer-/Service-Account-Dateien, Samsung-Portalwerte, `samsung-wallet-keys/samsung_wallet_private.key`, abgeleitete Wallet-URLs und lokale Cron-/Payment-Secrets in `supabase/secrets.local.env` vorzubereiten. Fehlende externe Werte wie APNs Key ID/Auth Key, Google Wallet Service Account oder `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` werden nur als Kommentar geschrieben.
+- Optional `node scripts/prepare-supabase-secrets-local.js --write` ausführen, um vorhandene lokale Supabase-/Apple-Werte, PEM-Dateien aus `certs/`, Google-Issuer-/Service-Account-Dateien, Samsung-Portalwerte, `samsung-wallet-keys/samsung_wallet_private.key`, `samsung-wallet-keys/samsung_public_cert.pem`, abgeleitete Wallet-URLs und lokale Cron-/Payment-Secrets in `supabase/secrets.local.env` vorzubereiten. Fehlende externe Werte wie APNs Key ID/Auth Key, Google Wallet Service Account oder ein Samsung Private Key, der nicht zum Partner-Zertifikat passt, werden nur als Kommentar geschrieben.
 - Fehlende Apple-/Google-Werte nach [docs/WALLET_EXTERNAL_CREDENTIALS.md](docs/WALLET_EXTERNAL_CREDENTIALS.md) (`Wallet External Credentials`) beschaffen: Apple APNs `.p8`, `APPLE_APNS_KEY_ID`, Google Wallet Issuer ID und Google Service Account JSON.
 - Danach `bash scripts/set-supabase-secrets.sh --dry-run` und `bash scripts/set-supabase-secrets.sh` ausführen. Das Script nutzt `supabase`, `pnpm dlx supabase`, `npx --yes supabase` oder `SUPABASE_CLI_BIN`, leitet die Project Ref aus `config.json -> supabase.url` ab und gibt keine Secret-Werte aus. Alternativ `supabase/secrets.example.env` nach `supabase/secrets.local.env` kopieren und manuell füllen. PEM-/p8-/JSON-Werte können auch per `supabase secrets set NAME="$(cat datei)"` gesetzt werden.
 - Optional vor der externen Abnahme `node scripts/wallet-readiness-report.js --strict` ausführen. Der Wallet Readiness Report zeigt nur Statusmeldungen und keine Secret-Werte.
@@ -139,7 +139,7 @@ Limits:
 
 1. Samsung Wallet Card in der Partner-Konsole auf Data Fetch Link konfigurieren.
 2. `SAMSUNG_WALLET_PARTNER_SERVER_URL` exakt auf `https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server` setzen.
-3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH` muss produktiv `false` bleiben.
+3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen und sicherstellen, dass `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passt. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH` muss produktiv `false` bleiben.
 4. Edge Functions deployen: `bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server`.
 5. Per HTTPS einen Samsung Add-Link über `samsung-wallet-add-link` erzeugen.
 6. In Supabase prüfen:

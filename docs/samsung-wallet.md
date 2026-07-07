@@ -33,7 +33,7 @@ SAMSUNG_WALLET_PARTNER_SERVER_URL=https://<PROJECT_REF>.supabase.co/functions/v1
 SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false
 ```
 
-`SAMSUNG_WALLET_PRIVATE_KEY_PEM` kommt aus `samsung-wallet-keys/samsung_wallet_private.key`. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` kommt aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole.
+`SAMSUNG_WALLET_PRIVATE_KEY_PEM` kommt aus `samsung-wallet-keys/samsung_wallet_private.key` und muss zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` kommt aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole.
 
 ## Samsung Partner Portal
 
@@ -48,6 +48,7 @@ https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server
 ```
 
 6. Samsung Public Key oder Zertifikat herunterladen bzw. aus dem Portal kopieren und als `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` setzen.
+7. Sicherstellen, dass der lokale Partner Private Key zum Samsung-Partner-Zertifikat passt. Falls der originale Private Key fehlt, die vorhandene CSR/Private-Key-Kombination neu im Samsung Portal hinterlegen und ein dazu passendes Partner-Zertifikat herunterladen.
 
 ## Deploy
 

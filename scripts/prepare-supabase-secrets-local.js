@@ -242,6 +242,39 @@ function normalizeSamsungCardType(value) {
   return '';
 }
 
+function publicKeyFingerprintFromPrivateKey(value) {
+  try {
+    const privateKey = crypto.createPrivateKey(value);
+    const publicKeyDer = crypto.createPublicKey(privateKey).export({ type: 'spki', format: 'der' });
+
+    return crypto.createHash('sha256').update(publicKeyDer).digest('hex');
+  } catch {
+    return '';
+  }
+}
+
+function publicKeyFingerprintFromCertificate(value) {
+  try {
+    const certificate = new crypto.X509Certificate(value);
+    const publicKeyDer = certificate.publicKey.export({ type: 'spki', format: 'der' });
+
+    return crypto.createHash('sha256').update(publicKeyDer).digest('hex');
+  } catch {
+    return '';
+  }
+}
+
+function samsungPrivateKeyMatchesPartnerCertificate(privateKeyPem, partnerCertificatePem) {
+  if (!configured(partnerCertificatePem)) {
+    return true;
+  }
+
+  const privateKeyFingerprint = publicKeyFingerprintFromPrivateKey(privateKeyPem);
+  const partnerCertificateFingerprint = publicKeyFingerprintFromCertificate(partnerCertificatePem);
+
+  return Boolean(privateKeyFingerprint && partnerCertificateFingerprint && privateKeyFingerprint === partnerCertificateFingerprint);
+}
+
 function deriveFunctionsBaseUrl(supabaseUrl) {
   if (!configured(supabaseUrl)) {
     return '';
@@ -364,6 +397,13 @@ function buildEntries(config) {
 
   const samsungPartnerId = samsungWallet.get('SAMSUNG_WALLET_PARTNER_ID') || '';
   const samsungPrivateKey = readTextFileMaybeRtf('samsung-wallet-keys/samsung_wallet_private.key');
+  const samsungPartnerCertificate = firstConfigured(
+    readTextFileMaybeRtf('samsung-wallet-keys/X303/el_promillo.crt'),
+    readTextFileMaybeRtf('samsung-wallet-keys/samsung_partner_cert.pem'),
+    readTextFileMaybeRtf('samsung-wallet-keys/partner_cert.pem')
+  );
+  const samsungPrivateKeyReady = configured(samsungPrivateKey)
+    && samsungPrivateKeyMatchesPartnerCertificate(samsungPrivateKey, samsungPartnerCertificate);
   const samsungPublicKey = firstConfigured(
     readTextFileMaybeRtf('samsung-wallet-keys/samsung_public_cert.pem'),
     readTextFileMaybeRtf('samsung-wallet-keys/samsung_public_key.pem'),
@@ -397,8 +437,10 @@ function buildEntries(config) {
     samsungWallet.get('SAMSUNG_WALLET_ADD_FLOW'),
     'data_fetch'
   ), 'Samsung Wallet Data Fetch Link flow');
-  add(entries, 'SAMSUNG_WALLET_PRIVATE_KEY_PEM', samsungPrivateKey, 'samsung-wallet-keys/samsung_wallet_private.key', {
-    hint: 'Place the matching Samsung private key at samsung-wallet-keys/samsung_wallet_private.key'
+  add(entries, 'SAMSUNG_WALLET_PRIVATE_KEY_PEM', samsungPrivateKeyReady ? samsungPrivateKey : '', 'samsung-wallet-keys/samsung_wallet_private.key', {
+    hint: configured(samsungPartnerCertificate)
+      ? 'Place the private key matching samsung-wallet-keys/X303/el_promillo.crt at samsung-wallet-keys/samsung_wallet_private.key'
+      : 'Place the matching Samsung private key at samsung-wallet-keys/samsung_wallet_private.key'
   });
   add(entries, 'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM', samsungPublicKey, 'samsung-wallet-keys/samsung_public_cert.pem', {
     hint: 'Download/extract Samsung public key or certificate from Samsung Wallet Partner Portal'

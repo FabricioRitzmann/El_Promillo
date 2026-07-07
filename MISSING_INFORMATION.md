@@ -2,90 +2,84 @@
 
 Status: Samsung Wallet live activation is stopped by project rule 4.
 
-The Samsung backend code, SQL additions, deployment hooks, setup docs and local
-secret preparation are in place. The current local secret preparation detects 14
-Samsung values from the project folder, but one required verification value is
-still missing.
+The `X303` folder contains Samsung certificate material. The Samsung server
+certificate has been prepared locally as `samsung-wallet-keys/samsung_public_cert.pem`,
+so incoming Samsung Partner Server API signatures can be verified once deployed.
+
+One required signing value is still not valid: the current local
+`samsung-wallet-keys/samsung_wallet_private.key` does not match the partner
+certificate from `X303/el_promillo.crt`.
 
 ## What Is Missing
 
 | Exact value | Why it is required | Required format | Where to put it |
 | --- | --- | --- | --- |
-| `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` | Samsung calls the Partner Server API with `Authorization: Bearer <JWS>`. The Edge Function must verify that signature before returning or updating card data. | PEM certificate or public key text, starting with `-----BEGIN CERTIFICATE-----` or `-----BEGIN PUBLIC KEY-----` | `samsung-wallet-keys/samsung_public_cert.pem`, then Supabase Edge Secret `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` |
-
-## Where To Find It
-
-Open the Samsung Wallet Partner Portal:
-
-1. Go to the wallet card used for El Promillo.
-2. Open the certificate/security area connected to the CSR/certificate lifecycle.
-3. Find the certificate/public key supplied by Samsung. In the Samsung guide table this is described as the Samsung public key that can be extracted from the certificate from Samsung.
-4. Download it if Samsung offers a `.cer`, `.crt` or `.pem` file.
-
-Documentation references:
-
-- Samsung Key & Certificate Lifecycle: https://developer.samsung.com/wallet/securityauthentication/keycertificatelifecycle.html
-- Samsung REST API Authorization Token: https://developer.samsung.com/wallet/securityauthentication/restapiauthorizationtoken.html
-- Samsung Server Interaction: https://developer.samsung.com/wallet/api/server-interaction.html
-
-## Accepted File Formats
-
-Preferred:
-
-```text
-samsung-wallet-keys/samsung_public_cert.pem
-```
-
-Also acceptable if downloaded from Samsung:
-
-```text
-samsung-wallet-keys/samsung_public_cert.cer
-samsung-wallet-keys/samsung_public_cert.crt
-```
-
-If Samsung gives a `.cer` file, convert it with one of these commands:
-
-```bash
-openssl x509 -inform DER -in samsung-wallet-keys/samsung_public_cert.cer -out samsung-wallet-keys/samsung_public_cert.pem
-```
-
-If DER conversion fails because the file is already PEM text:
-
-```bash
-openssl x509 -inform PEM -in samsung-wallet-keys/samsung_public_cert.cer -out samsung-wallet-keys/samsung_public_cert.pem
-```
+| `SAMSUNG_WALLET_PRIVATE_KEY_PEM` matching `X303/el_promillo.crt` | The Edge Function signs Samsung Authorization tokens with the partner private key. Samsung verifies those tokens with the public key from the partner certificate. If the private key does not match, Samsung will reject server requests. | PEM RSA private key, starting with `-----BEGIN PRIVATE KEY-----` or `-----BEGIN RSA PRIVATE KEY-----` | `samsung-wallet-keys/samsung_wallet_private.key`, then Supabase Edge Secret `SAMSUNG_WALLET_PRIVATE_KEY_PEM` |
 
 ## Current Local Evidence
 
-Present locally:
+Found in `samsung-wallet-keys/X303`:
 
-- `samsung-wallet-keys/samsung_wallet_private.key`
-- `samsung-wallet-keys/samsung_wallet.csr`
-- Samsung partner/card values from the local Samsung env text files
-- Samsung RD click and impression URLs from the local Samsung env text files
-- Samsung Partner Server URL can be derived from the Supabase project URL
+- `el_promillo_walletsvc.samsung.com.crt`: Samsung server certificate, prepared as `samsung_public_cert.pem`.
+- `el_promillo.crt`: partner certificate issued by Samsung.
 
-Still absent:
+Found elsewhere:
 
-- `samsung-wallet-keys/samsung_public_cert.pem`
-- `samsung-wallet-keys/samsung_public_cert.cer`
-- `samsung-wallet-keys/samsung_public_cert.crt`
+- `samsung-wallet-keys/samsung_wallet_private.key`: private key exists, but its public key does not match `X303/el_promillo.crt`.
+- `samsung-wallet-keys/samsung_wallet.csr`: CSR exists and matches the current private key, but does not match `X303/el_promillo.crt`.
+
+Current local secret-prep result:
+
+```text
+Samsung ready: 14
+Samsung missing: SAMSUNG_WALLET_PRIVATE_KEY_PEM
+```
+
+## Where To Find The Missing Private Key
+
+Samsung cannot give you this private key. It must be the private key that was
+created on your computer when the CSR for `X303/el_promillo.crt` was generated.
+
+Look for a file that may have been created together with the CSR, for example:
+
+```text
+private.key
+partner.key
+samsung.key
+samsung_private.key
+el_promillo.key
+```
+
+Possible places:
+
+- Downloads folder
+- Desktop
+- old project folders
+- wherever you generated the CSR before uploading it to Samsung
+
+If you cannot find that matching private key, the safe alternative is:
+
+1. Use the existing `samsung-wallet-keys/samsung_wallet.csr` and `samsung-wallet-keys/samsung_wallet_private.key` pair, because those two currently match each other.
+2. Upload that CSR again in the Samsung Wallet Partner Portal.
+3. Download the new partner certificate issued for that CSR.
+4. Replace `samsung-wallet-keys/X303/el_promillo.crt` with the new partner certificate or save it as `samsung-wallet-keys/samsung_partner_cert.pem`.
+5. Update the Samsung Certificate ID if Samsung gives you a new one.
 
 ## Why Work Stops Here
 
-Changing the public claim flow to automatically route Samsung devices would
-touch Apple/Google-adjacent frontend behavior. Project rule 3 requires a separate
+Changing the public claim flow to automatically route Samsung devices would touch
+Apple/Google-adjacent frontend behavior. Project rule 3 requires a separate
 confirmation before that UI/device-detection change.
 
-Deploying Samsung live without `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` would mean
-the Partner Server API cannot safely verify Samsung callback signatures.
+Deploying Samsung live with a non-matching partner private key would create
+Samsung links but fail during server authentication.
 
 ## Next Safe Step
 
-Place the Samsung certificate/public key in:
+Place the matching partner private key here:
 
 ```text
-/Users/fabricio/Desktop/pornwheel/samsung-wallet-keys/samsung_public_cert.pem
+/Users/fabricio/Desktop/pornwheel/samsung-wallet-keys/samsung_wallet_private.key
 ```
 
 Then rerun:
@@ -94,7 +88,7 @@ Then rerun:
 node scripts/prepare-supabase-secrets-local.js --json
 ```
 
-Expected result after the file is present:
+Expected result after the correct private key is present:
 
 ```text
 Missing Samsung values: none
