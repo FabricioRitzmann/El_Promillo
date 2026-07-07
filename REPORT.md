@@ -50,6 +50,8 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/samsung-wallet-smoke-test.js`
 - `scripts/verify-samsung-wallet-smoke-test.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
+- `scripts/samsung-wallet-partner-callback-test.js`
+- `scripts/verify-samsung-wallet-partner-callback-test.js`
 - `scripts/verify-claim-token-links.js`
 - `docs/samsung-wallet.md`
 - `docs/provider-architecture.md`
@@ -124,6 +126,7 @@ Lokal geprüft:
 - `scripts/verify-claim-page-output-safety.js`
 - `scripts/verify-claim-token-links.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
+- `scripts/verify-samsung-wallet-partner-callback-test.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
@@ -136,6 +139,8 @@ Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Sams
 Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
 
 Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar. Neue QR-Codes und QR-PDFs öffnen `/claim.html?token=<public_claim_token>`; alte `/claim.html?template=<template_id>` Links bleiben weiterhin gültig.
+
+Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wallet-partner-callback-test.js` vorbereitet. Es ruft `GET /cards/{cardId}/{refId}` und optional `POST /cards/{cardId}/{refId}` gegen `samsung-wallet-server` mit einem frischen Samsung-Test-Tool-Bearer auf und prüft danach `get_card_data`, `send_card_state` und den Kartenstatus, ohne Authorization Header, Secrets oder vollständige Add-to-Wallet-URLs auszugeben.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 

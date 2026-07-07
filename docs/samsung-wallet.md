@@ -72,6 +72,30 @@ Danach `supabase/schema.sql` vollständig ausführen, falls die Tabellen `samsun
 
 Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Login, `unlock=true` und Business-Zugehörigkeit Pflicht. Provider-Antworten werden redigiert zurückgegeben und in `samsung_wallet_events` auditiert.
 
+## Partner Callback Test
+
+Für die echte externe Samsung-Abnahme brauchst du einen frischen `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool oder von einem echten Samsung-Wallet-Callback. Der Header ist methoden- und routengebunden; falls Samsung getrennte Header für GET und POST ausgibt, nutze getrennte Dateien:
+
+```bash
+node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 \
+  --get-authorization-file tmp/samsung-get-bearer.txt \
+  --post-authorization-file tmp/samsung-post-bearer.txt \
+  --strict
+```
+
+Wenn du nur GET Card Data prüfen willst:
+
+```bash
+node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 \
+  --authorization-file tmp/samsung-bearer.txt \
+  --skip-post \
+  --strict
+```
+
+Das Script nutzt die neueste `samsung_wallet_instances`-Zeile, falls `--card-id` und `--ref-id` nicht gesetzt sind. Es gibt Authorization Header, Secrets und vollständige Add-to-Wallet-URLs nicht aus.
+
 ## Security
 
 - Browser bekommt keine Service Role, keine privaten Keys und kein Samsung-Zertifikat.

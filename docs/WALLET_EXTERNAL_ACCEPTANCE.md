@@ -150,19 +150,40 @@ node scripts/samsung-wallet-smoke-test.js --functions-base-url https://<PROJECT_
 6. Öffentliche Claim-Seite auf einem Samsung-Android-Gerät öffnen:
 
 ```text
-https://<APP_PUBLIC_BASE_URL>/claim.html?template=<template_id>
+https://<APP_PUBLIC_BASE_URL>/claim.html?token=<public_claim_token>
 ```
 
-Der Hauptbutton `Zu Wallet hinzufügen` muss Samsung Wallet öffnen. Apple, Google und Samsung bleiben als manuelle Alternativen sichtbar.
+Der Hauptbutton `Zu Wallet hinzufügen` muss Samsung Wallet öffnen. Apple, Google und Samsung bleiben als manuelle Alternativen sichtbar. Bereits vorhandene alte `/claim.html?template=<template_id>` Links bleiben nur als Fallback gültig.
 7. In Supabase prüfen:
    - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
    - `samsung_wallet_events` enthält `add_link_created`.
 8. Samsung Test Tool oder Samsung-Gerät öffnen und den Data-Fetch-Link installieren.
-9. In Supabase prüfen:
+9. Für eine reproduzierbare Partner-Callback-Abnahme den frischen Samsung `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool in eine lokale Datei legen, z. B. `tmp/samsung-bearer.txt`. Falls das Test Tool getrennte Header für GET und POST ausgibt, zwei Dateien nutzen:
+
+```bash
+node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 \
+  --get-authorization-file tmp/samsung-get-bearer.txt \
+  --post-authorization-file tmp/samsung-post-bearer.txt \
+  --strict
+```
+
+Bei nur einem Header:
+
+```bash
+node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1 \
+  --authorization-file tmp/samsung-bearer.txt \
+  --skip-post \
+  --strict
+```
+
+Das Script druckt Authorization Header, Secrets und vollständige Add-to-Wallet-URLs nicht aus.
+10. In Supabase prüfen:
    - `samsung_wallet_events` enthält `get_card_data`.
    - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
    - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.
-10. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
+11. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
 
 ## 5. Scheduled, Location und Queue
 
