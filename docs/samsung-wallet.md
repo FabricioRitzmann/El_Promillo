@@ -4,7 +4,7 @@ Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
 
 ## Flow
 
-1. Die öffentliche Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js` und priorisiert den Samsung-Wallet-Button. Apple und Google bleiben als manuelle Buttons sichtbar.
+1. Die öffentliche Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js`. Der Hauptbutton `Zu Wallet hinzufügen` öffnet dann Samsung Wallet; Apple, Google und Samsung bleiben zusätzlich als manuelle Buttons sichtbar.
 2. Die App erzeugt über `samsung-wallet-add-link` eine `refId`.
 3. Die Function speichert diese `refId` in `samsung_wallet_instances`.
 4. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
@@ -80,4 +80,4 @@ Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Lo
 
 ## Aktueller Stand
 
-Serverseitige Samsung-Vorbereitung ist implementiert und die öffentliche Claim-Seite ist angebunden. iPhone/iPad priorisiert Apple Wallet, Samsung Android priorisiert Samsung Wallet, andere Android-Geräte priorisieren Google Wallet. Desktop oder unbekannte Geräte zeigen alle Wallet-Buttons als manuelle Auswahl.
+Serverseitige Samsung-Vorbereitung ist implementiert und die öffentliche Claim-Seite ist angebunden. iPhone/iPad öffnet über den Hauptbutton Apple Wallet, Samsung Android Samsung Wallet, andere Android-Geräte Google Wallet. Desktop oder unbekannte Geräte zeigen die Wallet-Buttons als manuelle Auswahl.

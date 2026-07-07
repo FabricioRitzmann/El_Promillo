@@ -3,7 +3,8 @@
 Status: implemented after explicit confirmation on 2026-07-07.
 
 The public claim page now connects Samsung Wallet without changing the existing
-Apple and Google wallet functions.
+Apple and Google wallet functions. The main button `Zu Wallet hinzufügen`
+uses device detection; the provider-specific buttons stay available manually.
 
 ## Confirmed Routing
 
@@ -24,9 +25,11 @@ All provider buttons remain available manually:
 ## Implemented Files
 
 - `public/claim.html`
+  - Adds `walletPrimaryButton`.
   - Adds `samsungWalletButton` next to Apple and Google.
 - `public/js/claim.js`
   - Imports `detectWalletDevice` from `walletDeviceDetection.js`.
+  - Routes `walletPrimaryButton` to Apple, Samsung or Google.
   - Routes Samsung Android to `samsung-wallet-add-link`.
   - Keeps iPhone/iPad on Apple and non-Samsung Android on Google.
   - Validates Samsung Add-Links before rendering or opening them.

@@ -29,6 +29,10 @@ const packageJson = read('package.json');
 assertIncludes(claim, [
   'import { byId, escapeHtml, showMessage, walletPreviewHtml } from \'./ui.js\';',
   'import { detectWalletDevice } from \'./walletDeviceDetection.js\';',
+  'async function claimPreferredWallet()',
+  "claimCard('apple')",
+  "claimCard('google')",
+  'claimSamsungWallet()',
   'function safeGoogleWalletSaveUrl(saveUrl)',
   "url.origin === 'https://pay.google.com'",
   "url.pathname.startsWith('/gp/v/save/')",
@@ -72,10 +76,12 @@ assert(
 );
 
 assertIncludes(read('public/claim.html'), [
+  'id="walletPrimaryButton"',
+  'Zu Wallet hinzufügen',
   'id="claimButton"',
   'id="googleWalletButton"',
   'id="samsungWalletButton"'
-], 'Claim Wallet Provider Buttons');
+], 'Claim Wallet Haupt- und Provider-Buttons');
 
 assertIncludes(contextDoc, [
   'Claim-Seite',

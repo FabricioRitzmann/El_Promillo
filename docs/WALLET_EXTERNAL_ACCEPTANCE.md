@@ -153,7 +153,7 @@ node scripts/samsung-wallet-smoke-test.js --functions-base-url https://<PROJECT_
 https://<APP_PUBLIC_BASE_URL>/claim.html?template=<template_id>
 ```
 
-Der Samsung-Wallet-Button muss primär erscheinen. Apple und Google bleiben als manuelle Alternativen sichtbar.
+Der Hauptbutton `Zu Wallet hinzufügen` muss Samsung Wallet öffnen. Apple, Google und Samsung bleiben als manuelle Alternativen sichtbar.
 7. In Supabase prüfen:
    - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
    - `samsung_wallet_events` enthält `add_link_created`.

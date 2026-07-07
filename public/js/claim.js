@@ -5,6 +5,7 @@ import { featureEnabled } from './templateFeatures.js';
 import { detectWalletDevice } from './walletDeviceDetection.js';
 
 const claimMessage = byId('claimMessage');
+const walletPrimaryButton = byId('walletPrimaryButton');
 const claimButton = byId('claimButton');
 const googleWalletButton = byId('googleWalletButton');
 const samsungWalletButton = byId('samsungWalletButton');
@@ -16,29 +17,9 @@ let publicConfig = null;
 let currentClaimResult = null;
 let detectedDeviceWallet = 'choice';
 
-function setButtonPriority(button, isPrimary) {
-  if (!button) {
-    return;
-  }
-
-  button.classList.toggle('primary', isPrimary);
-  button.classList.toggle('secondary', !isPrimary);
-}
-
 function configureWalletButtons() {
   detectedDeviceWallet = detectWalletDevice().wallet;
-
-  if (claimButton) {
-    setButtonPriority(claimButton, detectedDeviceWallet === 'apple' || detectedDeviceWallet === 'choice');
-  }
-
-  if (googleWalletButton) {
-    setButtonPriority(googleWalletButton, detectedDeviceWallet === 'google');
-  }
-
-  if (samsungWalletButton) {
-    setButtonPriority(samsungWalletButton, detectedDeviceWallet === 'samsung');
-  }
+  walletPrimaryButton?.setAttribute('data-wallet-provider', detectedDeviceWallet);
 }
 
 async function loadTemplate() {
@@ -74,6 +55,7 @@ async function loadTemplate() {
   }
 
   preview.innerHTML = walletPreviewHtml(template);
+  walletPrimaryButton.disabled = false;
   claimButton.disabled = false;
   googleWalletButton.disabled = false;
   samsungWalletButton.disabled = false;
@@ -132,6 +114,10 @@ async function downloadApplePass(result) {
 }
 
 function setClaimButtonsDisabled(disabled) {
+  if (walletPrimaryButton) {
+    walletPrimaryButton.disabled = disabled;
+  }
+
   if (claimButton) {
     claimButton.disabled = disabled;
   }
@@ -321,6 +307,26 @@ async function claimSamsungWallet() {
   } finally {
     setClaimButtonsDisabled(false);
   }
+}
+
+async function claimPreferredWallet() {
+  detectedDeviceWallet = detectWalletDevice().wallet;
+  walletPrimaryButton?.setAttribute('data-wallet-provider', detectedDeviceWallet);
+
+  if (detectedDeviceWallet === 'apple') {
+    return claimCard('apple');
+  }
+
+  if (detectedDeviceWallet === 'google') {
+    return claimCard('google');
+  }
+
+  if (detectedDeviceWallet === 'samsung') {
+    return claimSamsungWallet();
+  }
+
+  showMessage(claimMessage, 'Bitte wähle Apple, Google oder Samsung Wallet.', 'info');
+  return null;
 }
 
 function centsToAmount(cents, fallback = '') {
@@ -574,6 +580,13 @@ async function claimCardViaLocalApi(walletPlatform, walletObjectId) {
 
   return result;
 }
+
+walletPrimaryButton?.addEventListener('click', () => {
+  claimPreferredWallet().catch((error) => {
+    setClaimButtonsDisabled(false);
+    showMessage(claimMessage, error.message, 'error');
+  });
+});
 
 claimButton?.addEventListener('click', () => {
   claimCard('apple').catch((error) => {

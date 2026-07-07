@@ -120,7 +120,7 @@ Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Sams
 
 Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
 
-Die Device Detection ist in `public/js/claim.js` eingebunden. iPhone/iPad priorisiert Apple Wallet, Samsung Android priorisiert Samsung Wallet, andere Android-Geräte priorisieren Google Wallet; alle Buttons bleiben manuell verfügbar.
+Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
 

@@ -37,8 +37,8 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - QR-Code pro Template für `/claim.html?template=<template_id>`
 - PDF-Download pro Template als A4/A5 über `GET /api/templates/:templateId/qr.pdf?format=a4|a5`
 - Öffentliche Claim-Seite ohne Kundenaccount
-- Claim-Seite mit Apple-Wallet-, Google-Wallet- und Samsung-Wallet-Button
-- Geräte-Erkennung auf der Claim-Seite: iPhone/iPad priorisiert Apple Wallet, Samsung Android priorisiert Samsung Wallet, andere Android-Geräte priorisieren Google Wallet; alle drei Wallet-Buttons bleiben manuell verfügbar
+- Claim-Seite mit Hauptbutton `Zu Wallet hinzufügen` plus Apple-Wallet-, Google-Wallet- und Samsung-Wallet-Button für manuelle Auswahl
+- Geräte-Erkennung auf der Claim-Seite: iPhone/iPad öffnet über den Hauptbutton Apple Wallet, Samsung Android Samsung Wallet, andere Android-Geräte Google Wallet; alle drei Wallet-Buttons bleiben manuell verfügbar
 - Google-Wallet-Button kann über Edge Function einen signierten Save-Link erzeugen, sobald Google-Wallet-Secrets gesetzt sind
 - Samsung-Wallet-Button erzeugt über `samsung-wallet-add-link` einen Data-Fetch-Add-Link, ohne Samsung-Keys oder Zertifikate an den Browser auszugeben
 - Serverseitiges Anlegen individueller Kundenkarten mit eindeutiger `card_instance_number`
