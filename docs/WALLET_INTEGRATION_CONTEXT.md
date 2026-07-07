@@ -135,6 +135,8 @@ Aktueller Stand laut `supabase/schema.sql`:
 - `apple_wallet_registrations`
 - `apple_pass_versions`
 - `google_wallet_objects`
+- `samsung_wallet_instances`
+- `samsung_wallet_events`
 - `wallet_notification_campaigns`
 - `wallet_notification_recipients`
 - `wallet_push_logs`
@@ -304,6 +306,37 @@ Security-Hinweis:
 - `get-business-scan-statistics` ist die geschützte Edge Function für die Dashboard-Besucherstatistik. Sie prüft Betreiber-JWT, `operator_profiles.unlock` und Business-Zugehörigkeit, liest nur eigene `scan_events` und liefert aggregierte KPIs, Diagrammdaten und letzte Scans für Filter wie Zeitraum, Kartentyp, Clubfunktion, Geschlecht, Altersgruppe, Erst-/Wiederholungsscan, Aktion und Uhrzeit.
 - Der lokale Node-Fallback lädt QR-PDF-Templates, Claim-Templates und Scanner-Karten mit expliziten Select-Listen (`localTemplatePublicSelect`, `localTemplateInternalSelect`, `localOperatorCardSelect`) statt rohen `*`-Selects. Damit gelangen `pass_authentication_token`, rohe interne Betreiber-/Business-Felder und andere nicht benötigte Wallet-Daten nicht einmal in den browsernahen lokalen Antwortpfad.
 - Der Google-Wallet-Contract wird lokal mit `scripts/verify-google-wallet-contract.js` abgesichert: Provider-Konfiguration, Service-Account-JSON, PKCS8 Private Key Format, Save-Link-Origin-Normalisierung, Object-Type-Mapping für Generic/Loyalty/Offer/Event Ticket, redigierte Save-JWT-Logs, `TEXT_AND_NOTIFY`, Fallbacks, SQL-Isolation und Limitzählung.
+
+## 4a. Samsung Wallet Daten
+
+Samsung Wallet ist als zusätzlicher Provider über Supabase Edge Functions vorbereitet. Der MVP nutzt Samsung Data Fetch Links: Der öffentliche Link enthält nur `pdata/refId`; Samsung ruft danach `samsung-wallet-server` serverseitig ab.
+
+Benötigte Supabase Secrets:
+
+- `SAMSUNG_WALLET_PARTNER_ID`
+- `SAMSUNG_WALLET_PARTNER_CODE`
+- `SAMSUNG_WALLET_CARD_ID`
+- `SAMSUNG_WALLET_CARD_TYPE`
+- `SAMSUNG_WALLET_CARD_SUB_TYPE`
+- `SAMSUNG_WALLET_CERTIFICATE_ID`
+- `SAMSUNG_WALLET_COUNTRY_CODE`
+- `SAMSUNG_WALLET_ENV`
+- `SAMSUNG_WALLET_ADD_FLOW`
+- `SAMSUNG_WALLET_PRIVATE_KEY_PEM`
+- `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`
+- `SAMSUNG_WALLET_RD_CLICK_URL`
+- `SAMSUNG_WALLET_RD_IMPRESSION_URL`
+- `SAMSUNG_WALLET_PARTNER_SERVER_URL`
+- `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH`
+
+Serverseitige Dateien:
+
+- `supabase/functions/_shared/samsungWalletProvider.ts`
+- `supabase/functions/samsung-wallet-add-link/index.ts`
+- `supabase/functions/samsung-wallet-server/index.ts`
+- `supabase/schema.sql` mit `samsung_wallet_instances` und `samsung_wallet_events`
+
+Für Produktion muss `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole gesetzt sein. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur ein Sandbox-Debug-Fallback und darf nicht produktiv verwendet werden.
 
 ## 5. Public URLs
 

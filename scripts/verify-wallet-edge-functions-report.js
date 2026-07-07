@@ -39,6 +39,8 @@ const requiredFunctions = [
   'update-apple-pass',
   'send-apple-wallet-update',
   'google-wallet-save-link',
+  'samsung-wallet-add-link',
+  'samsung-wallet-server',
   'issue-google-wallet-pass',
   'update-google-wallet-pass',
   'send-google-wallet-message',

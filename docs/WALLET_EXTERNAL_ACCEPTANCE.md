@@ -59,6 +59,24 @@ Google:
 - optional `GOOGLE_WALLET_CLASS_SUFFIX`
 - optional `GOOGLE_WALLET_ORIGINS`
 
+Samsung:
+
+- `SAMSUNG_WALLET_PARTNER_ID`
+- `SAMSUNG_WALLET_PARTNER_CODE`
+- `SAMSUNG_WALLET_CARD_ID`
+- `SAMSUNG_WALLET_CARD_TYPE`
+- `SAMSUNG_WALLET_CARD_SUB_TYPE`
+- `SAMSUNG_WALLET_CERTIFICATE_ID`
+- `SAMSUNG_WALLET_COUNTRY_CODE`
+- `SAMSUNG_WALLET_ENV`
+- `SAMSUNG_WALLET_ADD_FLOW`
+- `SAMSUNG_WALLET_PRIVATE_KEY_PEM`
+- `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`
+- `SAMSUNG_WALLET_RD_CLICK_URL`
+- `SAMSUNG_WALLET_RD_IMPRESSION_URL`
+- `SAMSUNG_WALLET_PARTNER_SERVER_URL`
+- `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH`
+
 Payment:
 
 - `PAYMENT_PROVIDER`
@@ -116,6 +134,22 @@ Limits:
    - `wallet_notification_recipients` enthält pro Empfänger Status und Plattform.
    - `wallet_push_logs` enthält `google_text_and_notify` oder `google_object_message_fallback`.
 9. Google-Limit testen: mehr als drei notification-triggering Messages pro Pass innerhalb von 24 Stunden müssen als `limited` oder Fallback geloggt werden.
+
+## 4a. Samsung Wallet Abnahme
+
+1. Samsung Wallet Card in der Partner-Konsole auf Data Fetch Link konfigurieren.
+2. `SAMSUNG_WALLET_PARTNER_SERVER_URL` exakt auf `https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server` setzen.
+3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH` muss produktiv `false` bleiben.
+4. Edge Functions deployen: `bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server`.
+5. Per HTTPS einen Samsung Add-Link über `samsung-wallet-add-link` erzeugen.
+6. In Supabase prüfen:
+   - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
+   - `samsung_wallet_events` enthält `add_link_created`.
+7. Samsung Test Tool oder Samsung-Gerät öffnen und den Data-Fetch-Link installieren.
+8. In Supabase prüfen:
+   - `samsung_wallet_events` enthält `get_card_data`.
+   - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
+   - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.
 
 ## 5. Scheduled, Location und Queue
 

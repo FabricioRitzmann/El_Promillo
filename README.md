@@ -23,7 +23,7 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - Cron-Setup für geplante Kampagnen und Wallet-Update-Queue unter [docs/WALLET_CRON_SETUP.md](docs/WALLET_CRON_SETUP.md), inklusive [supabase/cron.example.sql](supabase/cron.example.sql)
 - Produktive Apple-/Google-/Cron-/Payment-Abnahme unter [docs/WALLET_EXTERNAL_ACCEPTANCE.md](docs/WALLET_EXTERNAL_ACCEPTANCE.md)
 - Read-only Supabase-Abnahmequeries unter [supabase/acceptance-queries.sql](supabase/acceptance-queries.sql)
-- Supabase-Secrets-Vorlage unter [supabase/secrets.example.env](supabase/secrets.example.env) für Apple, Google, Public URLs, Cron, Payment und Versandlimits
+- Supabase-Secrets-Vorlage unter [supabase/secrets.example.env](supabase/secrets.example.env) für Apple, Google, Samsung, Public URLs, Cron, Payment und Versandlimits
 - Manueller Smoke-Test für lokale oder produktive URLs über `node scripts/wallet-smoke-test.js`
 - Matrix wird in Editor, Dashboard, Wallet-Vorschau, direkten Wallet-Benachrichtigungen, Scanner-Aktionen, Server-API und SQL-Validierung verwendet
 - Wallet-Vorschau, Claim-Seite, QR-PDF und Wallet-Felder nutzen gemeinsame matrixbasierte Feature-Zeilen, damit unpassende Felder nicht sichtbar werden
@@ -557,6 +557,21 @@ GOOGLE_WALLET_ISSUER_ID
 GOOGLE_WALLET_SERVICE_ACCOUNT_JSON
 GOOGLE_WALLET_CLASS_SUFFIX
 GOOGLE_WALLET_ORIGINS
+SAMSUNG_WALLET_PARTNER_ID
+SAMSUNG_WALLET_PARTNER_CODE
+SAMSUNG_WALLET_CARD_ID
+SAMSUNG_WALLET_CARD_TYPE
+SAMSUNG_WALLET_CARD_SUB_TYPE
+SAMSUNG_WALLET_CERTIFICATE_ID
+SAMSUNG_WALLET_COUNTRY_CODE
+SAMSUNG_WALLET_ENV
+SAMSUNG_WALLET_ADD_FLOW
+SAMSUNG_WALLET_PRIVATE_KEY_PEM
+SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM
+SAMSUNG_WALLET_RD_CLICK_URL
+SAMSUNG_WALLET_RD_IMPRESSION_URL
+SAMSUNG_WALLET_PARTNER_SERVER_URL
+SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH
 SUPABASE_URL
 SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
@@ -607,7 +622,7 @@ bash scripts/set-supabase-secrets.sh
 supabase secrets set --env-file supabase/secrets.local.env
 ```
 
-`supabase/secrets.example.env` ist die vollständige, redigierte Feldliste für Apple Developer Daten, Google Wallet Daten, Public URLs, Cron, Payment und Versandregeln. `supabase/secrets.local.env` ist in `.gitignore` und darf echte Werte enthalten. Für Zertifikate, p8-Keys und Google-Service-Account-JSON ist der Einzelbefehl mit `$(cat ...)` oft robuster, wenn du Werte bewusst einzeln setzen willst.
+`supabase/secrets.example.env` ist die vollständige, redigierte Feldliste für Apple Developer Daten, Google Wallet Daten, Samsung Wallet Daten, Public URLs, Cron, Payment und Versandregeln. `supabase/secrets.local.env` ist in `.gitignore` und darf echte Werte enthalten. Für Zertifikate, p8-Keys, Samsung-PEM-Dateien und Google-Service-Account-JSON ist der Einzelbefehl mit `$(cat ...)` oft robuster, wenn du Werte bewusst einzeln setzen willst.
 
 Beispiel für Secrets:
 
@@ -630,6 +645,21 @@ supabase secrets set GOOGLE_WALLET_ISSUER_ID="..."
 supabase secrets set GOOGLE_WALLET_SERVICE_ACCOUNT_JSON="$(cat google-service-account.json)"
 supabase secrets set GOOGLE_WALLET_CLASS_SUFFIX="wallet_cards_mvp"
 supabase secrets set GOOGLE_WALLET_ORIGINS="https://deine-domain.ch"
+supabase secrets set SAMSUNG_WALLET_PARTNER_ID="..."
+supabase secrets set SAMSUNG_WALLET_PARTNER_CODE="..."
+supabase secrets set SAMSUNG_WALLET_CARD_ID="..."
+supabase secrets set SAMSUNG_WALLET_CARD_TYPE="loyalty"
+supabase secrets set SAMSUNG_WALLET_CARD_SUB_TYPE="others"
+supabase secrets set SAMSUNG_WALLET_CERTIFICATE_ID="..."
+supabase secrets set SAMSUNG_WALLET_COUNTRY_CODE="CH"
+supabase secrets set SAMSUNG_WALLET_ENV="sandbox"
+supabase secrets set SAMSUNG_WALLET_ADD_FLOW="data_fetch"
+supabase secrets set SAMSUNG_WALLET_PRIVATE_KEY_PEM="$(cat samsung-wallet-keys/samsung_wallet_private.key)"
+supabase secrets set SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM="$(cat samsung-wallet-keys/samsung_public_cert.pem)"
+supabase secrets set SAMSUNG_WALLET_RD_CLICK_URL="https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?..."
+supabase secrets set SAMSUNG_WALLET_RD_IMPRESSION_URL="https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?..."
+supabase secrets set SAMSUNG_WALLET_PARTNER_SERVER_URL="https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server"
+supabase secrets set SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH="false"
 supabase secrets set PAYMENT_PROVIDER="manual"
 supabase secrets set PAYMENT_CHECKOUT_BASE_URL=""
 supabase secrets set PAYMENT_WEBHOOK_SECRET="$(openssl rand -hex 32)"
@@ -743,6 +773,8 @@ supabase functions deploy issue-apple-pass
 supabase functions deploy update-apple-pass
 supabase functions deploy send-apple-wallet-update
 supabase functions deploy google-wallet-save-link
+supabase functions deploy samsung-wallet-add-link
+supabase functions deploy samsung-wallet-server
 supabase functions deploy issue-google-wallet-pass
 supabase functions deploy update-google-wallet-pass
 supabase functions deploy send-google-wallet-message
@@ -764,6 +796,8 @@ claim-card
 get-public-template
 claim-apple-pass
 google-wallet-save-link
+samsung-wallet-add-link
+samsung-wallet-server
 create-topup-payment-session
 confirm-topup-payment
 apple-wallet-webservice

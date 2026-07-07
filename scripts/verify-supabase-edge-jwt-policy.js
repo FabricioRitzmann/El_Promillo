@@ -13,6 +13,8 @@ const expectedNoJwtFunctions = new Set([
   'get-public-template',
   'claim-apple-pass',
   'google-wallet-save-link',
+  'samsung-wallet-add-link',
+  'samsung-wallet-server',
   'create-topup-payment-session',
   'confirm-topup-payment',
   'apple-wallet-webservice',
@@ -59,6 +61,18 @@ const publicClaimGuards = {
     'acceptedClaimKeys.has(walletObjectId)',
     'signJwt(payload, config.privateKey)',
     'https://pay.google.com/gp/v/save/'
+  ],
+  'samsung-wallet-add-link': [
+    'enforcePublicClaimRateLimit(supabaseAdmin, request, \'samsung-wallet-add-link\')',
+    'samsungWalletProvider.randomRefId()',
+    ".from('samsung_wallet_instances')",
+    'SAMSUNG_WALLET_CONFIG_MISSING'
+  ],
+  'samsung-wallet-server': [
+    'samsungWalletProvider.verifyPartnerServerAuthorization',
+    ".from('samsung_wallet_instances')",
+    ".from('samsung_wallet_events')",
+    'SAMSUNG_ROUTE_NOT_FOUND'
   ],
   'create-topup-payment-session': [
     'validateTopupClaimKey(walletObjectId)',

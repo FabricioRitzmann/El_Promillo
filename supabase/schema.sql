@@ -706,6 +706,91 @@ alter table public.google_wallet_objects
 add constraint google_wallet_objects_object_type_check
 check (object_type in ('genericObject', 'loyaltyObject', 'offerObject', 'eventTicketObject'));
 
+create table if not exists public.samsung_wallet_instances (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.operator_profiles(id) on delete cascade,
+  business_id uuid references public.businesses(id) on delete set null,
+  template_id uuid not null references public.card_templates(id) on delete cascade,
+  ref_id text not null unique,
+  customer_code text not null unique,
+  card_id text not null,
+  card_type text not null default 'loyalty',
+  card_sub_type text not null default 'others',
+  country_code text not null default 'CH',
+  add_flow text not null default 'data_fetch',
+  card_status text not null default 'pending',
+  samsung_callback_url text,
+  samsung_wallet_id text,
+  last_event text,
+  last_event_at timestamptz,
+  last_synced_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.samsung_wallet_instances
+drop constraint if exists samsung_wallet_instances_ref_id_format_check;
+
+alter table public.samsung_wallet_instances
+add constraint samsung_wallet_instances_ref_id_format_check
+check (char_length(ref_id) between 8 and 32 and ref_id ~ '^[A-Za-z0-9_-]+$') not valid;
+
+alter table public.samsung_wallet_instances
+drop constraint if exists samsung_wallet_instances_add_flow_check;
+
+alter table public.samsung_wallet_instances
+add constraint samsung_wallet_instances_add_flow_check
+check (add_flow in ('data_fetch')) not valid;
+
+alter table public.samsung_wallet_instances
+drop constraint if exists samsung_wallet_instances_card_status_check;
+
+alter table public.samsung_wallet_instances
+add constraint samsung_wallet_instances_card_status_check
+check (card_status in ('pending', 'active', 'expired', 'redeemed', 'held', 'deleted', 'cancelled', 'suspended')) not valid;
+
+alter table public.samsung_wallet_instances
+drop constraint if exists samsung_wallet_instances_metadata_shape_check;
+
+alter table public.samsung_wallet_instances
+add constraint samsung_wallet_instances_metadata_shape_check
+check (jsonb_typeof(metadata) = 'object' and octet_length(metadata::text) <= 20000) not valid;
+
+create table if not exists public.samsung_wallet_events (
+  id uuid primary key default gen_random_uuid(),
+  samsung_wallet_instance_id uuid references public.samsung_wallet_instances(id) on delete cascade,
+  owner_id uuid not null references public.operator_profiles(id) on delete cascade,
+  business_id uuid references public.businesses(id) on delete set null,
+  template_id uuid references public.card_templates(id) on delete cascade,
+  ref_id text,
+  event_type text not null,
+  samsung_request_id text,
+  samsung_event text,
+  request_payload jsonb not null default '{}'::jsonb,
+  response_payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.samsung_wallet_events
+drop constraint if exists samsung_wallet_events_event_type_format_check;
+
+alter table public.samsung_wallet_events
+add constraint samsung_wallet_events_event_type_format_check
+check (event_type ~ '^[a-z][a-z0-9_]{0,79}$') not valid;
+
+alter table public.samsung_wallet_events
+drop constraint if exists samsung_wallet_events_payload_shape_check;
+
+alter table public.samsung_wallet_events
+add constraint samsung_wallet_events_payload_shape_check
+check (
+  jsonb_typeof(request_payload) = 'object'
+  and jsonb_typeof(response_payload) = 'object'
+  and octet_length(request_payload::text) <= 20000
+  and octet_length(response_payload::text) <= 20000
+) not valid;
+
 create table if not exists public.wallet_notification_campaigns (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.operator_profiles(id) on delete cascade,
@@ -1297,6 +1382,14 @@ create index if not exists apple_pass_versions_card_instance_idx on public.apple
 create index if not exists google_wallet_objects_owner_id_idx on public.google_wallet_objects(owner_id);
 create index if not exists google_wallet_objects_card_instance_idx on public.google_wallet_objects(card_instance_id);
 create unique index if not exists google_wallet_objects_card_instance_unique_idx on public.google_wallet_objects(card_instance_id);
+create index if not exists samsung_wallet_instances_owner_id_idx on public.samsung_wallet_instances(owner_id);
+create index if not exists samsung_wallet_instances_business_id_idx on public.samsung_wallet_instances(business_id);
+create index if not exists samsung_wallet_instances_template_id_idx on public.samsung_wallet_instances(template_id);
+create index if not exists samsung_wallet_instances_card_id_ref_id_idx on public.samsung_wallet_instances(card_id, ref_id);
+create index if not exists samsung_wallet_instances_customer_code_idx on public.samsung_wallet_instances(customer_code);
+create index if not exists samsung_wallet_events_owner_id_idx on public.samsung_wallet_events(owner_id, created_at desc);
+create index if not exists samsung_wallet_events_instance_id_idx on public.samsung_wallet_events(samsung_wallet_instance_id, created_at desc);
+create index if not exists samsung_wallet_events_ref_id_idx on public.samsung_wallet_events(ref_id);
 create index if not exists wallet_notification_campaigns_owner_id_idx on public.wallet_notification_campaigns(owner_id);
 create index if not exists wallet_notification_campaigns_business_id_idx on public.wallet_notification_campaigns(business_id);
 create index if not exists wallet_notification_campaigns_status_idx on public.wallet_notification_campaigns(status, scheduled_at);
@@ -1367,6 +1460,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists set_google_wallet_objects_updated_at on public.google_wallet_objects;
 create trigger set_google_wallet_objects_updated_at
 before update on public.google_wallet_objects
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_samsung_wallet_instances_updated_at on public.samsung_wallet_instances;
+create trigger set_samsung_wallet_instances_updated_at
+before update on public.samsung_wallet_instances
 for each row execute function public.set_updated_at();
 
 drop trigger if exists set_wallet_notification_campaigns_updated_at on public.wallet_notification_campaigns;
@@ -3869,6 +3967,8 @@ alter table public.apple_wallet_devices enable row level security;
 alter table public.apple_wallet_registrations enable row level security;
 alter table public.apple_pass_versions enable row level security;
 alter table public.google_wallet_objects enable row level security;
+alter table public.samsung_wallet_instances enable row level security;
+alter table public.samsung_wallet_events enable row level security;
 alter table public.wallet_notification_campaigns enable row level security;
 alter table public.wallet_notification_recipients enable row level security;
 alter table public.wallet_push_logs enable row level security;
@@ -4085,6 +4185,20 @@ using (owner_id = auth.uid() and public.current_operator_unlocked());
 drop policy if exists "unlocked operators can read own google wallet objects" on public.google_wallet_objects;
 create policy "unlocked operators can read own google wallet objects"
 on public.google_wallet_objects
+for select
+to authenticated
+using (owner_id = auth.uid() and public.current_operator_unlocked());
+
+drop policy if exists "unlocked operators can read own samsung wallet instances" on public.samsung_wallet_instances;
+create policy "unlocked operators can read own samsung wallet instances"
+on public.samsung_wallet_instances
+for select
+to authenticated
+using (owner_id = auth.uid() and public.current_operator_unlocked());
+
+drop policy if exists "unlocked operators can read own samsung wallet events" on public.samsung_wallet_events;
+create policy "unlocked operators can read own samsung wallet events"
+on public.samsung_wallet_events
 for select
 to authenticated
 using (owner_id = auth.uid() and public.current_operator_unlocked());
@@ -4469,6 +4583,38 @@ grant select (
   created_at,
   updated_at
 ) on public.google_wallet_objects to authenticated;
+revoke select, insert, update, delete on public.samsung_wallet_instances from authenticated;
+grant select (
+  id,
+  owner_id,
+  business_id,
+  template_id,
+  ref_id,
+  customer_code,
+  card_id,
+  card_type,
+  card_sub_type,
+  country_code,
+  add_flow,
+  card_status,
+  last_event,
+  last_event_at,
+  last_synced_at,
+  created_at,
+  updated_at
+) on public.samsung_wallet_instances to authenticated;
+revoke select, insert, update, delete on public.samsung_wallet_events from authenticated;
+grant select (
+  id,
+  samsung_wallet_instance_id,
+  owner_id,
+  business_id,
+  template_id,
+  ref_id,
+  event_type,
+  samsung_event,
+  created_at
+) on public.samsung_wallet_events to authenticated;
 revoke select, insert, update, delete on public.wallet_notification_campaigns from authenticated;
 grant select (
   id,

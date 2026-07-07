@@ -21,6 +21,8 @@ const publicFunctionChecks = [
   'get-public-template',
   'claim-apple-pass',
   'google-wallet-save-link',
+  'samsung-wallet-add-link',
+  'samsung-wallet-server',
   'create-topup-payment-session',
   'confirm-topup-payment',
   'apple-wallet-webservice',
