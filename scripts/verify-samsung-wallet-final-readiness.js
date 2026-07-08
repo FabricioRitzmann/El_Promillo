@@ -46,7 +46,12 @@ assertIncludesAll('Samsung Final Readiness Script', script, [
 assertIncludesAll('Samsung Final Readiness Docs', `${bearerGuide}\n${samsungDoc}\n${externalAcceptance}\n${report}`, [
   'samsung-wallet-final-readiness.js',
   'tmp/samsung-bearer.txt',
-  'Authorization: Bearer <JWS>'
+  'Authorization: Bearer <JWS>',
+  'Partner-Key-JWT Ist Nicht Derselbe Bearer',
+  'cty=AUTH',
+  'API.method',
+  'API.path',
+  'SAMSUNG_AUTHORIZATION_HEADER_INVALID'
 ]);
 
 assertIncludesAll('Package Check', packageJson, [

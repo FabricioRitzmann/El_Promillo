@@ -18,6 +18,21 @@ Authorization: Bearer <JWS>
 
 Dieser Header beweist serverseitig, dass der Request wirklich von Samsung kommt und zur konkreten Route passt. Er kann nicht lokal erzeugt oder erraten werden.
 
+## Wichtig: Partner-Key-JWT Ist Nicht Derselbe Bearer
+
+Ein lokal mit unserem `samsung_wallet_private.key` signierter JWT ist nützlich für Requests **von El Promillo zu Samsung**, zum Beispiel Update Notification oder Cancel Notification. Dafür erzeugt die App bereits serverseitig einen Samsung-kompatiblen Authorization Token in `supabase/functions/_shared/samsungWalletProvider.ts`.
+
+Dieser lokal signierte Partner-JWT löst aber nicht den offenen Callback-Nachweis. Der fehlende Bearer für `samsung-wallet-server` muss von **Samsung zu El Promillo** kommen und mit Samsungs Private Key signiert sein. Unsere Edge Function prüft ihn mit `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`.
+
+Der Samsung-kompatible Authorization Token nutzt:
+
+```text
+JWS Header: cty=AUTH, ver=3, certificateId, partnerId, utc, alg=RS256
+JWS Payload: API.method, API.path, optional refId
+```
+
+Ein generischer JWT mit `iss`, `sub`, `iat`, `exp` und `jti` ist daher nicht passend für diesen Samsung Partner-Server-Callback. Er würde bei uns spätestens mit `SAMSUNG_AUTHORIZATION_HEADER_INVALID` oder `SAMSUNG_AUTHORIZATION_API_MISMATCH` scheitern.
+
 ## Variante A: Mit Samsung Handy
 
 1. Samsung Wallet Partner Portal öffnen.
