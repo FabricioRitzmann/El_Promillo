@@ -73,6 +73,12 @@ node scripts/samsung-wallet-final-readiness.js \
   --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
 ```
 
+Callback-Spur nach Handy-/Test-Tool-Versuch:
+
+```bash
+node scripts/samsung-wallet-callback-evidence.js
+```
+
 Produktions-Gate:
 
 ```bash

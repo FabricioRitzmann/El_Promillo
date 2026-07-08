@@ -53,6 +53,8 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/samsung-wallet-partner-callback-test.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
+- `scripts/samsung-wallet-callback-evidence.js`
+- `scripts/verify-samsung-wallet-callback-evidence.js`
 - `scripts/samsung-wallet-final-readiness.js`
 - `scripts/verify-samsung-wallet-final-readiness.js`
 - `scripts/verify-samsung-wallet-goal-audit.js`
@@ -136,6 +138,7 @@ Lokal geprüft:
 - `scripts/verify-claim-token-links.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
+- `scripts/verify-samsung-wallet-callback-evidence.js`
 - `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
 - `scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict`
 - `scripts/verify-samsung-wallet-goal-audit.js`
@@ -155,6 +158,8 @@ Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Z
 Die Samsung-Erkennung wurde zusätzlich zwischen Browser-Device-Detection und Provider-Registry abgeglichen: Samsung-Hinweise wie `samsung`, `sm-`, `samsungbrowser` und `galaxy` routen zu Samsung Wallet, damit Galaxy-Geräte mit Chrome nicht versehentlich in den Google-Wallet-Pfad fallen. Die drei Samsung Edge Functions wurden danach erneut deployed und remote per Edge-Functions-Report plus Samsung-Smoke-Test geprüft.
 
 Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wallet-partner-callback-test.js` vorbereitet. Es ruft `GET /cards/{cardId}/{refId}` und optional `POST /cards/{cardId}/{refId}` gegen `samsung-wallet-server` mit einem frischen Samsung-Test-Tool-Bearer auf und prüft danach `get_card_data`, `send_card_state` und den Kartenstatus, ohne Authorization Header, Secrets oder vollständige Add-to-Wallet-URLs auszugeben.
+
+`scripts/samsung-wallet-callback-evidence.js` zeigt nach einem Handy- oder Test-Tool-Versuch redigiert, ob `add_link_created`, `get_card_data`, `send_card_state` oder `authorization_failed` Events in Supabase angekommen sind. Dadurch kann ein echter Samsung-Rückruf von einem reinen Frontend-/QR-Test unterschieden werden, ohne Bearer oder Secrets zu drucken.
 
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 

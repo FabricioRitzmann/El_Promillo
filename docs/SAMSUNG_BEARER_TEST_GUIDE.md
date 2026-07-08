@@ -99,6 +99,24 @@ node scripts/samsung-wallet-final-readiness.js \
 
 Ohne Samsung-Bearer endet dieser Check bewusst mit `EXTERNAL_BLOCKED: 1`. Das bedeutet: Die vorbereitbaren Gates sind geprüft, aber der echte Samsung-Callback-Nachweis fehlt noch.
 
+Direkt nach einem Handy- oder Test-Tool-Versuch kannst du prüfen, ob Samsung
+überhaupt zurückgerufen hat:
+
+```bash
+node scripts/samsung-wallet-callback-evidence.js
+```
+
+Wichtig sind:
+
+```text
+OK               GET Card Data Evidence
+OK               POST Card State Evidence
+OK               Authorization Failures - Keine Authorization-Fehler ...
+```
+
+Falls `authorization_failed` erscheint, kam Samsung zwar bis zur Edge Function,
+aber der Bearer fehlte, war abgelaufen oder passte nicht zur Route.
+
 Wenn der Header in `tmp/samsung-bearer.txt` liegt:
 
 ```bash

@@ -78,6 +78,18 @@ Eine knappe Schritt-für-Schritt-Anleitung liegt zusätzlich in `docs/SAMSUNG_BE
 Der aktuelle Requirement-Stand gegen den ursprünglichen Samsung-Zielprompt liegt
 in `docs/SAMSUNG_WALLET_GOAL_AUDIT.md`.
 
+Nach einem echten Handy- oder Test-Tool-Versuch kann die Callback-Spur geprüft
+werden:
+
+```bash
+node scripts/samsung-wallet-callback-evidence.js
+```
+
+Das Script zeigt redigiert, ob `add_link_created`, `get_card_data`,
+`send_card_state` oder `authorization_failed` Events angekommen sind. Für eine
+bestimmte Karte kann mit `--ref-id`, `--customer-code` oder `--instance-id`
+gefiltert werden.
+
 Der vorbereitete Gesamtcheck zeigt vor dem echten Bearer-Test, ob Code, Remote-Schema, Edge Functions und Samsung-Smoke-Test bereit sind:
 
 ```bash
