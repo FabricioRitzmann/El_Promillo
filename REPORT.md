@@ -53,6 +53,8 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/samsung-wallet-partner-callback-test.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
+- `scripts/samsung-wallet-final-readiness.js`
+- `scripts/verify-samsung-wallet-final-readiness.js`
 - `scripts/verify-claim-token-links.js`
 - `docs/SAMSUNG_BEARER_TEST_GUIDE.md`
 - `docs/samsung-wallet.md`
@@ -130,6 +132,7 @@ Lokal geprüft:
 - `scripts/verify-claim-token-links.js`
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
+- `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
@@ -146,6 +149,8 @@ Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Z
 Die Samsung-Erkennung wurde zusätzlich zwischen Browser-Device-Detection und Provider-Registry abgeglichen: Samsung-Hinweise wie `samsung`, `sm-`, `samsungbrowser` und `galaxy` routen zu Samsung Wallet, damit Galaxy-Geräte mit Chrome nicht versehentlich in den Google-Wallet-Pfad fallen. Die drei Samsung Edge Functions wurden danach erneut deployed und remote per Edge-Functions-Report plus Samsung-Smoke-Test geprüft.
 
 Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wallet-partner-callback-test.js` vorbereitet. Es ruft `GET /cards/{cardId}/{refId}` und optional `POST /cards/{cardId}/{refId}` gegen `samsung-wallet-server` mit einem frischen Samsung-Test-Tool-Bearer auf und prüft danach `get_card_data`, `send_card_state` und den Kartenstatus, ohne Authorization Header, Secrets oder vollständige Add-to-Wallet-URLs auszugeben.
+
+`scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 
 Der Bearer-Test wurde zusätzlich gegen einen bewusst ungültigen Header ausgeführt. Ergebnis: Das Script läuft sauber bis zur Remote-Samsung-Auth-Prüfung und erhält erwartungsgemäss `401 SAMSUNG_AUTHORIZATION_REQUIRED`; es scheitert nicht mehr lokal am Testscript. `docs/SAMSUNG_BEARER_TEST_GUIDE.md` dokumentiert den späteren Ablauf, sobald der echte Samsung-Bearer vorhanden ist. `.gitignore` schützt lokale `*bearer*.txt*` Dateien vor versehentlichem Commit.
 

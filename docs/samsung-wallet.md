@@ -76,6 +76,15 @@ Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Lo
 
 Eine knappe Schritt-für-Schritt-Anleitung liegt zusätzlich in `docs/SAMSUNG_BEARER_TEST_GUIDE.md`.
 
+Der vorbereitete Gesamtcheck zeigt vor dem echten Bearer-Test, ob Code, Remote-Schema, Edge Functions und Samsung-Smoke-Test bereit sind:
+
+```bash
+node scripts/samsung-wallet-final-readiness.js \
+  --functions-base-url https://<PROJECT_REF>.supabase.co/functions/v1
+```
+
+Ohne echten Samsung-Bearer meldet der Check `EXTERNAL_BLOCKED`, weil dieser Nachweis nur aus dem Samsung Test Tool oder von Samsung Wallet selbst kommen kann.
+
 Für die echte externe Samsung-Abnahme brauchst du einen frischen `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool oder von einem echten Samsung-Wallet-Callback. Der Header ist methoden- und routengebunden; falls Samsung getrennte Header für GET und POST ausgibt, nutze getrennte Dateien:
 
 ```bash

@@ -75,6 +75,15 @@ Authorization: Bearer <JWS>
 
 ## Testbefehl
 
+Vor dem echten Bearer-Test kannst du jederzeit prüfen, ob lokal und remote alles vorbereitet ist:
+
+```bash
+node scripts/samsung-wallet-final-readiness.js \
+  --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
+```
+
+Ohne Samsung-Bearer endet dieser Check bewusst mit `EXTERNAL_BLOCKED: 1`. Das bedeutet: Die vorbereitbaren Gates sind geprüft, aber der echte Samsung-Callback-Nachweis fehlt noch.
+
 Wenn der Header in `tmp/samsung-bearer.txt` liegt:
 
 ```bash
@@ -85,10 +94,28 @@ node scripts/samsung-wallet-partner-callback-test.js \
   --strict
 ```
 
+Oder als zusammengefasster finaler Check:
+
+```bash
+node scripts/samsung-wallet-final-readiness.js \
+  --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 \
+  --strict
+```
+
 Falls Samsung getrennte Bearer für GET und POST liefert:
 
 ```bash
 node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 \
+  --get-authorization-file tmp/samsung-get-bearer.txt \
+  --post-authorization-file tmp/samsung-post-bearer.txt \
+  --strict
+```
+
+Oder zusammengefasst:
+
+```bash
+node scripts/samsung-wallet-final-readiness.js \
   --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 \
   --get-authorization-file tmp/samsung-get-bearer.txt \
   --post-authorization-file tmp/samsung-post-bearer.txt \
