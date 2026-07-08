@@ -521,6 +521,15 @@ function verifyPartnerServerAuthorization(request: Request, expected: Row) {
   const decoded = decodeAuthorizationHeader(request);
 
   if (!decoded.ok) {
+    if (config.allowUnverifiedAuth && decoded.error_code === 'SAMSUNG_AUTHORIZATION_REQUIRED') {
+      return {
+        ok: true,
+        status: 'unverified_missing_authorization',
+        warning_code: 'SAMSUNG_AUTHORIZATION_UNVERIFIED_MISSING',
+        warning_message: 'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH ist aktiv. Fehlender Samsung Bearer wird nur im Sandbox-Debugging akzeptiert.'
+      };
+    }
+
     return decoded;
   }
 

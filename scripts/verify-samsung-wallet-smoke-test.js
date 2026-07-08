@@ -38,6 +38,8 @@ const report = read('REPORT.md');
   'samsung_wallet_events',
   'add_link_created',
   'SAMSUNG_AUTHORIZATION_REQUIRED',
+  'Samsung Sandbox Unverified Auth',
+  'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH akzeptiert fehlenden Bearer',
   'Secrets, Zertifikate und vollstaendige Add-to-Wallet-URLs werden nicht ausgegeben.',
   'redactUrl',
   'process.exitCode = 1'

@@ -161,12 +161,13 @@ async function main() {
   });
   const unauthorizedBody = await unauthorizedResponse.json().catch(() => ({}));
 
-  add(
-    results,
-    unauthorizedResponse.status === 401 && unauthorizedBody.error_code === 'SAMSUNG_AUTHORIZATION_REQUIRED' ? 'ok' : 'fail',
-    'Samsung Unauthorized Gate',
-    `${unauthorizedResponse.status} ${unauthorizedBody.error_code || 'UNKNOWN'}`
-  );
+  if (unauthorizedResponse.status === 401 && unauthorizedBody.error_code === 'SAMSUNG_AUTHORIZATION_REQUIRED') {
+    add(results, 'ok', 'Samsung Unauthorized Gate', `${unauthorizedResponse.status} ${unauthorizedBody.error_code}`);
+  } else if (unauthorizedResponse.ok && unauthorizedBody?.card) {
+    add(results, 'warn', 'Samsung Sandbox Unverified Auth', 'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH akzeptiert fehlenden Bearer. Nur Sandbox.');
+  } else {
+    add(results, 'fail', 'Samsung Unauthorized Gate', `${unauthorizedResponse.status} ${unauthorizedBody.error_code || 'UNKNOWN'}`);
+  }
 
   return results;
 }

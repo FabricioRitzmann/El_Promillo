@@ -113,7 +113,7 @@ Das Script nutzt die neueste `samsung_wallet_instances`-Zeile, falls `--card-id`
 - Neue QR-/Claim-Links enthalten nur `public_claim_token`, nicht die interne Template-ID; öffentliche Responses geben diesen Token nicht erneut aus.
 - Der öffentliche Samsung-Link enthält nur `refId`.
 - `samsung-wallet-server` prüft standardmässig die Samsung Bearer-JWS-Signatur.
-- `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur für Sandbox-Debugging und darf produktiv nicht gesetzt werden.
+- `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur für Sandbox-Debugging und darf produktiv nicht gesetzt werden. Wenn das Samsung Test Tool bzw. Samsung Wallet im Sandbox-Test den Partner-Server ohne `Authorization: Bearer <JWS>` aufruft, akzeptiert die Function diesen fehlenden Header nur mit diesem Flag und protokolliert den Vorgang über `get_card_data` bzw. `send_card_state`.
 
 ## Aktueller Stand
 

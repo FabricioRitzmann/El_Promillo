@@ -154,6 +154,8 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 
 `samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
 
+Der Samsung-Handy-Test vom 8. Juli 2026 zeigte erstmals einen echten Rückruf bis zur Edge Function, aber ohne `Authorization: Bearer <JWS>` Header. Für genau diesen Samsung-Sandbox-Fall akzeptiert `samsung-wallet-server` fehlende Authorization nur, wenn `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` gesetzt ist. Produktiv muss dieser Wert wieder `false` sein oder Samsung muss den signierten Bearer wie erwartet senden.
+
 Der Bearer-Test wurde zusätzlich gegen einen bewusst ungültigen Header ausgeführt. Ergebnis: Das Script läuft sauber bis zur Remote-Samsung-Auth-Prüfung und erhält erwartungsgemäss `401 SAMSUNG_AUTHORIZATION_REQUIRED`; es scheitert nicht mehr lokal am Testscript. `docs/SAMSUNG_BEARER_TEST_GUIDE.md` dokumentiert den späteren Ablauf, sobald der echte Samsung-Bearer vorhanden ist. `.gitignore` schützt lokale `*bearer*.txt*` Dateien vor versehentlichem Commit.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
