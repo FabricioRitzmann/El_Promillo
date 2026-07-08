@@ -58,6 +58,8 @@ assertIncludesAll('Samsung Partner Server Error Paths', server, [
   'SAMSUNG_ROUTE_NOT_FOUND',
   'SAMSUNG_ROUTE_PARAMS_REQUIRED',
   'SAMSUNG_AUTHORIZATION_INVALID',
+  'insertSamsungAuthorizationFailure',
+  'authorization_failed',
   'SAMSUNG_CARD_DATA_FAILED',
   'get_card_data',
   'send_card_state',

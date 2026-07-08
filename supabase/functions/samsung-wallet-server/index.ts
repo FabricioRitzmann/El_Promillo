@@ -166,6 +166,20 @@ async function insertSamsungEvent(supabaseAdmin: any, instance: Row, eventType: 
   }
 }
 
+async function insertSamsungAuthorizationFailure(supabaseAdmin: any, instance: Row | null, request: Request, authError: Row) {
+  if (!instance?.id) {
+    return;
+  }
+
+  await insertSamsungEvent(supabaseAdmin, instance, 'authorization_failed', {
+    samsung_request_id: stringValue(request.headers.get('x-request-id')),
+    method: request.method,
+    error_code: stringValue(authError.error_code || 'SAMSUNG_AUTHORIZATION_INVALID'),
+    error_message: stringValue(authError.error_message || 'Samsung Authorization ist ungueltig.'),
+    error_reason: stringValue(authError.error_reason || 'Samsung Bearer konnte nicht validiert werden.')
+  });
+}
+
 async function loadSamsungInstance(supabaseAdmin: any, cardId: string, refId: string) {
   const { data, error } = await supabaseAdmin
     .from('samsung_wallet_instances')
@@ -211,9 +225,22 @@ function assertSamsungAuthorization(request: Request, cardId: string, refId: str
 }
 
 async function handleGetCardData(request: Request, supabaseAdmin: any, cardId: string, refId: string) {
-  assertSamsungAuthorization(request, cardId, refId);
-
   const instance = await loadSamsungInstance(supabaseAdmin, cardId, refId);
+  const auth = samsungWalletProvider.verifyPartnerServerAuthorization(request, {
+    method: request.method,
+    path: `/cards/${cardId}/${refId}`,
+    refId
+  });
+
+  if (!auth.ok) {
+    await insertSamsungAuthorizationFailure(supabaseAdmin, instance, request, auth);
+    throw createStructuredError(
+      Number(auth.status || 401),
+      auth.error_code || 'SAMSUNG_AUTHORIZATION_INVALID',
+      auth.error_message || 'Samsung Authorization ist ungültig.',
+      auth.error_reason || 'Die Anfrage wurde nicht von Samsung Wallet autorisiert.'
+    );
+  }
 
   if (!instance) {
     return noContent(204);
@@ -258,9 +285,22 @@ async function handleGetCardData(request: Request, supabaseAdmin: any, cardId: s
 }
 
 async function handleSendCardState(request: Request, supabaseAdmin: any, cardId: string, refId: string) {
-  assertSamsungAuthorization(request, cardId, refId);
-
   const instance = await loadSamsungInstance(supabaseAdmin, cardId, refId);
+  const auth = samsungWalletProvider.verifyPartnerServerAuthorization(request, {
+    method: request.method,
+    path: `/cards/${cardId}/${refId}`,
+    refId
+  });
+
+  if (!auth.ok) {
+    await insertSamsungAuthorizationFailure(supabaseAdmin, instance, request, auth);
+    throw createStructuredError(
+      Number(auth.status || 401),
+      auth.error_code || 'SAMSUNG_AUTHORIZATION_INVALID',
+      auth.error_message || 'Samsung Authorization ist ungültig.',
+      auth.error_reason || 'Die Anfrage wurde nicht von Samsung Wallet autorisiert.'
+    );
+  }
 
   if (!instance) {
     return noContent(204);

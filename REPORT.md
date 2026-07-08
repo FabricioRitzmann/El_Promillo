@@ -152,6 +152,8 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 
+`samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
+
 Der Bearer-Test wurde zusätzlich gegen einen bewusst ungültigen Header ausgeführt. Ergebnis: Das Script läuft sauber bis zur Remote-Samsung-Auth-Prüfung und erhält erwartungsgemäss `401 SAMSUNG_AUTHORIZATION_REQUIRED`; es scheitert nicht mehr lokal am Testscript. `docs/SAMSUNG_BEARER_TEST_GUIDE.md` dokumentiert den späteren Ablauf, sobald der echte Samsung-Bearer vorhanden ist. `.gitignore` schützt lokale `*bearer*.txt*` Dateien vor versehentlichem Commit.
 
 Hinweis: Die lokale Codex-Runtime nutzt Node 24; das Projekt erwartet Node 20. Der Check läuft trotzdem durch.
