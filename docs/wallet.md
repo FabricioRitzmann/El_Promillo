@@ -11,6 +11,7 @@ Die aktuelle Detaildoku liegt hier:
 - Apple/Google/Cron/Payment Abnahme: `docs/WALLET_EXTERNAL_ACCEPTANCE.md`
 - Apple/Google Kontext: `docs/WALLET_INTEGRATION_CONTEXT.md`
 - Samsung Setup: `docs/samsung-wallet.md`
+- Samsung Ziel-Audit: `docs/SAMSUNG_WALLET_GOAL_AUDIT.md`
 - Provider-Struktur: `docs/provider-architecture.md`
 - Setup: `docs/setup.md`
 

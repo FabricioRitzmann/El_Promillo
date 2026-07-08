@@ -55,8 +55,10 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
 - `scripts/samsung-wallet-final-readiness.js`
 - `scripts/verify-samsung-wallet-final-readiness.js`
+- `scripts/verify-samsung-wallet-goal-audit.js`
 - `scripts/verify-claim-token-links.js`
 - `docs/SAMSUNG_BEARER_TEST_GUIDE.md`
+- `docs/SAMSUNG_WALLET_GOAL_AUDIT.md`
 - `docs/samsung-wallet.md`
 - `docs/SAMSUNG_BEARER_TEST_GUIDE.md`
 - `docs/provider-architecture.md`
@@ -136,6 +138,7 @@ Lokal geprüft:
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
 - `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
 - `scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict`
+- `scripts/verify-samsung-wallet-goal-audit.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
@@ -156,6 +159,8 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 
 `scripts/samsung-wallet-production-gate.js` ist der zusätzliche Go-Live-Blocker: Er prüft lokale Samsung-Produktions-Secrets, verlangt `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs und einen echten Samsung Callback-Bearer. Das Gate redigiert Secrets, Zertifikate, Bearer und vollständige URLs.
+
+`docs/SAMSUNG_WALLET_GOAL_AUDIT.md` dokumentiert den Samsung-Zielprompt requirementweise gegen den aktuellen Repo-Stand. `scripts/verify-samsung-wallet-goal-audit.js` prüft, dass dieser Audit, Provider-Architektur, Device Routing, Samsung SQL, Report und Production-Blocker weiter zusammenpassen.
 
 `samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
 

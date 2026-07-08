@@ -75,6 +75,8 @@ Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Lo
 ## Partner Callback Test
 
 Eine knappe Schritt-für-Schritt-Anleitung liegt zusätzlich in `docs/SAMSUNG_BEARER_TEST_GUIDE.md`.
+Der aktuelle Requirement-Stand gegen den ursprünglichen Samsung-Zielprompt liegt
+in `docs/SAMSUNG_WALLET_GOAL_AUDIT.md`.
 
 Der vorbereitete Gesamtcheck zeigt vor dem echten Bearer-Test, ob Code, Remote-Schema, Edge Functions und Samsung-Smoke-Test bereit sind:
 
