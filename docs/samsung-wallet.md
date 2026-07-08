@@ -107,6 +107,19 @@ node scripts/samsung-wallet-partner-callback-test.js \
 
 Das Script nutzt die neueste `samsung_wallet_instances`-Zeile, falls `--card-id` und `--ref-id` nicht gesetzt sind. Es gibt Authorization Header, Secrets und vollständige Add-to-Wallet-URLs nicht aus.
 
+## Production Gate
+
+Vor einem echten Samsung-Livegang prüft ein separates Gate, ob die lokalen Samsung-Secrets produktionsfähig aussehen und ob ein Samsung-Callback-Bearer als externer Nachweis vorliegt:
+
+```bash
+node scripts/samsung-wallet-production-gate.js \
+  --env-file supabase/secrets.local.env \
+  --authorization-file tmp/samsung-bearer.txt \
+  --strict
+```
+
+Dieses Gate verlangt unter anderem `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs, Samsung-Pflicht-Secrets und einen echten Samsung `Authorization: Bearer <JWS>` Callback-Nachweis. Es gibt Secrets, Zertifikate, Bearer und vollständige URLs nicht aus.
+
 ## Security
 
 - Browser bekommt keine Service Role, keine privaten Keys und kein Samsung-Zertifikat.

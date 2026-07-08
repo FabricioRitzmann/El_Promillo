@@ -80,6 +80,12 @@ Samsung benötigt zusätzlich:
 
 Produktionswichtig: `SAMSUNG_WALLET_ENV=production` und `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`. Der Code deaktiviert den unverified Samsung-Fallback zusätzlich automatisch, wenn `SAMSUNG_WALLET_ENV=production`, `prod` oder `live` gesetzt ist.
 
+Vor einem echten Livegang zusätzlich prüfen:
+
+```bash
+node scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict
+```
+
 Die Partner Server URL in Samsung muss auf die deployte Function zeigen:
 
 ```text

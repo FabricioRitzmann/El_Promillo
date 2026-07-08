@@ -135,6 +135,7 @@ Lokal geprüft:
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
 - `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
+- `scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict`
 - Edge TypeScript-Syntax
 - Edge Function Imports
 - Edge JWT Policy
@@ -153,6 +154,8 @@ Die Samsung-Erkennung wurde zusätzlich zwischen Browser-Device-Detection und Pr
 Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wallet-partner-callback-test.js` vorbereitet. Es ruft `GET /cards/{cardId}/{refId}` und optional `POST /cards/{cardId}/{refId}` gegen `samsung-wallet-server` mit einem frischen Samsung-Test-Tool-Bearer auf und prüft danach `get_card_data`, `send_card_state` und den Kartenstatus, ohne Authorization Header, Secrets oder vollständige Add-to-Wallet-URLs auszugeben.
 
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
+
+`scripts/samsung-wallet-production-gate.js` ist der zusätzliche Go-Live-Blocker: Er prüft lokale Samsung-Produktions-Secrets, verlangt `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs und einen echten Samsung Callback-Bearer. Das Gate redigiert Secrets, Zertifikate, Bearer und vollständige URLs.
 
 `samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
 

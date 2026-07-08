@@ -184,7 +184,17 @@ Das Script druckt Authorization Header, Secrets und vollständige Add-to-Wallet-
    - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
    - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.
    - Falls `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` für Sandbox aktiv ist, ist ein fehlender Bearer als Testzustand erlaubt; für Produktion muss der Wert wieder `false` sein und `SAMSUNG_WALLET_ENV=production` gesetzt werden.
-11. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
+11. Vor Livegang das Samsung Production Gate ausführen:
+
+```bash
+node scripts/samsung-wallet-production-gate.js \
+  --env-file supabase/secrets.local.env \
+  --authorization-file tmp/samsung-bearer.txt \
+  --strict
+```
+
+Das Gate blockiert, solange lokale Secrets noch nach Sandbox aussehen, unverified Auth aktiv ist oder der echte Samsung `Authorization: Bearer <JWS>` Callback-Nachweis fehlt. Es druckt keine Secrets, Bearer, Zertifikate oder vollständige URLs.
+12. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
 
 ## 5. Scheduled, Location und Queue
 
