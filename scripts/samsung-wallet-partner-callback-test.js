@@ -206,7 +206,7 @@ async function main() {
   const getResponse = await fetch(route, {
     method: 'GET',
     headers: {
-      authorization: auth,
+      authorization: getAuth,
       'x-request-id': `codex-samsung-get-${Date.now()}`
     }
   });

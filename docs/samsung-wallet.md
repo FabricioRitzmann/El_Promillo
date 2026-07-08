@@ -74,6 +74,8 @@ Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Lo
 
 ## Partner Callback Test
 
+Eine knappe Schritt-für-Schritt-Anleitung liegt zusätzlich in `docs/SAMSUNG_BEARER_TEST_GUIDE.md`.
+
 Für die echte externe Samsung-Abnahme brauchst du einen frischen `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool oder von einem echten Samsung-Wallet-Callback. Der Header ist methoden- und routengebunden; falls Samsung getrennte Header für GET und POST ausgibt, nutze getrennte Dateien:
 
 ```bash

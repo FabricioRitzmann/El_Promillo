@@ -35,6 +35,8 @@ GitHub_Token*
 GITHUB_TOKEN*
 RENDER_API_KEY*
 Supabase_CLI*
+*bearer*.txt*
+tmp:*
 samsung-wallet-keys/
 samsung_env_values*
 *samsung_env_values*

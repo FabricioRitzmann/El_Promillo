@@ -43,6 +43,10 @@ assertIncludesAll('Samsung Partner Callback Test Script', script, [
   'Authorization Header, Secrets und vollstaendige Add-to-Wallet-URLs werden nicht ausgegeben.'
 ]);
 
+assert(script.includes('authorization: getAuth'), 'GET Card Data muss den Samsung GET Authorization Header verwenden.');
+assert(script.includes('authorization: postAuth'), 'POST Card State muss den Samsung POST Authorization Header verwenden.');
+assert(!script.includes('authorization: auth'), 'Samsung Callback Test darf keine undefinierte auth-Variable verwenden.');
+
 assertIncludesAll('Samsung Partner Callback Test Docs', `${acceptance}\n${samsungDoc}\n${report}`, [
   'samsung-wallet-partner-callback-test.js',
   '--authorization-file',
