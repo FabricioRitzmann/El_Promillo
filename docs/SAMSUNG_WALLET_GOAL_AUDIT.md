@@ -73,6 +73,9 @@ node scripts/samsung-wallet-final-readiness.js \
   --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
 ```
 
+Der Final-Readiness-Check enthält ebenfalls `Samsung Verified Callback
+Evidence`; Sandbox-/unverified Events bleiben dort `EXTERNAL_BLOCKED`.
+
 Callback-Spur nach Handy-/Test-Tool-Versuch:
 
 ```bash

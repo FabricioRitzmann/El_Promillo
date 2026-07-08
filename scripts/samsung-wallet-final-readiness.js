@@ -149,6 +149,38 @@ function samsungSmokeDetail(result) {
   return 'Add-Link, Instanz, Event und Unauthorized-Gate ok';
 }
 
+function samsungEvidenceDetail(result) {
+  if (!result.ok) {
+    return {
+      status: 'fail',
+      detail: compactDetail(result) || 'Callback-Evidence konnte nicht gelesen werden.'
+    };
+  }
+
+  try {
+    const payload = JSON.parse(result.output || '{}');
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    const verified = results.find((item) => item.label === 'Verified Auth Evidence');
+
+    if (!verified) {
+      return {
+        status: 'blocked_external',
+        detail: 'Verified Auth Evidence fehlt in samsung-wallet-callback-evidence.js.'
+      };
+    }
+
+    return {
+      status: verified.status === 'ok' ? 'ok' : 'blocked_external',
+      detail: verified.detail || 'Kein Detail vorhanden.'
+    };
+  } catch (_error) {
+    return {
+      status: 'fail',
+      detail: 'Callback-Evidence JSON konnte nicht gelesen werden.'
+    };
+  }
+}
+
 async function main() {
   const results = [];
   const config = loadConfig();
@@ -189,6 +221,10 @@ async function main() {
       const smokeResult = runNodeScript('scripts/samsung-wallet-smoke-test.js', smokeArgs);
       add(results, smokeResult.ok ? 'ok' : 'fail', 'Samsung Remote Smoke Test', smokeResult.ok ? samsungSmokeDetail(smokeResult) : compactDetail(smokeResult));
     }
+
+    const evidenceResult = runNodeScript('scripts/samsung-wallet-callback-evidence.js', ['--json']);
+    const evidence = samsungEvidenceDetail(evidenceResult);
+    add(results, evidence.status, 'Samsung Verified Callback Evidence', evidence.detail);
   } else {
     add(results, 'warn', 'Remote Checks', 'per --skip-remote übersprungen', false);
   }

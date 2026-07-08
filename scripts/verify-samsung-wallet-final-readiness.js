@@ -36,6 +36,10 @@ assertIncludesAll('Samsung Final Readiness Script', script, [
   'wallet-remote-schema-check.js',
   'wallet-edge-functions-report.js',
   'samsung-wallet-smoke-test.js',
+  'samsung-wallet-callback-evidence.js',
+  'samsungEvidenceDetail',
+  'Samsung Verified Callback Evidence',
+  'Verified Auth Evidence',
   'samsung-wallet-partner-callback-test.js',
   'blocked_external',
   'defaultBearerFile',
@@ -51,7 +55,8 @@ assertIncludesAll('Samsung Final Readiness Docs', `${bearerGuide}\n${samsungDoc}
   'cty=AUTH',
   'API.method',
   'API.path',
-  'SAMSUNG_AUTHORIZATION_HEADER_INVALID'
+  'SAMSUNG_AUTHORIZATION_HEADER_INVALID',
+  'Samsung Verified Callback Evidence'
 ]);
 
 assertIncludesAll('Package Check', packageJson, [

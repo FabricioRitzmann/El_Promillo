@@ -97,7 +97,7 @@ node scripts/samsung-wallet-final-readiness.js \
   --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1
 ```
 
-Ohne Samsung-Bearer endet dieser Check bewusst mit `EXTERNAL_BLOCKED: 1`. Das bedeutet: Die vorbereitbaren Gates sind geprüft, aber der echte Samsung-Callback-Nachweis fehlt noch.
+Ohne Samsung-Bearer und ohne `Samsung Verified Callback Evidence` endet dieser Check bewusst mit `EXTERNAL_BLOCKED`. Das bedeutet: Die vorbereitbaren Gates sind geprüft, aber der echte Samsung-Callback-Nachweis fehlt noch.
 
 Direkt nach einem Handy- oder Test-Tool-Versuch kannst du prüfen, ob Samsung
 überhaupt zurückgerufen hat:

@@ -92,7 +92,7 @@ wertet es `auth_status` aus: `verified` ist der produktionsreife Nachweis,
 Sandbox-/Alt-Event-Evidence. Für eine bestimmte Karte kann mit `--ref-id`,
 `--customer-code` oder `--instance-id` gefiltert werden.
 
-Der vorbereitete Gesamtcheck zeigt vor dem echten Bearer-Test, ob Code, Remote-Schema, Edge Functions und Samsung-Smoke-Test bereit sind:
+Der vorbereitete Gesamtcheck zeigt vor dem echten Bearer-Test, ob Code, Remote-Schema, Edge Functions, Samsung-Smoke-Test und `Samsung Verified Callback Evidence` bereit sind:
 
 ```bash
 node scripts/samsung-wallet-final-readiness.js \
