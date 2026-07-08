@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { looksConfigured } from '../server/config.js';
+import { createClient } from '@supabase/supabase-js';
+import { loadConfig, looksConfigured } from '../server/config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -26,6 +27,9 @@ Options:
   --authorization-file      Samsung callback Authorization header file. Default: tmp/samsung-bearer.txt when present.
   --get-authorization-file  GET-specific Samsung callback Authorization header file.
   --post-authorization-file POST-specific Samsung callback Authorization header file.
+  --instance-id             Optional Samsung instance UUID for verified evidence lookup.
+  --ref-id                  Optional Samsung refId/pdata for verified evidence lookup.
+  --customer-code           Optional Samsung customer code for verified evidence lookup.
   --strict                  Exit non-zero on fail or blocked_external.
   --json                    Machine-readable output.
 
@@ -132,6 +136,104 @@ function bearerPresent() {
   });
 }
 
+function redact(value, visible = 4) {
+  const text = String(value || '').trim();
+
+  if (!text) {
+    return '';
+  }
+
+  if (text.length <= visible * 2 + 3) {
+    return `${text.slice(0, Math.min(2, text.length))}...`;
+  }
+
+  return `${text.slice(0, visible)}...${text.slice(-visible)}`;
+}
+
+async function loadSamsungInstance(supabase) {
+  const instanceId = String(argValue('--instance-id') || '').trim();
+  const refId = String(argValue('--ref-id') || '').trim();
+  const customerCode = String(argValue('--customer-code') || '').trim();
+  let query = supabase
+    .from('samsung_wallet_instances')
+    .select('id, ref_id, customer_code, card_status, created_at')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (instanceId) {
+    query = query.eq('id', instanceId);
+  } else if (refId) {
+    query = query.eq('ref_id', refId);
+  } else if (customerCode) {
+    query = query.eq('customer_code', customerCode);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+function payloadValue(event, key) {
+  const payload = event?.request_payload;
+
+  return payload && typeof payload === 'object' ? payload[key] : undefined;
+}
+
+async function verifiedCallbackEvidence() {
+  const config = loadConfig();
+
+  if (!configured(config.supabase?.url) || !configured(config.supabase?.serviceRoleKey)) {
+    return {
+      ok: false,
+      detail: 'SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY fehlt lokal für Evidence-Abfrage.'
+    };
+  }
+
+  const supabase = createClient(config.supabase.url, config.supabase.serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+  const instance = await loadSamsungInstance(supabase);
+
+  if (!instance?.id) {
+    return {
+      ok: false,
+      detail: 'Keine Samsung-Instanz gefunden.'
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('samsung_wallet_events')
+    .select('event_type, request_payload, created_at')
+    .eq('samsung_wallet_instance_id', instance.id)
+    .in('event_type', ['get_card_data', 'send_card_state'])
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    throw error;
+  }
+
+  const events = Array.isArray(data) ? data : [];
+  const verified = events.some((event) => payloadValue(event, 'auth_verified') === true || payloadValue(event, 'auth_status') === 'verified');
+  const statuses = [...new Set(events.map((event) => String(payloadValue(event, 'auth_status') || '').trim()).filter(Boolean))];
+
+  return {
+    ok: verified,
+    detail: verified
+      ? `verifizierter Samsung Callback vorhanden (${redact(instance.ref_id)}).`
+      : statuses.length > 0
+        ? `kein verifizierter Callback; gesehen: ${statuses.join(', ')}.`
+        : 'Callbacks ohne auth_status oder keine Callback-Events gefunden.'
+  };
+}
+
 function summarize(results) {
   return results.reduce((summary, result) => {
     summary[result.status] = (summary[result.status] || 0) + 1;
@@ -139,7 +241,7 @@ function summarize(results) {
   }, { ok: 0, warn: 0, fail: 0, blocked_external: 0 });
 }
 
-function main() {
+async function main() {
   const results = [];
   const envFile = path.resolve(rootDir, argValue('--env-file') || 'supabase/secrets.local.env');
   const env = parseEnvFile(envFile);
@@ -180,10 +282,27 @@ function main() {
     add(results, 'blocked_external', 'Samsung Callback Bearer', 'Echter Samsung Authorization: Bearer <JWS> fehlt noch.');
   }
 
+  try {
+    const evidence = await verifiedCallbackEvidence();
+    add(
+      results,
+      evidence.ok ? 'ok' : 'blocked_external',
+      'Samsung Verified Callback Evidence',
+      evidence.detail
+    );
+  } catch (error) {
+    add(
+      results,
+      'blocked_external',
+      'Samsung Verified Callback Evidence',
+      error instanceof Error ? error.message : 'Evidence-Abfrage fehlgeschlagen.'
+    );
+  }
+
   return results;
 }
 
-const results = main();
+const results = await main();
 const summary = summarize(results);
 
 if (jsonOutput) {

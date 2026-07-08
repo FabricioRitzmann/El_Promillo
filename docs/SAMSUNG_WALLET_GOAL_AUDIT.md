@@ -24,7 +24,7 @@ Repo-seitig umgesetzt und geprüft:
 Noch extern zu beweisen:
 
 - Ein echter Samsung-Produktionscallback mit gültigem `Authorization: Bearer <JWS>`.
-- Das Samsung Production Gate muss mit `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false` und echtem Bearer grün laufen.
+- Das Samsung Production Gate muss mit `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, echtem Bearer und `Samsung Verified Callback Evidence: OK` grün laufen.
 
 ## Requirement Audit
 

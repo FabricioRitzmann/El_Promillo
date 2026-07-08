@@ -193,7 +193,7 @@ node scripts/samsung-wallet-production-gate.js \
   --strict
 ```
 
-Das Gate blockiert, solange lokale Secrets noch nach Sandbox aussehen, unverified Auth aktiv ist oder der echte Samsung `Authorization: Bearer <JWS>` Callback-Nachweis fehlt. Es druckt keine Secrets, Bearer, Zertifikate oder vollständige URLs.
+Das Gate blockiert, solange lokale Secrets noch nach Sandbox aussehen, unverified Auth aktiv ist oder der echte Samsung `Authorization: Bearer <JWS>` Callback-Nachweis fehlt. Zusätzlich muss `Samsung Verified Callback Evidence` `OK` sein; ein lokaler Bearer-Dateiname ohne verifiziertes Supabase-Event reicht nicht. Es druckt keine Secrets, Bearer, Zertifikate oder vollständige URLs.
 12. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
 
 ## 5. Scheduled, Location und Queue

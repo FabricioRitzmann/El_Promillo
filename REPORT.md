@@ -164,7 +164,7 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 
-`scripts/samsung-wallet-production-gate.js` ist der zusätzliche Go-Live-Blocker: Er prüft lokale Samsung-Produktions-Secrets, verlangt `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs und einen echten Samsung Callback-Bearer. Das Gate redigiert Secrets, Zertifikate, Bearer und vollständige URLs.
+`scripts/samsung-wallet-production-gate.js` ist der zusätzliche Go-Live-Blocker: Er prüft lokale Samsung-Produktions-Secrets, verlangt `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs, einen echten Samsung Callback-Bearer und `Samsung Verified Callback Evidence: OK` aus Supabase Events. Ein lokaler Bearer-Dateiname ohne verifiziertes Callback-Event reicht nicht. Das Gate redigiert Secrets, Zertifikate, Bearer und vollständige URLs.
 
 `docs/SAMSUNG_WALLET_GOAL_AUDIT.md` dokumentiert den Samsung-Zielprompt requirementweise gegen den aktuellen Repo-Stand. `scripts/verify-samsung-wallet-goal-audit.js` prüft, dass dieser Audit, Provider-Architektur, Device Routing, Samsung SQL, Report und Production-Blocker weiter zusammenpassen.
 

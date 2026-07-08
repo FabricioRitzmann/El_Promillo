@@ -86,6 +86,10 @@ Vor einem echten Livegang zusätzlich prüfen:
 node scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict
 ```
 
+Das Gate prüft neben den Production-Secrets auch Supabase Callback-Evidence.
+`Samsung Verified Callback Evidence` muss `OK` sein; Sandbox-/unverified
+Callbacks blockieren den Livegang.
+
 Die Partner Server URL in Samsung muss auf die deployte Function zeigen:
 
 ```text

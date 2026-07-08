@@ -136,6 +136,11 @@ node scripts/samsung-wallet-production-gate.js \
 
 Dieses Gate verlangt unter anderem `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs, Samsung-Pflicht-Secrets und einen echten Samsung `Authorization: Bearer <JWS>` Callback-Nachweis. Es gibt Secrets, Zertifikate, Bearer und vollständige URLs nicht aus.
 
+Zusätzlich fragt das Gate Supabase nach Samsung Callback-Events ab. Für einen
+Livegang muss `Samsung Verified Callback Evidence` auf `OK` stehen. Ein
+vorhandener Bearer-Dateiname oder ein Sandbox-Callback mit
+`auth_status=unverified_missing_authorization` reicht nicht.
+
 ## Security
 
 - Browser bekommt keine Service Role, keine privaten Keys und kein Samsung-Zertifikat.

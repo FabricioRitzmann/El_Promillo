@@ -32,6 +32,9 @@ assertIncludesAll('Samsung Production Gate Script', gate, [
   'Samsung Wallet Production Gate',
   '--env-file',
   '--authorization-file',
+  '--instance-id',
+  '--ref-id',
+  '--customer-code',
   'SAMSUNG_WALLET_ENV',
   'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH',
   'production',
@@ -42,6 +45,12 @@ assertIncludesAll('Samsung Production Gate Script', gate, [
   'SAMSUNG_WALLET_PARTNER_SERVER_URL',
   'APP_PUBLIC_BASE_URL',
   'Samsung Callback Bearer',
+  'Samsung Verified Callback Evidence',
+  'verifiedCallbackEvidence',
+  'samsung_wallet_instances',
+  'samsung_wallet_events',
+  'auth_verified',
+  'auth_status',
   'blocked_external',
   'Secrets, Bearer, Zertifikate und vollstaendige URLs werden nicht ausgegeben.'
 ]);
@@ -49,7 +58,8 @@ assertIncludesAll('Samsung Production Gate Script', gate, [
 assertIncludesAll('Samsung Production Gate Docs', `${samsungDoc}\n${setupDoc}\n${externalAcceptance}\n${report}`, [
   'samsung-wallet-production-gate.js',
   'SAMSUNG_WALLET_ENV=production',
-  'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false'
+  'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false',
+  'Samsung Verified Callback Evidence'
 ]);
 
 assertIncludesAll('Package Check', packageJson, [
