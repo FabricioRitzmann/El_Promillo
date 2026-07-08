@@ -139,6 +139,16 @@ function compactDetail(result) {
   return text.split(/\r?\n/).slice(-3).join(' | ');
 }
 
+function samsungSmokeDetail(result) {
+  const output = String(result.output || '');
+
+  if (output.includes('Samsung Sandbox POST Card State') && output.includes('Samsung Card Status - active')) {
+    return 'Add-Link, Data Fetch, get_card_data und Sandbox-POST/send_card_state ok';
+  }
+
+  return 'Add-Link, Instanz, Event und Unauthorized-Gate ok';
+}
+
 async function main() {
   const results = [];
   const config = loadConfig();
@@ -177,7 +187,7 @@ async function main() {
       }
 
       const smokeResult = runNodeScript('scripts/samsung-wallet-smoke-test.js', smokeArgs);
-      add(results, smokeResult.ok ? 'ok' : 'fail', 'Samsung Remote Smoke Test', smokeResult.ok ? 'Add-Link, Instanz, Event und Unauthorized-Gate ok' : compactDetail(smokeResult));
+      add(results, smokeResult.ok ? 'ok' : 'fail', 'Samsung Remote Smoke Test', smokeResult.ok ? samsungSmokeDetail(smokeResult) : compactDetail(smokeResult));
     }
   } else {
     add(results, 'warn', 'Remote Checks', 'per --skip-remote übersprungen', false);

@@ -1,6 +1,8 @@
 # Samsung Wallet Missing Data
 
-Status: no missing local Samsung credential data detected.
+Status: no missing local Samsung credential data detected. The remaining
+production item is an external Samsung Partner Server callback with a valid
+`Authorization: Bearer <JWS>` header.
 
 The matching old Samsung private key was found at:
 
@@ -40,34 +42,34 @@ Ready Samsung values: 15
 Missing Samsung values: none
 ```
 
-## Next Safe Commands
+## Implemented Since This File Was Created
 
-Generate the ignored local secrets file:
+- Samsung local secrets were generated and remote Supabase Secrets were set.
+- `samsung-wallet-add-link`, `samsung-wallet-server`, and `update-samsung-wallet-pass` were deployed.
+- The Claim page and device detection now route Apple, Samsung, Google and manual choice correctly.
+- Real Samsung handset testing reached the Edge Function and stored `get_card_data`.
+- Because Samsung sandbox did not send `Authorization: Bearer <JWS>`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` is temporarily active for testing only.
+- `samsung-wallet-server` now accepts POST state data as query params, JSON body, or form body.
+- Remote smoke testing verifies `send_card_state`, `last_event=ADDED`, and `card_status=active` through the sandbox fallback.
 
-```bash
-node scripts/prepare-supabase-secrets-local.js --write --force
-```
+## Remaining External Production Proof
 
-Deploy only Samsung secrets and functions. Avoid touching Apple/Google secrets
-unless explicitly intended:
-
-```bash
-bash scripts/set-supabase-secrets.sh --dry-run --env-file /tmp/samsung-secrets.env
-bash scripts/set-supabase-secrets.sh --env-file /tmp/samsung-secrets.env
-bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server
-```
-
-Then register this Partner Server URL in Samsung:
+Samsung production must send a valid signed Partner Server authorization header:
 
 ```text
-https://mfyltmjzofahbavrwpac.supabase.co/functions/v1/samsung-wallet-server
+Authorization: Bearer <JWS>
 ```
 
-## Still Separate By Rule 3
+Validate it with:
 
-The public claim UI/device-detection update is not yet applied. It affects
-Apple-/Google-adjacent frontend behavior and must be confirmed separately before
-implementation.
+```bash
+node scripts/samsung-wallet-partner-callback-test.js \
+  --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1 \
+  --authorization-file tmp/samsung-bearer.txt \
+  --strict
+```
+
+For production, set `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`.
 
 ## Docs
 
