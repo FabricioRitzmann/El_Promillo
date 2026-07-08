@@ -36,6 +36,16 @@ const cases = [
     wallet: 'samsung'
   },
   {
+    name: 'Samsung Chrome with Galaxy model routes to Samsung Wallet',
+    input: {
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Chrome/121.0 Mobile Safari/537.36',
+      platform: 'Android',
+      brands: [{ brand: 'Google Chrome' }],
+      maxTouchPoints: 5
+    },
+    wallet: 'samsung'
+  },
+  {
     name: 'Other Android routes to Google Wallet',
     input: {
       userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/121.0 Mobile Safari/537.36',

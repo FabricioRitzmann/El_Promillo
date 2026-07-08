@@ -111,7 +111,10 @@ assertIncludesAll('Samsung Provider Data-Fetch/Auth', provider, [
   'buildSamsungLoyaltyAttributes',
   'buildSamsungGenericAttributes',
   'QRCODE',
-  'detectSupport(userAgent'
+  'detectSupport(userAgent',
+  'hasSamsungDeviceHint',
+  "'sm-'",
+  "'galaxy'"
 ]);
 
 assertIncludesAll('Samsung Add-Link Function', addLink, [

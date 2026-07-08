@@ -123,6 +123,12 @@ function samsungFontColor(value: unknown) {
   return luminance > 0.55 ? 'dark' : 'light';
 }
 
+function hasSamsungDeviceHint(userAgent = '') {
+  const text = stringValue(userAgent).toLowerCase();
+
+  return ['samsung', 'sm-', 'samsungbrowser', 'galaxy'].some((hint) => text.includes(hint));
+}
+
 function stateForInstance(instance: Row = {}) {
   const status = stringValue(instance.status || instance.card_status).toLowerCase();
 
@@ -749,11 +755,12 @@ export const samsungWalletProvider = {
 
   detectSupport(userAgent = '') {
     const text = stringValue(userAgent).toLowerCase();
+    const isAndroid = text.includes('android');
 
     return {
       provider: 'samsung',
-      supported: text.includes('android') && text.includes('samsung'),
-      reason: text.includes('android') ? 'android_device_detected' : 'not_android'
+      supported: isAndroid && hasSamsungDeviceHint(text),
+      reason: isAndroid && hasSamsungDeviceHint(text) ? 'samsung_android' : isAndroid ? 'manual_choice_required' : 'not_android'
     };
   },
 

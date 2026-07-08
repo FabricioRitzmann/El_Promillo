@@ -155,13 +155,15 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
   'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM',
   'verifyPartnerServerAuthorization',
   'cardDataForInstance',
-  'signAuthorizationToken'
+  'signAuthorizationToken',
+  'hasSamsungDeviceHint'
 ].forEach((needle) => {
   assert(samsungProvider.includes(needle), `Samsung Wallet Provider Vertrag fehlt: ${needle}`);
 });
 
 [
   'walletCardModel',
+  'hasSamsungDeviceHint',
   'business',
   'customer',
   'branding',

@@ -23,6 +23,12 @@ function configuredHttpsUrl(value: unknown) {
   return /^https:\/\//i.test(text) ? text : '';
 }
 
+function hasSamsungDeviceHint(userAgent = '') {
+  const text = stringValue(userAgent).toLowerCase();
+
+  return ['samsung', 'sm-', 'samsungbrowser', 'galaxy'].some((hint) => text.includes(hint));
+}
+
 function providerPrepared(provider: string, action: string, reason: string) {
   return {
     ok: false,
@@ -130,8 +136,8 @@ function supportFromUserAgent(provider: string, userAgent = '') {
   if (provider === 'google') {
     return {
       provider,
-      supported: text.includes('android') && !text.includes('samsung'),
-      reason: text.includes('android') ? 'android_device_detected' : 'manual_choice_required'
+      supported: text.includes('android') && !hasSamsungDeviceHint(text),
+      reason: text.includes('android') && !hasSamsungDeviceHint(text) ? 'android_device_detected' : 'manual_choice_required'
     };
   }
 
