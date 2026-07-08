@@ -79,6 +79,10 @@ Callback-Spur nach Handy-/Test-Tool-Versuch:
 node scripts/samsung-wallet-callback-evidence.js
 ```
 
+Für den Livegang muss dort `Verified Auth Evidence` auf `OK` stehen. Reine
+Sandbox-Fallbacks oder alte Events ohne `auth_status` zählen nicht als
+Produktionsnachweis.
+
 Produktions-Gate:
 
 ```bash

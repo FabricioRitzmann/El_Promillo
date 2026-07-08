@@ -39,6 +39,11 @@ assertIncludesAll('Samsung Callback Evidence Script', script, [
   'get_card_data',
   'send_card_state',
   'authorization_failed',
+  'auth_status',
+  'auth_verified',
+  'auth_warning_code',
+  'Verified Auth Evidence',
+  'unverified',
   'Secrets, Bearer, Zertifikate und vollstaendige Add-to-Wallet-URLs werden nicht ausgegeben.',
   'redact(',
   'safePayload(',
@@ -49,7 +54,9 @@ assertIncludesAll('Samsung Callback Evidence Docs', `${samsungDoc}\n${bearerGuid
   'samsung-wallet-callback-evidence.js',
   'GET Card Data Evidence',
   'POST Card State Evidence',
-  'authorization_failed'
+  'Verified Auth Evidence',
+  'authorization_failed',
+  'auth_status'
 ]);
 
 assertIncludesAll('Package Check', packageJson, [

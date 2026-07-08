@@ -139,6 +139,7 @@ Lokal geprüft:
 - `scripts/verify-samsung-wallet-error-paths.js`
 - `scripts/verify-samsung-wallet-partner-callback-test.js`
 - `scripts/verify-samsung-wallet-callback-evidence.js`
+- `scripts/samsung-wallet-callback-evidence.js`
 - `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
 - `scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict`
 - `scripts/verify-samsung-wallet-goal-audit.js`
@@ -159,7 +160,7 @@ Die Samsung-Erkennung wurde zusätzlich zwischen Browser-Device-Detection und Pr
 
 Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wallet-partner-callback-test.js` vorbereitet. Es ruft `GET /cards/{cardId}/{refId}` und optional `POST /cards/{cardId}/{refId}` gegen `samsung-wallet-server` mit einem frischen Samsung-Test-Tool-Bearer auf und prüft danach `get_card_data`, `send_card_state` und den Kartenstatus, ohne Authorization Header, Secrets oder vollständige Add-to-Wallet-URLs auszugeben.
 
-`scripts/samsung-wallet-callback-evidence.js` zeigt nach einem Handy- oder Test-Tool-Versuch redigiert, ob `add_link_created`, `get_card_data`, `send_card_state` oder `authorization_failed` Events in Supabase angekommen sind. Dadurch kann ein echter Samsung-Rückruf von einem reinen Frontend-/QR-Test unterschieden werden, ohne Bearer oder Secrets zu drucken.
+`scripts/samsung-wallet-callback-evidence.js` zeigt nach einem Handy- oder Test-Tool-Versuch redigiert, ob `add_link_created`, `get_card_data`, `send_card_state` oder `authorization_failed` Events in Supabase angekommen sind. Zusätzlich wertet es `auth_status` aus: `verified` ist produktionsreife Bearer-Evidence, `unverified_missing_authorization` oder fehlender Status bleibt Sandbox-/Alt-Event-Evidence. Dadurch kann ein echter Samsung-Rückruf von einem reinen Frontend-/QR-Test unterschieden werden, ohne Bearer oder Secrets zu drucken. Die aktualisierte `samsung-wallet-server` Function wurde erneut deployed; ein frischer Remote-Smoke-Test schreibt nun `auth_status=unverified_missing_authorization`, `auth_verified=false` und `auth_warning_code=SAMSUNG_AUTHORIZATION_UNVERIFIED_MISSING` in die GET-/POST-Events.
 
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne Bearer meldet der Check bewusst `EXTERNAL_BLOCKED`.
 

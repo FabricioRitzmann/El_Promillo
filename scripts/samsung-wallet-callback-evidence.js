@@ -70,7 +70,7 @@ function safePayload(payload = {}) {
   const source = payload && typeof payload === 'object' ? payload : {};
   const output = {};
 
-  for (const key of ['error_code', 'error_message', 'samsung_event', 'cc2', 'event_source', 'callback_present', 'fields', 'method']) {
+  for (const key of ['error_code', 'error_message', 'samsung_event', 'cc2', 'event_source', 'callback_present', 'fields', 'method', 'auth_status', 'auth_verified', 'auth_warning_code']) {
     if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
       output[key] = source[key];
     }
@@ -81,6 +81,12 @@ function safePayload(payload = {}) {
   }
 
   return output;
+}
+
+function payloadValue(event, key) {
+  const payload = event?.request_payload;
+
+  return payload && typeof payload === 'object' ? payload[key] : undefined;
 }
 
 async function loadInstance(supabase) {
@@ -157,12 +163,32 @@ async function main() {
   const hasGet = eventCounts.get_card_data > 0;
   const hasPost = eventCounts.send_card_state > 0;
   const hasAuthFailed = eventCounts.authorization_failed > 0;
+  const callbackEvents = events.filter((event) => ['get_card_data', 'send_card_state'].includes(event.event_type));
+  const authStatuses = callbackEvents
+    .map((event) => String(payloadValue(event, 'auth_status') || '').trim())
+    .filter(Boolean);
+  const uniqueAuthStatuses = [...new Set(authStatuses)];
+  const hasVerifiedAuth = authStatuses.includes('verified');
+  const hasUnverifiedAuth = authStatuses.some((status) => status.startsWith('unverified') || status.includes('structurally'));
+  const hasMissingAuthStatus = callbackEvents.length > 0 && authStatuses.length === 0;
 
   add(results, 'ok', 'Samsung Instance', `Status ${instance.card_status || 'unknown'}, refId ${redact(instance.ref_id)}, Kundencode ${redact(instance.customer_code)}.`);
   add(results, hasAddLink ? 'ok' : 'warn', 'Add-Link Evidence', hasAddLink ? `add_link_created Events: ${eventCounts.add_link_created}` : 'Kein add_link_created Event im untersuchten Fenster.');
   add(results, hasGet ? 'ok' : 'blocked_external', 'GET Card Data Evidence', hasGet ? `get_card_data Events: ${eventCounts.get_card_data}` : 'Noch kein Samsung GET Card Data Callback sichtbar.');
   add(results, hasPost ? 'ok' : 'warn', 'POST Card State Evidence', hasPost ? `send_card_state Events: ${eventCounts.send_card_state}` : 'Noch kein Samsung POST Card State Callback sichtbar.');
   add(results, hasAuthFailed ? 'warn' : 'ok', 'Authorization Failures', hasAuthFailed ? `authorization_failed Events: ${eventCounts.authorization_failed}` : 'Keine Authorization-Fehler im untersuchten Fenster.');
+  add(
+    results,
+    hasVerifiedAuth ? 'ok' : hasUnverifiedAuth || hasMissingAuthStatus ? 'warn' : 'blocked_external',
+    'Verified Auth Evidence',
+    hasVerifiedAuth
+      ? 'Mindestens ein Callback wurde mit Samsung-Signatur verifiziert.'
+      : hasUnverifiedAuth
+        ? `Nur Sandbox-/unverified Auth sichtbar: ${uniqueAuthStatuses.join(', ')}.`
+        : hasMissingAuthStatus
+          ? 'Callbacks sind vorhanden, aber stammen aus Events vor dem Auth-Status-Logging. Erneut testen.'
+          : 'Noch kein verifizierter Samsung-Bearer-Callback sichtbar.'
+  );
 
   if (instance.last_event) {
     add(results, 'ok', 'Latest Samsung State', `${instance.last_event} / ${instance.card_status || 'unknown'} / ${instance.last_event_at || 'kein Zeitstempel'}`);

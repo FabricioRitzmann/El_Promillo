@@ -224,6 +224,14 @@ async function insertSamsungAuthorizationFailure(supabaseAdmin: any, instance: R
   });
 }
 
+function samsungAuthAudit(auth: Row = {}) {
+  return {
+    auth_status: stringValue(auth.status || 'verified'),
+    auth_verified: auth.status === 'verified',
+    ...(auth.warning_code ? { auth_warning_code: stringValue(auth.warning_code) } : {})
+  };
+}
+
 async function loadSamsungInstance(supabaseAdmin: any, cardId: string, refId: string) {
   const { data, error } = await supabaseAdmin
     .from('samsung_wallet_instances')
@@ -320,7 +328,8 @@ async function handleGetCardData(request: Request, supabaseAdmin: any, cardId: s
 
   await insertSamsungEvent(supabaseAdmin, instance, 'get_card_data', {
     samsung_request_id: stringValue(request.headers.get('x-request-id')),
-    fields: new URL(request.url).searchParams.get('fields') || null
+    fields: new URL(request.url).searchParams.get('fields') || null,
+    ...samsungAuthAudit(auth)
   });
 
   return json({
@@ -411,7 +420,8 @@ async function handleSendCardState(request: Request, supabaseAdmin: any, cardId:
     samsung_event: samsungEvent || null,
     cc2: cc2 || null,
     callback_present: Boolean(callbackUrl),
-    event_source: url.searchParams.get('event') || url.searchParams.get('state') ? 'query' : 'body'
+    event_source: url.searchParams.get('event') || url.searchParams.get('state') ? 'query' : 'body',
+    ...samsungAuthAudit(auth)
   });
 
   return json({ ok: true });

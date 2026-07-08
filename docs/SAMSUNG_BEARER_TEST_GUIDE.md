@@ -111,11 +111,14 @@ Wichtig sind:
 ```text
 OK               GET Card Data Evidence
 OK               POST Card State Evidence
+OK               Verified Auth Evidence
 OK               Authorization Failures - Keine Authorization-Fehler ...
 ```
 
 Falls `authorization_failed` erscheint, kam Samsung zwar bis zur Edge Function,
 aber der Bearer fehlte, war abgelaufen oder passte nicht zur Route.
+Falls `Verified Auth Evidence` nur `WARN` meldet, wurden zwar Callbacks
+gespeichert, aber noch kein produktionsreif signierter Samsung-Bearer bewiesen.
 
 Wenn der Header in `tmp/samsung-bearer.txt` liegt:
 
