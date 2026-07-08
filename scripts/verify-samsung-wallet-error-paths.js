@@ -62,6 +62,8 @@ assertIncludesAll('Samsung Partner Server Error Paths', server, [
   'insertSamsungAuthorizationFailure',
   'authorization_failed',
   'SAMSUNG_CARD_DATA_FAILED',
+  'samsungStateBody',
+  'event_source',
   'get_card_data',
   'send_card_state',
   'noContent(204)'

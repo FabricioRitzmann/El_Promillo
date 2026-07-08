@@ -158,7 +158,7 @@ Der Hauptbutton `Zu Wallet hinzufügen` muss Samsung Wallet öffnen. Apple, Goog
    - `samsung_wallet_instances.ref_id` ist gesetzt und maximal 32 Zeichen lang.
    - `samsung_wallet_events` enthält `add_link_created`.
 8. Samsung Test Tool oder Samsung-Gerät öffnen und den Data-Fetch-Link installieren.
-9. Für eine reproduzierbare Partner-Callback-Abnahme den frischen Samsung `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool in eine lokale Datei legen, z. B. `tmp/samsung-bearer.txt`. Falls das Test Tool getrennte Header für GET und POST ausgibt, zwei Dateien nutzen:
+9. Für eine reproduzierbare Partner-Callback-Abnahme den frischen Samsung `Authorization: Bearer <JWS>` Header aus dem Samsung Test Tool in eine lokale Datei legen, z. B. `tmp/samsung-bearer.txt`. Falls das Test Tool getrennte Header für GET und POST ausgibt, zwei Dateien nutzen. Der Partner-Server akzeptiert `event`/`cc2` beim POST als Query-Parameter, JSON-Body oder Form-Body; Produktion muss trotzdem mit gültigem Bearer laufen.
 
 ```bash
 node scripts/samsung-wallet-partner-callback-test.js \
@@ -183,6 +183,7 @@ Das Script druckt Authorization Header, Secrets und vollständige Add-to-Wallet-
    - `samsung_wallet_events` enthält `get_card_data`.
    - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
    - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.
+   - Falls `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` für Sandbox aktiv ist, ist ein fehlender Bearer als Testzustand erlaubt; für Produktion muss der Wert wieder `false` sein.
 11. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
 
 ## 5. Scheduled, Location und Queue

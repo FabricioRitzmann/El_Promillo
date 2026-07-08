@@ -25,8 +25,9 @@ Options:
   --json                Print machine-readable JSON.
 
 This smoke test creates one Samsung Wallet instance and one add_link_created
-event. It never prints Supabase keys, private keys, certificates or full Samsung
-Add-to-Wallet URLs.
+event. If sandbox unverified auth is enabled remotely, it also exercises one
+POST Card State callback. It never prints Supabase keys, private keys,
+certificates or full Samsung Add-to-Wallet URLs.
 `);
   process.exit(0);
 }
@@ -66,6 +67,34 @@ async function newestActiveTemplate(supabase) {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function countEvents(supabase, instanceId, eventType) {
+  const { count, error } = await supabase
+    .from('samsung_wallet_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('samsung_wallet_instance_id', instanceId)
+    .eq('event_type', eventType);
+
+  if (error) {
+    throw error;
+  }
+
+  return Number(count || 0);
+}
+
+async function reloadSamsungInstance(supabase, instanceId) {
+  const { data, error } = await supabase
+    .from('samsung_wallet_instances')
+    .select('card_status, last_event')
+    .eq('id', instanceId)
     .maybeSingle();
 
   if (error) {
@@ -156,7 +185,8 @@ async function main() {
     add(results, Array.isArray(events) && events.length > 0 ? 'ok' : 'fail', 'Samsung Event Persisted', 'add_link_created');
   }
 
-  const unauthorizedResponse = await fetch(`${baseUrl}/samsung-wallet-server/cards/${encodeURIComponent(instance.card_id)}/${encodeURIComponent(refId)}`, {
+  const samsungServerRoute = `${baseUrl}/samsung-wallet-server/cards/${encodeURIComponent(instance.card_id)}/${encodeURIComponent(refId)}`;
+  const unauthorizedResponse = await fetch(samsungServerRoute, {
     method: 'GET'
   });
   const unauthorizedBody = await unauthorizedResponse.json().catch(() => ({}));
@@ -165,6 +195,32 @@ async function main() {
     add(results, 'ok', 'Samsung Unauthorized Gate', `${unauthorizedResponse.status} ${unauthorizedBody.error_code}`);
   } else if (unauthorizedResponse.ok && unauthorizedBody?.card) {
     add(results, 'warn', 'Samsung Sandbox Unverified Auth', 'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH akzeptiert fehlenden Bearer. Nur Sandbox.');
+
+    const postResponse = await fetch(samsungServerRoute, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        event: 'ADDED',
+        cc2: 'CH'
+      })
+    });
+    const postBody = await postResponse.json().catch(() => ({}));
+
+    add(
+      results,
+      postResponse.ok && postBody?.ok ? 'ok' : 'fail',
+      'Samsung Sandbox POST Card State',
+      postResponse.ok ? 'POST Event ADDED wurde ohne Bearer im Sandbox-Fallback verarbeitet.' : `${postResponse.status} ${postBody.error_code || 'UNKNOWN'}`
+    );
+
+    const sendCardStateEvents = await countEvents(supabase, instance.id, 'send_card_state');
+    const updatedInstance = await reloadSamsungInstance(supabase, instance.id);
+
+    add(results, sendCardStateEvents > 0 ? 'ok' : 'fail', 'Samsung POST Event Persisted', `send_card_state Events: ${sendCardStateEvents}`);
+    add(results, updatedInstance?.last_event === 'ADDED' ? 'ok' : 'fail', 'Samsung Last Event', updatedInstance?.last_event || 'leer');
+    add(results, updatedInstance?.card_status === 'active' ? 'ok' : 'fail', 'Samsung Card Status', updatedInstance?.card_status || 'leer');
   } else {
     add(results, 'fail', 'Samsung Unauthorized Gate', `${unauthorizedResponse.status} ${unauthorizedBody.error_code || 'UNKNOWN'}`);
   }

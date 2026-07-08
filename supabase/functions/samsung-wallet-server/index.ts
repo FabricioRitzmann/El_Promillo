@@ -89,6 +89,50 @@ function stringValue(value: unknown) {
   return String(value || '').trim();
 }
 
+async function samsungStateBody(request: Request) {
+  const contentType = stringValue(request.headers.get('content-type')).toLowerCase();
+
+  if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+    const form = await request.formData().catch(() => null);
+    const body: Row = {};
+
+    if (!form) {
+      return body;
+    }
+
+    for (const [key, value] of form.entries()) {
+      if (typeof value === 'string') {
+        body[key] = value;
+      }
+    }
+
+    return body;
+  }
+
+  const rawBody = await request.text().catch(() => '');
+
+  if (!rawBody) {
+    return {};
+  }
+
+  if (contentType.includes('application/json') || rawBody.trim().startsWith('{')) {
+    try {
+      return JSON.parse(rawBody || '{}');
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  const params = new URLSearchParams(rawBody);
+  const body: Row = {};
+
+  for (const [key, value] of params.entries()) {
+    body[key] = value;
+  }
+
+  return body;
+}
+
 function createStructuredError(statusCode: number, errorCode: string, message: string, reason: string) {
   return {
     statusCode,
@@ -307,10 +351,32 @@ async function handleSendCardState(request: Request, supabaseAdmin: any, cardId:
   }
 
   const url = new URL(request.url);
-  const body = await request.json().catch(() => ({})) as Row;
-  const samsungEvent = stringValue(url.searchParams.get('event')).toUpperCase();
-  const cc2 = stringValue(url.searchParams.get('cc2')).toUpperCase();
-  const callbackUrl = stringValue(body.callback);
+  const body = await samsungStateBody(request);
+  const samsungEvent = stringValue(
+    url.searchParams.get('event')
+    || url.searchParams.get('state')
+    || body.event
+    || body.samsung_event
+    || body.state
+    || body.status
+    || body.cardState
+    || body.card_status
+    || body.card?.state
+  ).toUpperCase();
+  const cc2 = stringValue(
+    url.searchParams.get('cc2')
+    || url.searchParams.get('country')
+    || body.cc2
+    || body.country
+    || body.countryCode
+    || body.country_code
+  ).toUpperCase();
+  const callbackUrl = stringValue(
+    body.callback
+    || body.callbackUrl
+    || body.callback_url
+    || body.cardCallbackUrl
+  );
   const cardStatus = eventStatus(samsungEvent);
   const nowIso = new Date().toISOString();
   const updatePayload: Row = {
@@ -344,7 +410,8 @@ async function handleSendCardState(request: Request, supabaseAdmin: any, cardId:
     samsung_request_id: stringValue(request.headers.get('x-request-id')),
     samsung_event: samsungEvent || null,
     cc2: cc2 || null,
-    callback_present: Boolean(callbackUrl)
+    callback_present: Boolean(callbackUrl),
+    event_source: url.searchParams.get('event') || url.searchParams.get('state') ? 'query' : 'body'
   });
 
   return json({ ok: true });

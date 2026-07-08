@@ -11,7 +11,7 @@ Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
 5. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
 6. Samsung ruft danach `samsung-wallet-server` auf:
    - `GET /cards/{cardId}/{refId}` für aktuelle Kartendaten
-   - `POST /cards/{cardId}/{refId}?cc2=CH&event=ADDED` für Status-Callbacks
+   - `POST /cards/{cardId}/{refId}` für Status-Callbacks. `event`/`cc2` werden als Query-Parameter, JSON-Body oder Form-Body akzeptiert.
 
 ## Supabase Secrets
 
@@ -118,3 +118,5 @@ Das Script nutzt die neueste `samsung_wallet_instances`-Zeile, falls `--card-id`
 ## Aktueller Stand
 
 Serverseitige Samsung-Vorbereitung ist implementiert und die öffentliche Claim-Seite ist angebunden. iPhone/iPad öffnet über den Hauptbutton Apple Wallet, Samsung Android Samsung Wallet, andere Android-Geräte Google Wallet. Desktop oder unbekannte Geräte zeigen die Wallet-Buttons als manuelle Auswahl.
+
+Stand 8. Juli 2026: Ein echter Samsung-Handy-Test hat `get_card_data` gegen die Supabase Edge Function ausgelöst. Weil Samsung im Sandbox-Test keinen Bearer mitsendete, ist remote temporär `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` aktiv. Der Remote-Smoke-Test prüft in diesem Modus zusätzlich `POST Card State`; `send_card_state`, `last_event=ADDED` und `card_status=active` werden korrekt gespeichert. Für Produktion muss der Fallback deaktiviert werden und Samsung muss den signierten Bearer mitsenden.

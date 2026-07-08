@@ -108,6 +108,7 @@ Additiv in `supabase/schema.sql`:
 - Private Keys und Partner Secrets bleiben serverseitig in Supabase Secrets.
 - `samsung-wallet-add-link` nutzt das bestehende Public-Rate-Limit.
 - `samsung-wallet-server` prüft Samsung Bearer-JWS gegen `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM`.
+- `samsung-wallet-server` akzeptiert Status-Callbacks robust als Query, JSON-Body oder Form-Body und schreibt nur redigierte Auditfelder.
 - `update-samsung-wallet-pass` ist betreiber-geschützt, verlangt Login plus `unlock=true` und schreibt redigierte Audit-Events.
 - `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur Sandbox-Debug und darf nicht produktiv aktiv sein.
 
@@ -142,7 +143,7 @@ Lokal geprüft:
 
 Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Samsung-Werte mehr.
 
-Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigte, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert.
+Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigt je nach Remote-Modus entweder, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert, oder dass der bewusst aktivierte Sandbox-Fallback greift.
 
 Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar. Neue QR-Codes und QR-PDFs öffnen `/claim.html?token=<public_claim_token>`; alte `/claim.html?template=<template_id>` Links bleiben weiterhin gültig.
 
@@ -154,7 +155,7 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 
 `samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
 
-Der Samsung-Handy-Test vom 8. Juli 2026 zeigte erstmals einen echten Rückruf bis zur Edge Function, aber ohne `Authorization: Bearer <JWS>` Header. Für genau diesen Samsung-Sandbox-Fall akzeptiert `samsung-wallet-server` fehlende Authorization nur, wenn `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` gesetzt ist. Produktiv muss dieser Wert wieder `false` sein oder Samsung muss den signierten Bearer wie erwartet senden.
+Der Samsung-Handy-Test vom 8. Juli 2026 zeigte erstmals einen echten Rückruf bis zur Edge Function, aber ohne `Authorization: Bearer <JWS>` Header. Für genau diesen Samsung-Sandbox-Fall akzeptiert `samsung-wallet-server` fehlende Authorization nur, wenn `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` gesetzt ist. Danach wurden remote `get_card_data` Events durch echte Handy-Tests bestätigt. Der Remote-Smoke-Test prüft zusätzlich einen `POST Card State` im Sandbox-Fallback und bestätigt `send_card_state`, `last_event=ADDED` und `card_status=active`. Produktiv muss dieser Wert wieder `false` sein oder Samsung muss den signierten Bearer wie erwartet senden.
 
 Der Bearer-Test wurde zusätzlich gegen einen bewusst ungültigen Header ausgeführt. Ergebnis: Das Script läuft sauber bis zur Remote-Samsung-Auth-Prüfung und erhält erwartungsgemäss `401 SAMSUNG_AUTHORIZATION_REQUIRED`; es scheitert nicht mehr lokal am Testscript. `docs/SAMSUNG_BEARER_TEST_GUIDE.md` dokumentiert den späteren Ablauf, sobald der echte Samsung-Bearer vorhanden ist. `.gitignore` schützt lokale `*bearer*.txt*` Dateien vor versehentlichem Commit.
 
