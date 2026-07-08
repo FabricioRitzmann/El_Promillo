@@ -237,6 +237,10 @@ function samsungCardSubType(value: unknown) {
   return text || 'others';
 }
 
+function isProductionSamsungEnv(value: unknown) {
+  return ['production', 'prod', 'live'].includes(stringValue(value).toLowerCase());
+}
+
 function providerStructuredError(statusCode: number, errorCode: string, message: string, reason: string) {
   return {
     ok: false,
@@ -265,11 +269,14 @@ function samsungConfig() {
   const certificateId = stringValue(Deno.env.get('SAMSUNG_WALLET_CERTIFICATE_ID'));
   const rawCardType = stringValue(Deno.env.get('SAMSUNG_WALLET_CARD_TYPE') || 'loyalty');
   const rawCardSubType = stringValue(Deno.env.get('SAMSUNG_WALLET_CARD_SUB_TYPE') || 'others');
+  const walletEnv = stringValue(Deno.env.get('SAMSUNG_WALLET_ENV') || 'sandbox').toLowerCase();
   const countryCode = stringValue(Deno.env.get('SAMSUNG_WALLET_COUNTRY_CODE') || 'CH').toUpperCase();
   const addFlow = stringValue(Deno.env.get('SAMSUNG_WALLET_ADD_FLOW') || 'data_fetch').toLowerCase();
   const privateKeyPem = stringValue(Deno.env.get('SAMSUNG_WALLET_PRIVATE_KEY_PEM') || Deno.env.get('SAMSUNG_WALLET_PRIVATE_KEY'));
   const samsungPublicKeyPem = stringValue(Deno.env.get('SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM') || Deno.env.get('SAMSUNG_WALLET_SAMSUNG_CERT_PEM'));
-  const allowUnverifiedAuth = stringValue(Deno.env.get('SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH')).toLowerCase() === 'true';
+  const allowUnverifiedAuthRequested = stringValue(Deno.env.get('SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH')).toLowerCase() === 'true';
+  const productionEnv = isProductionSamsungEnv(walletEnv);
+  const allowUnverifiedAuth = allowUnverifiedAuthRequested && !productionEnv;
   const partnerServerUrl = safeHttpsUrl(Deno.env.get('SAMSUNG_WALLET_PARTNER_SERVER_URL'));
   const rdClickUrl = safeHttpsUrl(Deno.env.get('SAMSUNG_WALLET_RD_CLICK_URL'));
   const rdImpressionUrl = safeHttpsUrl(Deno.env.get('SAMSUNG_WALLET_RD_IMPRESSION_URL'));
@@ -295,10 +302,13 @@ function samsungConfig() {
     certificateId,
     cardType: samsungCardType(rawCardType),
     cardSubType: samsungCardSubType(rawCardSubType),
+    walletEnv,
+    productionEnv,
     countryCode,
     addFlow,
     privateKeyPem,
     samsungPublicKeyPem,
+    allowUnverifiedAuthRequested,
     allowUnverifiedAuth,
     partnerServerUrl,
     rdClickUrl,
@@ -521,6 +531,15 @@ function verifyPartnerServerAuthorization(request: Request, expected: Row) {
   const decoded = decodeAuthorizationHeader(request);
 
   if (!decoded.ok) {
+    if (config.productionEnv && config.allowUnverifiedAuthRequested && decoded.error_code === 'SAMSUNG_AUTHORIZATION_REQUIRED') {
+      return providerStructuredError(
+        403,
+        'SAMSUNG_AUTHORIZATION_UNVERIFIED_PRODUCTION_DISABLED',
+        'Samsung Sandbox-Auth ist in Produktion deaktiviert.',
+        'Setze SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false oder SAMSUNG_WALLET_ENV=sandbox. Produktion muss Authorization: Bearer <JWS> senden.'
+      );
+    }
+
     if (config.allowUnverifiedAuth && decoded.error_code === 'SAMSUNG_AUTHORIZATION_REQUIRED') {
       return {
         ok: true,
@@ -566,6 +585,15 @@ function verifyPartnerServerAuthorization(request: Request, expected: Row) {
   }
 
   if (!configured(config.samsungPublicKeyPem)) {
+    if (config.productionEnv && config.allowUnverifiedAuthRequested) {
+      return providerStructuredError(
+        503,
+        'SAMSUNG_AUTHORIZATION_PUBLIC_KEY_REQUIRED_IN_PRODUCTION',
+        'Samsung Public Key ist in Produktion erforderlich.',
+        'Setze SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM. Unverifizierte Samsung Authorization ist in Produktion deaktiviert.'
+      );
+    }
+
     if (config.allowUnverifiedAuth) {
       return {
         ok: true,

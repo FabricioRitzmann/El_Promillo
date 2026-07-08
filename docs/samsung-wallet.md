@@ -114,9 +114,10 @@ Das Script nutzt die neueste `samsung_wallet_instances`-Zeile, falls `--card-id`
 - Der öffentliche Samsung-Link enthält nur `refId`.
 - `samsung-wallet-server` prüft standardmässig die Samsung Bearer-JWS-Signatur.
 - `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur für Sandbox-Debugging und darf produktiv nicht gesetzt werden. Wenn das Samsung Test Tool bzw. Samsung Wallet im Sandbox-Test den Partner-Server ohne `Authorization: Bearer <JWS>` aufruft, akzeptiert die Function diesen fehlenden Header nur mit diesem Flag und protokolliert den Vorgang über `get_card_data` bzw. `send_card_state`.
+- Der Sandbox-Fallback ist hart deaktiviert, sobald `SAMSUNG_WALLET_ENV=production`, `prod` oder `live` gesetzt ist. In diesem Fall gibt der Server bei fehlendem Bearer `SAMSUNG_AUTHORIZATION_UNVERIFIED_PRODUCTION_DISABLED` zurück.
 
 ## Aktueller Stand
 
 Serverseitige Samsung-Vorbereitung ist implementiert und die öffentliche Claim-Seite ist angebunden. iPhone/iPad öffnet über den Hauptbutton Apple Wallet, Samsung Android Samsung Wallet, andere Android-Geräte Google Wallet. Desktop oder unbekannte Geräte zeigen die Wallet-Buttons als manuelle Auswahl.
 
-Stand 8. Juli 2026: Ein echter Samsung-Handy-Test hat `get_card_data` gegen die Supabase Edge Function ausgelöst. Weil Samsung im Sandbox-Test keinen Bearer mitsendete, ist remote temporär `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` aktiv. Der Remote-Smoke-Test prüft in diesem Modus zusätzlich `POST Card State`; `send_card_state`, `last_event=ADDED` und `card_status=active` werden korrekt gespeichert. Für Produktion muss der Fallback deaktiviert werden und Samsung muss den signierten Bearer mitsenden.
+Stand 8. Juli 2026: Ein echter Samsung-Handy-Test hat `get_card_data` gegen die Supabase Edge Function ausgelöst. Weil Samsung im Sandbox-Test keinen Bearer mitsendete, ist remote temporär `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` aktiv. Der Remote-Smoke-Test prüft in diesem Modus zusätzlich `POST Card State`; `send_card_state`, `last_event=ADDED` und `card_status=active` werden korrekt gespeichert. Für Produktion muss `SAMSUNG_WALLET_ENV=production` und `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false` gesetzt sein; Samsung muss dann den signierten Bearer mitsenden.

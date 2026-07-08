@@ -111,6 +111,7 @@ Additiv in `supabase/schema.sql`:
 - `samsung-wallet-server` akzeptiert Status-Callbacks robust als Query, JSON-Body oder Form-Body und schreibt nur redigierte Auditfelder.
 - `update-samsung-wallet-pass` ist betreiber-geschützt, verlangt Login plus `unlock=true` und schreibt redigierte Audit-Events.
 - `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` ist nur Sandbox-Debug und darf nicht produktiv aktiv sein.
+- Der Unverified-Fallback ist im Code deaktiviert, sobald `SAMSUNG_WALLET_ENV=production`, `prod` oder `live` ist.
 
 ## 7. Mögliche Risiken
 
@@ -155,7 +156,7 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 
 `samsung-wallet-server` schreibt zusätzlich ein redigiertes `authorization_failed` Event, falls Samsung eine bekannte `refId` aufruft, der Bearer aber nicht validiert werden kann. Dadurch bleiben echte Samsung-Callback-Versuche sichtbar, ohne Authorization Header oder sensible Daten zu speichern.
 
-Der Samsung-Handy-Test vom 8. Juli 2026 zeigte erstmals einen echten Rückruf bis zur Edge Function, aber ohne `Authorization: Bearer <JWS>` Header. Für genau diesen Samsung-Sandbox-Fall akzeptiert `samsung-wallet-server` fehlende Authorization nur, wenn `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` gesetzt ist. Danach wurden remote `get_card_data` Events durch echte Handy-Tests bestätigt. Der Remote-Smoke-Test prüft zusätzlich einen `POST Card State` im Sandbox-Fallback und bestätigt `send_card_state`, `last_event=ADDED` und `card_status=active`. Produktiv muss dieser Wert wieder `false` sein oder Samsung muss den signierten Bearer wie erwartet senden.
+Der Samsung-Handy-Test vom 8. Juli 2026 zeigte erstmals einen echten Rückruf bis zur Edge Function, aber ohne `Authorization: Bearer <JWS>` Header. Für genau diesen Samsung-Sandbox-Fall akzeptiert `samsung-wallet-server` fehlende Authorization nur, wenn `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` gesetzt ist und `SAMSUNG_WALLET_ENV` nicht `production`, `prod` oder `live` ist. Danach wurden remote `get_card_data` Events durch echte Handy-Tests bestätigt. Der Remote-Smoke-Test prüft zusätzlich einen `POST Card State` im Sandbox-Fallback und bestätigt `send_card_state`, `last_event=ADDED` und `card_status=active`. Produktiv muss dieser Wert wieder `false` sein oder Samsung muss den signierten Bearer wie erwartet senden.
 
 Der Bearer-Test wurde zusätzlich gegen einen bewusst ungültigen Header ausgeführt. Ergebnis: Das Script läuft sauber bis zur Remote-Samsung-Auth-Prüfung und erhält erwartungsgemäss `401 SAMSUNG_AUTHORIZATION_REQUIRED`; es scheitert nicht mehr lokal am Testscript. `docs/SAMSUNG_BEARER_TEST_GUIDE.md` dokumentiert den späteren Ablauf, sobald der echte Samsung-Bearer vorhanden ist. `.gitignore` schützt lokale `*bearer*.txt*` Dateien vor versehentlichem Commit.
 

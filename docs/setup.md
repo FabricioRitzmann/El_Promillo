@@ -78,7 +78,7 @@ Samsung benötigt zusätzlich:
 - `SAMSUNG_WALLET_RD_CLICK_URL`
 - `SAMSUNG_WALLET_RD_IMPRESSION_URL`
 
-Produktionswichtig: `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`.
+Produktionswichtig: `SAMSUNG_WALLET_ENV=production` und `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`. Der Code deaktiviert den unverified Samsung-Fallback zusätzlich automatisch, wenn `SAMSUNG_WALLET_ENV=production`, `prod` oder `live` gesetzt ist.
 
 Die Partner Server URL in Samsung muss auf die deployte Function zeigen:
 

@@ -139,7 +139,7 @@ Limits:
 
 1. Samsung Wallet Card in der Partner-Konsole auf Data Fetch Link konfigurieren.
 2. `SAMSUNG_WALLET_PARTNER_SERVER_URL` exakt auf `https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server` setzen.
-3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen und sicherstellen, dass `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passt. `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH` muss produktiv `false` bleiben.
+3. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` aus dem Samsung-Zertifikat/Public-Key setzen und sicherstellen, dass `SAMSUNG_WALLET_PRIVATE_KEY_PEM` zum Samsung-Partner-Zertifikat passt. `SAMSUNG_WALLET_ENV=production` und `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false` sind für Produktion Pflicht; der Code deaktiviert den unverified Fallback zusätzlich bei `production`, `prod` oder `live`.
 4. Edge Functions deployen: `bash scripts/deploy-wallet-functions.sh --only samsung-wallet-add-link,samsung-wallet-server,update-samsung-wallet-pass`.
 5. Per HTTPS einen Samsung Add-Link über `samsung-wallet-add-link` erzeugen oder automatisiert prüfen:
 
@@ -183,7 +183,7 @@ Das Script druckt Authorization Header, Secrets und vollständige Add-to-Wallet-
    - `samsung_wallet_events` enthält `get_card_data`.
    - Nach erfolgreichem Speichern enthält `samsung_wallet_events` `send_card_state`.
    - `samsung_wallet_instances.card_status` wechselt von `pending` auf `active`.
-   - Falls `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` für Sandbox aktiv ist, ist ein fehlender Bearer als Testzustand erlaubt; für Produktion muss der Wert wieder `false` sein.
+   - Falls `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=true` für Sandbox aktiv ist, ist ein fehlender Bearer als Testzustand erlaubt; für Produktion muss der Wert wieder `false` sein und `SAMSUNG_WALLET_ENV=production` gesetzt werden.
 11. Optional als eingeloggter Betreiber `update-samsung-wallet-pass` mit `action=update` gegen eine eigene `refId` testen. Das Ergebnis muss in `samsung_wallet_events` als `manual_update_requested` erscheinen. `action=revoke` testet die Samsung Cancel Notification und setzt die Instanz auf `cancelled`.
 
 ## 5. Scheduled, Location und Queue
