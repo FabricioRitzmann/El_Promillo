@@ -72,6 +72,22 @@ Danach `supabase/schema.sql` vollständig ausführen, falls die Tabellen `samsun
 
 Die Function nutzt `walletNotificationService.context(request)`, dadurch sind Login, `unlock=true` und Business-Zugehörigkeit Pflicht. Provider-Antworten werden redigiert zurückgegeben und in `samsung_wallet_events` auditiert.
 
+Für lokale Debugging-Fälle kann ein Partner-to-Samsung Authorization Header mit
+dem exakt gleichen Samsung-JWS-Format erzeugt werden:
+
+```bash
+node scripts/samsung-wallet-sign-partner-authorization.js \
+  --action update \
+  --ref-id <REF_ID> \
+  --output tmp/samsung-partner-update-authorization.txt
+```
+
+Dieser Helper nutzt `SAMSUNG_WALLET_PRIVATE_KEY_PEM` aus
+`supabase/secrets.local.env` und ist nur für ausgehende Partner-to-Samsung
+Requests gedacht. Er ist kein Ersatz für den echten
+Samsung-to-El-Promillo Callback-Bearer, den Samsung beim Partner-Server-Callback
+mitsenden muss.
+
 ## Partner Callback Test
 
 Eine knappe Schritt-für-Schritt-Anleitung liegt zusätzlich in `docs/SAMSUNG_BEARER_TEST_GUIDE.md`.

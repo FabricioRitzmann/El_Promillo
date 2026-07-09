@@ -33,6 +33,32 @@ JWS Payload: API.method, API.path, optional refId
 
 Ein generischer JWT mit `iss`, `sub`, `iat`, `exp` und `jti` ist daher nicht passend für diesen Samsung Partner-Server-Callback. Er würde bei uns spätestens mit `SAMSUNG_AUTHORIZATION_HEADER_INVALID` oder `SAMSUNG_AUTHORIZATION_API_MISMATCH` scheitern.
 
+## Partner-to-Samsung Token Lokal Erzeugen
+
+Falls du einen Authorization Header für ausgehende El-Promillo-Requests an
+Samsung brauchst, etwa für Update oder Cancel Notification, nutze diesen Helper:
+
+```bash
+node scripts/samsung-wallet-sign-partner-authorization.js \
+  --action update \
+  --ref-id <REF_ID> \
+  --output tmp/samsung-partner-update-authorization.txt
+```
+
+Der Helper erzeugt Samsungs `cty=AUTH` / `API.method` / `API.path` Format mit
+`SAMSUNG_WALLET_PRIVATE_KEY_PEM` aus `supabase/secrets.local.env`. Das ist
+**Partner-to-Samsung** und kein Ersatz für den echten Samsung Callback-Bearer
+von **Samsung-to-El-Promillo**.
+
+Für Cancel/Revoke:
+
+```bash
+node scripts/samsung-wallet-sign-partner-authorization.js \
+  --action revoke \
+  --ref-id <REF_ID> \
+  --output tmp/samsung-partner-revoke-authorization.txt
+```
+
 ## Variante A: Mit Samsung Handy
 
 1. Samsung Wallet Partner Portal öffnen.

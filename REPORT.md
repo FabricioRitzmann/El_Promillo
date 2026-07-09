@@ -57,6 +57,8 @@ Status: Samsung Backend ist live vorbereitet, die Claim-Seite ist angebunden und
 - `scripts/verify-samsung-wallet-callback-evidence.js`
 - `scripts/samsung-wallet-final-readiness.js`
 - `scripts/verify-samsung-wallet-final-readiness.js`
+- `scripts/samsung-wallet-sign-partner-authorization.js`
+- `scripts/verify-samsung-wallet-partner-authorization-helper.js`
 - `scripts/verify-samsung-wallet-goal-audit.js`
 - `scripts/verify-claim-token-links.js`
 - `docs/SAMSUNG_BEARER_TEST_GUIDE.md`
@@ -142,6 +144,7 @@ Lokal geprüft:
 - `scripts/samsung-wallet-callback-evidence.js`
 - `scripts/samsung-wallet-final-readiness.js --functions-base-url https://mfyltmjzofahbavrwpac.supabase.co/functions/v1`
 - `scripts/samsung-wallet-production-gate.js --env-file supabase/secrets.local.env --authorization-file tmp/samsung-bearer.txt --strict`
+- `scripts/verify-samsung-wallet-partner-authorization-helper.js`
 - `scripts/verify-samsung-wallet-goal-audit.js`
 - Edge TypeScript-Syntax
 - Edge Function Imports
@@ -165,6 +168,8 @@ Für die letzte externe Samsung-Partner-Callback-Abnahme ist `scripts/samsung-wa
 `scripts/samsung-wallet-final-readiness.js` fasst die lokale und remote Samsung-Abnahme zusammen: statische Provider-/Device-/Token-Checks, Remote-Schema, Edge-Function-Preflight, Samsung-Smoke-Test, `Samsung Verified Callback Evidence` und optional den echten Partner-Callback, sobald `tmp/samsung-bearer.txt` oder getrennte GET/POST-Bearer-Dateien vorhanden sind. Ohne verifizierte Bearer-Evidence meldet der Check bewusst `EXTERNAL_BLOCKED`.
 
 `scripts/samsung-wallet-production-gate.js` ist der zusätzliche Go-Live-Blocker: Er prüft lokale Samsung-Produktions-Secrets, verlangt `SAMSUNG_WALLET_ENV=production`, `SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false`, HTTPS-URLs, einen echten Samsung Callback-Bearer und `Samsung Verified Callback Evidence: OK` aus Supabase Events. Ein lokaler Bearer-Dateiname ohne verifiziertes Callback-Event reicht nicht. Das Gate redigiert Secrets, Zertifikate, Bearer und vollständige URLs.
+
+`scripts/samsung-wallet-sign-partner-authorization.js` erzeugt bei Bedarf einen lokalen Partner-to-Samsung Authorization Header im Samsung-Format `cty=AUTH` plus `API.method` und `API.path`, zum Beispiel für Update- oder Cancel-Notification-Debugging. Dieser Header nutzt den lokalen Partner Private Key und ist ausdrücklich kein Ersatz für den echten Samsung-to-El-Promillo Callback-Bearer.
 
 `docs/SAMSUNG_WALLET_GOAL_AUDIT.md` dokumentiert den Samsung-Zielprompt requirementweise gegen den aktuellen Repo-Stand. `scripts/verify-samsung-wallet-goal-audit.js` prüft, dass dieser Audit, Provider-Architektur, Device Routing, Samsung SQL, Report und Production-Blocker weiter zusammenpassen.
 
