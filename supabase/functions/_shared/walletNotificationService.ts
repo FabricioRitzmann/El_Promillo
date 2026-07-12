@@ -3,6 +3,10 @@ import { featureEnabled, normalizeTemplateType } from './templateFeatures.ts';
 import { appleWalletProvider } from './appleWalletProvider.ts';
 import { googleWalletProvider } from './googleWalletProvider.ts';
 import { publicApplePushResult, publicWalletProviderResult } from './publicResponses.ts';
+import { editorCardDesignFromTemplate } from './walletDesign.ts';
+import { walletAssetBucket, walletAssetStoragePath, walletAssetTypesForFallbacks } from './walletAssets.ts';
+import type { WalletAssetType, WalletAssetUrls, WalletPlatform } from './walletAssets.ts';
+import { encodeWalletAssetPng, MAX_WALLET_ASSET_BYTES, renderWalletAsset } from './walletAssetRenderer.ts';
 
 type Row = Record<string, any>;
 const MANUAL_WALLET_LOG_SELECT = 'id,owner_id,business_id,card_instance_id,wallet_platform,status,action,request_payload,response_payload,error_message,created_at';
@@ -1903,12 +1907,125 @@ function publicQueueProviderResult(platform: string, result: Row = {}) {
   return {
     ...summary,
     pass_version_id: result.pass_version_id || null,
-    generated_pass_version: Boolean(result.generated_pass_version)
+    generated_pass_version: Boolean(result.generated_pass_version),
+    generated_wallet_assets: Array.isArray(result.generated_wallet_assets)
+      ? result.generated_wallet_assets.map((asset: Row) => ({
+        asset_type: asset.asset_type,
+        asset_path: asset.asset_path,
+        width: asset.width,
+        height: asset.height
+      }))
+      : []
   };
 }
 
 function queueDueFilter(nowIso: string) {
   return `next_attempt_at.lte.${nowIso},next_attempt_at.is.null`;
+}
+
+function queueWalletPlatform(value: unknown): WalletPlatform | '' {
+  const platform = stringValue(value);
+
+  return ['apple', 'google', 'samsung'].includes(platform)
+    ? platform as WalletPlatform
+    : '';
+}
+
+function templateForCardInstance(cardInstance: Row = {}) {
+  return Array.isArray(cardInstance.card_templates)
+    ? cardInstance.card_templates[0]
+    : cardInstance.card_templates;
+}
+
+async function ensureQueueWalletAssets(context: Row, job: Row, cardInstance: Row) {
+  const walletPlatform = queueWalletPlatform(job.wallet_platform);
+  const template = templateForCardInstance(cardInstance);
+  const generatedAssets: Row[] = [];
+  const generatedAssetUrls: WalletAssetUrls = {};
+
+  if (!walletPlatform || !template) {
+    return {
+      generatedAssets,
+      generatedAssetUrls
+    };
+  }
+
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
+  const assetTypes = walletAssetTypesForFallbacks(editorDesign.assetFallbacks, walletPlatform);
+
+  for (const assetType of assetTypes) {
+    const assetPath = walletAssetStoragePath({
+      ownerId: job.owner_id,
+      businessId: job.business_id,
+      templateId: cardInstance.template_id,
+      cardInstanceId: cardInstance.id,
+      walletPlatform,
+      assetType
+    });
+
+    if (!assetPath) {
+      throw createStructuredError(
+        500,
+        'QUEUE_WALLET_ASSET_PATH_FAILED',
+        'Wallet-Asset-Pfad konnte nicht erstellt werden.',
+        'Queue-Jobs brauchen owner_id, business_id, template_id, card_instance_id, Plattform und Asset-Typ fuer automatische Wallet-Asset-Fallbacks.'
+      );
+    }
+
+    const rendered = renderWalletAsset(assetType as WalletAssetType, template, cardInstance, walletPlatform);
+    const pngBytes = await encodeWalletAssetPng(rendered.width, rendered.height, rendered.rgba);
+
+    if (pngBytes.byteLength > MAX_WALLET_ASSET_BYTES) {
+      throw createStructuredError(
+        413,
+        'QUEUE_WALLET_ASSET_TOO_LARGE',
+        'Generiertes Wallet-Asset ist zu gross.',
+        'Automatisch erzeugte Wallet-Assets muessen unter 2 MB bleiben.'
+      );
+    }
+
+    const { error: uploadError } = await context.supabaseAdmin.storage
+      .from(walletAssetBucket)
+      .upload(assetPath, pngBytes, {
+        contentType: 'image/png',
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw createStructuredError(
+        500,
+        'QUEUE_WALLET_ASSET_UPLOAD_FAILED',
+        'Wallet-Asset konnte vor dem Wallet-Update nicht gespeichert werden.',
+        uploadError.message || 'Supabase Storage Upload fuer automatisch erzeugte Wallet-Assets ist fehlgeschlagen.'
+      );
+    }
+
+    const { data: publicUrlData } = context.supabaseAdmin.storage
+      .from(walletAssetBucket)
+      .getPublicUrl(assetPath);
+
+    const publicUrl = stringValue(publicUrlData?.publicUrl);
+
+    if (publicUrl) {
+      generatedAssetUrls[assetType] = publicUrl;
+    }
+
+    generatedAssets.push({
+      asset_type: assetType,
+      asset_path: assetPath,
+      asset_url: publicUrl || null,
+      width: rendered.width,
+      height: rendered.height,
+      content_type: 'image/png',
+      wallet_platform: walletPlatform
+    });
+  }
+
+  return {
+    generatedAssets,
+    generatedAssetUrls
+  };
 }
 
 function validateQueueGooglePatch(patch: Row) {
@@ -3666,6 +3783,7 @@ export const walletNotificationService = {
 
       try {
         assertQueueJobMatchesCardInstance(job, cardInstance);
+        const walletAssetGeneration = await ensureQueueWalletAssets(context, job, cardInstance);
 
         let result;
 
@@ -3698,6 +3816,13 @@ export const walletNotificationService = {
               generated_pass_version: true
             };
           }
+
+          if (walletAssetGeneration.generatedAssets.length) {
+            result = {
+              ...result,
+              generated_wallet_assets: walletAssetGeneration.generatedAssets
+            };
+          }
         } else {
           const googleObject = Array.isArray(cardInstance.google_wallet_objects)
             ? cardInstance.google_wallet_objects[0]
@@ -3728,10 +3853,19 @@ export const walletNotificationService = {
 
           const patch = job.payload?.patch !== undefined
             ? job.payload.patch
-            : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType);
+            : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [], {
+              generatedAssetUrls: walletAssetGeneration.generatedAssetUrls
+            });
           validateQueueGooglePatch(patch);
 
           result = await googleWalletProvider.updateObject(objectType, objectId, patch);
+
+          if (walletAssetGeneration.generatedAssets.length) {
+            result = {
+              ...result,
+              generated_wallet_assets: walletAssetGeneration.generatedAssets
+            };
+          }
 
           if (result.ok) {
             await touchGoogleWalletObjectMapping({

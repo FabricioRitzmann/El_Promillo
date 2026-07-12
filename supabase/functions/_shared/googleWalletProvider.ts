@@ -768,7 +768,7 @@ function mergeTextModules(...groups: Array<Array<{ id: string; header: string; b
   return modules;
 }
 
-function statusPatchPayload(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = []) {
+function statusPatchPayload(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = [], options: Row = {}) {
   const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
   const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance);
   const modules = mergeTextModules(statusModules(template, cardInstance, extraRows), googleDesign.textModulesData);
@@ -792,7 +792,7 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
     patch.loyaltyPoints = googleDesign.loyaltyPoints;
   }
 
-  return patch;
+  return applyGeneratedAssetImages(patch, options.generatedAssetUrls);
 }
 
 function dateTimeValue(settings: Row) {
@@ -1301,8 +1301,8 @@ export const googleWalletProvider = {
     return googleApi('PATCH', `/${normalizedObjectType}/${encodeURIComponent(objectId)}`, patch);
   },
 
-  statusPatch(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = []) {
-    return statusPatchPayload(template, cardInstance, objectType, extraRows);
+  statusPatch(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = [], options: Row = {}) {
+    return statusPatchPayload(template, cardInstance, objectType, extraRows, options);
   },
 
   async addMessage(objectType: string, objectId: string, title: string, message: string, messageType = 'TEXT') {
