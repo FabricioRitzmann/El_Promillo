@@ -36,8 +36,8 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, QR, Feldprioritaet, Assets/Fallback-Hinweise |
 | Google Mapping | `mapEditorDesignToGoogleWalletObject` und `googleWalletProvider.ts` | Implementiert fuer Farben, QR, Logo/Hero/Image-Module, Textmodule |
 | Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, QR, priorisierte Felder |
-| Komplexe Asset-Generierung | `generate-wallet-asset` | Offen, Vertragsform ist dokumentiert |
-| Plattformwarnungen im Editor | Editor UI | Offen, Warnungsdaten kommen serverseitig aus `walletDesign.ts` |
+| Komplexe Asset-Generierung | `generate-wallet-asset` | Implementiert fuer PNG-Fallbacks in `wallet-assets` |
+| Plattformwarnungen im Editor | `public/js/ui.js`, `public/styles.css` | Implementiert fuer sichtbare Info/Warning/Critical Hinweise |
 | Update Queue fuer Design-Aenderungen | `wallet_update_queue` | Vorhandene Queue nutzbar; neue Update-Typen muessen in Editor-Save-Flow angebunden werden |
 
 ## Mapping-Matrix
@@ -53,8 +53,8 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Untertitel/Beschreibung | Beschreibung unter Titel | Secondary/back fields | `subheader`, Textmodule | `subtitle1`, `noticeDesc` | Teilweise | Laenge und Umbruch variieren | Kurze Vorderseite, volle Beschreibung in Details | Implementiert |
 | Karten-ID | Footer-Code | Sichtbares Feld und Barcode-AltText | `accountId`/Textmodul/Barcode | Barcode-Wert und Details | Ja | Layoutposition ist unterschiedlich | Hoechste Feldprioritaet, auch in Details | Implementiert |
 | QR-Code | Claim-/Karten-Code | `PKBarcodeFormatQR` | `QR_CODE` | `QRCODE`/`QRCODESERIAL` | Ja | Plattformformatnamen unterscheiden sich | QR als primaeres Format, AltText beibehalten | Implementiert |
-| Stempel | Visuelles Raster mit Icon | Kein natives Raster | Kein natives Raster | Kein natives Raster | Nein | Freies Grid gibt es nicht | Textfeld `x/y`; optional `stamp_grid` Asset | Text implementiert; Asset-Generator offen |
-| Streak | Icon + Zaehler/Ziel | Feld oder Bild | Textmodul/Image-Modul | Attribut/Text | Nein | Kombiniertes Editor-Layout nicht nativ | Streak als Text, optional `streak_badge` Asset | Text implementiert; Asset-Generator offen |
+| Stempel | Visuelles Raster mit Icon | Kein natives Raster | Kein natives Raster | Kein natives Raster | Nein | Freies Grid gibt es nicht | Textfeld `x/y`; optional `stamp_grid` Asset | Text und PNG-Asset-Generator implementiert |
+| Streak | Icon + Zaehler/Ziel | Feld oder Bild | Textmodul/Image-Modul | Attribut/Text | Nein | Kombiniertes Editor-Layout nicht nativ | Streak als Text, optional `streak_badge` Asset | Text und PNG-Asset-Generator implementiert |
 | VIP-Level | Feature-Reihe | Vorderseitenfeld nach Prioritaet | Loyalty/Textmodul | `level`/Details | Teilweise | Feldnamen/Positionen unterscheiden sich | VIP vorne, Rest in Details | Implementiert |
 | Guthaben | Feature-Reihe mit Waehrung | Vorderseitenfeld oder Back Field | Loyalty Points/Textmodul; Gift Card nicht genutzt | `amount`/`balance` | Teilweise | Gift-Card-Contract ist nicht in der bestehenden Integration angelegt | Loyalty/Generic Feld mit Betrag | Implementiert |
 | Garderobe | Aktiv/Bereit | Vorderseite oder Rueckseite | Textmodul | Notice/Details | Teilweise | Kein natives Cloakroom-Feld | Status als priorisiertes Textfeld | Implementiert |
@@ -63,7 +63,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Clubkarte Module | VIP, Guthaben, Garderobe, Coupon, Mitgliedschaft optional | Priorisierte Felder, Ueberlauf auf Rueckseite | Loyalty/Generic Textmodule | Begrenzte Attribute + Details | Nein | Zu viele Module fuer feste Wallet-Front | Prioritaet: ID, VIP, Guthaben, Mitgliedschaft, Coupon, Garderobe, Details | Implementiert |
 | Push-Hinweistext | Editor Notification/Message | Pass Web Service + APNS Update, latestMessage Feld | `TEXT_AND_NOTIFY` oder Object Patch | Samsung Server API Update Notification vorbereitet | Teilweise | Push-Mechaniken sind plattformspezifisch | Message separat behandeln, sichtbare Felder patchen | Bestehende Logik bleibt bestehen |
 | Footer / Rueckseite / Details | Footer-Code und Zusatzinfos | `backFields` | `textModulesData` | `noticeDesc` und Attribute | Teilweise | Kein gemeinsames Rueckseitenmodell | Details pro Plattform in native Detailfelder verschieben | Implementiert |
-| Custom Font | Web/CSS moeglich | Nicht als echte Pass-Schrift steuerbar | Nicht steuerbar | Templateabhaengig | Nein | Wallets rendern native Templates | Systemschrift oder serverseitig gerendertes Bild | Warnung implementiert; Asset-Generator offen |
+| Custom Font | Web/CSS moeglich | Nicht als echte Pass-Schrift steuerbar | Nicht steuerbar | Templateabhaengig | Nein | Wallets rendern native Templates | Systemschrift oder serverseitig gerendertes Bild | Warnung implementiert; dekoratives PNG-Asset vorbereitet |
 
 ## Template-Abdeckung
 

@@ -39,6 +39,7 @@ function listFiles(directory) {
 
 [
   'supabase/functions/_shared/walletDesign.ts',
+  'supabase/functions/generate-wallet-asset/index.ts',
   'docs/wallet-design-parity.md',
   'docs/wallet-feature-limitations.md'
 ].forEach(assertFile);
@@ -47,6 +48,10 @@ const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
+const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
+const deployScript = read('scripts/deploy-wallet-functions.sh');
+const editorUi = read('public/js/ui.js');
+const styles = read('public/styles.css');
 const parityDoc = read('docs/wallet-design-parity.md');
 const limitationsDoc = read('docs/wallet-feature-limitations.md');
 const packageJson = read('package.json');
@@ -131,6 +136,54 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   'mappedAttributes.fontColor'
 ]);
 
+assertIncludes('Serverseitige Wallet Asset Generierung', generateWalletAsset, [
+  'Deno.serve(async (request)',
+  'walletNotificationService.context(request)',
+  'card_instance_id',
+  'wallet_platform',
+  'asset_type',
+  "supportedAssetTypes = new Set(['stamp_grid', 'streak_badge', 'wallet_background', 'decorative_title', 'club_module_badges'])",
+  '.eq(' + "'owner_id', context.ownerId)",
+  '.eq(' + "'business_id', context.business.id)",
+  "from('wallet-assets')",
+  "contentType: 'image/png'",
+  'MAX_WALLET_ASSET_BYTES = 2 * 1024 * 1024',
+  'encodePng(rendered.width, rendered.height, rendered.rgba)',
+  'asset_url',
+  'asset_path'
+]);
+
+assertIncludes('Wallet Asset Deploy', deployScript, [
+  'generate-wallet-asset'
+]);
+
+assertIncludes('Editor Wallet Warnungen', editorUi, [
+  'function walletPlatformWarnings(template, card',
+  'function walletPlatformWarningsHtml(template, card',
+  'Wallet-Hinweise',
+  'wallet-warning-${escapeHtml(warning.level)}',
+  "level: 'info'",
+  "level: 'warning'",
+  "level: 'critical'",
+  'Stempelraster',
+  'Streak-Anzeige',
+  'Hintergrundbild',
+  'Viele Felder',
+  'Bild-URL',
+  'walletPreviewHtml(template, card = null)',
+  'const platformWarnings = walletPlatformWarningsHtml(template, card'
+]);
+
+assertIncludes('Editor Wallet Warnstyles', styles, [
+  '.wallet-preview-stack',
+  '.wallet-platform-warnings',
+  '.wallet-warning-item',
+  '.wallet-warning-info',
+  '.wallet-warning-warning',
+  '.wallet-warning-critical',
+  '.wallet-warning-platforms'
+]);
+
 assertIncludes('Wallet Design Parity Doku', parityDoc, [
   '# Wallet Design Parity',
   'Apple Wallet Pass Design and Creation',
@@ -142,6 +195,8 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Stempelraster',
   'Clubkarte',
   'generate-wallet-asset',
+  'Implementiert fuer PNG-Fallbacks',
+  'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
 
@@ -159,8 +214,10 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '### Funktioniert Bei Apple + Samsung, Aber Nicht Google',
   '## Clubkarte',
   '## Asset-Fallbacks',
+  'generate-wallet-asset` ist implementiert',
   '## Update Queue',
   '## Editor-Warnungen',
+  'Editor-UI zeigt plattformbezogene Hinweise',
   '## Security'
 ]);
 

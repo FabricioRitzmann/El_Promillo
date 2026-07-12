@@ -159,6 +159,108 @@ function escapeCssUrl(value) {
   return String(value || '').replace(/["'()\\\n\r]/g, '');
 }
 
+function walletPlatformWarnings(template, card, context = {}) {
+  const warnings = [];
+  const settings = context.settings || templateSettings(template);
+  const featureRows = context.featureRows || cardFeatureRows(template, card);
+  const templateType = normalizeTemplateType(template);
+  const eventBackgroundImageUrl = context.eventBackgroundImageUrl || (
+    featureEnabled(template, 'eventBackgroundImage') ? settings.eventBackgroundImageUrl : ''
+  );
+  const activeClubFeatures = templateType === 'club_card'
+    ? ['vip', 'balance', 'cloakroom', 'redemption', 'membership'].filter((featureName) => featureEnabled(template, featureName))
+    : [];
+
+  warnings.push({
+    level: 'info',
+    platforms: ['Apple', 'Google', 'Samsung'],
+    title: 'Titel-Schrift',
+    body: 'Wallets nutzen native System- oder Template-Schriften; dekorative Web-Schrift wird nicht erzwungen.'
+  });
+
+  if (featureEnabled(template, 'stamps')) {
+    warnings.push({
+      level: 'warning',
+      platforms: ['Apple', 'Google', 'Samsung'],
+      title: 'Stempelraster',
+      body: 'Das Raster wird als Statusfeld angezeigt; bei Bedarf erzeugt das Backend ein Wallet-Asset.'
+    });
+  }
+
+  if (featureEnabled(template, 'streak')) {
+    warnings.push({
+      level: 'warning',
+      platforms: ['Apple', 'Google', 'Samsung'],
+      title: 'Streak-Anzeige',
+      body: 'Icon und Zaehler koennen nicht pixelgenau positioniert werden und werden vereinfacht gemappt.'
+    });
+  }
+
+  if (eventBackgroundImageUrl) {
+    warnings.push({
+      level: 'warning',
+      platforms: ['Apple', 'Google', 'Samsung'],
+      title: 'Hintergrundbild',
+      body: 'Das Bild wird je nach Plattform als Strip, Hero oder Main Image genutzt.'
+    });
+  }
+
+  if (featureRows.length > 4 || activeClubFeatures.length > 3) {
+    warnings.push({
+      level: 'warning',
+      platforms: ['Apple', 'Samsung'],
+      title: 'Viele Felder',
+      body: 'Nicht alle aktiven Module passen verlaesslich auf die Vorderseite; Details werden ausgelagert.'
+    });
+  }
+
+  const externalImages = [
+    template.business_logo_url,
+    template.logo_url,
+    settings.stampIconUrl,
+    settings.streakIconUrl,
+    eventBackgroundImageUrl
+  ].filter(Boolean);
+  const invalidImage = externalImages.find((url) => !String(url).startsWith('https://'));
+
+  if (invalidImage) {
+    warnings.push({
+      level: 'critical',
+      platforms: ['Google', 'Samsung'],
+      title: 'Bild-URL',
+      body: 'Wallet-Bilder brauchen oeffentliche HTTPS-URLs; lokale oder unsichere URLs werden ausgelassen.'
+    });
+  }
+
+  return warnings;
+}
+
+function walletPlatformWarningsHtml(template, card, context = {}) {
+  const warnings = walletPlatformWarnings(template, card, context);
+
+  if (!warnings.length) {
+    return '';
+  }
+
+  return `
+    <div class="wallet-platform-warnings" aria-label="Wallet-Plattformhinweise">
+      <div class="wallet-warning-heading">Wallet-Hinweise</div>
+      ${warnings.map((warning) => `
+        <div class="wallet-warning-item wallet-warning-${escapeHtml(warning.level)}">
+          <div class="wallet-warning-title">
+            <span class="wallet-warning-level">${escapeHtml(warning.level)}</span>
+            <strong>${escapeHtml(warning.title)}</strong>
+          </div>
+          <p>${escapeHtml(warning.body)}</p>
+          <div class="wallet-warning-platforms">
+            ${warning.platforms.map((platform) => `<span>${escapeHtml(platform)}</span>`).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 export function walletPreviewHtml(template, card = null) {
   const business = {
     name: template.business_name,
@@ -221,23 +323,31 @@ export function walletPreviewHtml(template, card = null) {
   const stampSlots = featureEnabled(template, 'stamps')
     ? stampSlotsHtml(stampValue, stampsRequired, settings.stampIconUrl || cardEmblemUrl)
     : '';
+  const platformWarnings = walletPlatformWarningsHtml(template, card, {
+    settings,
+    featureRows,
+    eventBackgroundImageUrl
+  });
 
   return `
-    <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
-      <div class="wallet-top">
-        ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
-        <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
+    <div class="wallet-preview-stack">
+      <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
+        <div class="wallet-top">
+          ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
+          <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
+        </div>
+        <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
+        <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
+        <div class="wallet-meta">
+          <span>${escapeHtml(cardTypeLabel(template))}</span>
+          <strong>${escapeHtml(progress)}</strong>
+        </div>
+        ${featureRowsHtml}
+        ${stampSlots}
+        ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
+        <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
       </div>
-      <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
-      <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
-      <div class="wallet-meta">
-        <span>${escapeHtml(cardTypeLabel(template))}</span>
-        <strong>${escapeHtml(progress)}</strong>
-      </div>
-      ${featureRowsHtml}
-      ${stampSlots}
-      ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
-      <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
+      ${platformWarnings}
     </div>
   `;
 }

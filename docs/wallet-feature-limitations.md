@@ -127,7 +127,7 @@ Wenn zu viele Module aktiv sind:
 - `streak_badge` fuer dekorative Streak-Anzeigen.
 - `wallet_background` fuer komplexe Hintergruende/Texturen.
 
-Die sichere Edge Function `generate-wallet-asset` ist noch umzusetzen. Der erwartete Vertrag:
+Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`.
 
 ```json
 {
@@ -178,7 +178,7 @@ Warn-Level:
 Warnquellen:
 
 - `walletDesign.ts` erzeugt `WalletDesignWarning[]`.
-- Die Editor-UI soll diese Warnungen pro Plattform anzeigen.
+- Die Editor-UI zeigt plattformbezogene Hinweise direkt unter der Live-Vorschau an.
 - Keine Editor-Funktion darf so dargestellt werden, als waere sie in Apple, Google und Samsung identisch moeglich.
 
 ## Security
