@@ -265,9 +265,8 @@ assert(
   configExample.googleWallet.desiredPassTypes.includes('generic')
     && configExample.googleWallet.desiredPassTypes.includes('loyalty')
     && configExample.googleWallet.desiredPassTypes.includes('offer')
-    && configExample.googleWallet.desiredPassTypes.includes('eventTicket')
-    && configExample.googleWallet.desiredPassTypes.includes('giftCard'),
-  'config.example.json muss Google Wallet Generic, Loyalty, Offer, Event Ticket und Gift Card vorbereiten.'
+    && configExample.googleWallet.desiredPassTypes.includes('eventTicket'),
+  'config.example.json muss Google Wallet Generic, Loyalty, Offer und Event Ticket vorbereiten.'
 );
 assert(
   configExample.deliveryRules.allowedTargets.includes('event')

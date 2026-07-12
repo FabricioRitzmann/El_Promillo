@@ -731,10 +731,9 @@ async function recordLocalWalletEmblemUpdate(card, cardInstance, reason = 'scann
         business_id: card.business_id,
         card_instance_id: cardInstance.id,
         wallet_platform: walletPlatform,
-        update_type: 'emblem_changed',
+        update_type: 'emblem_update',
         payload: {
           source: 'scanner_demographics',
-          update_type: 'emblem_changed',
           reason,
           customer_card_id: card.id,
           card_instance_number: cardInstance.card_instance_number || card.card_instance_number,

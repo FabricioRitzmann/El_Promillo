@@ -1,7 +1,6 @@
 import { appleWalletProvider } from '../_shared/appleWalletProvider.ts';
 import { publicApplePassVersion, publicWalletOperationPayload } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
-import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
@@ -357,15 +356,6 @@ Deno.serve(async (request) => {
       return json(limits, blockedStatus === 'skipped' ? 409 : 429);
     }
 
-    const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
-      supabaseAdmin: context.supabaseAdmin,
-      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-      ownerId: context.ownerId,
-      businessId: context.business.id,
-      template: cardInstance.card_templates,
-      cardInstance,
-      walletPlatform: 'apple'
-    });
     const passVersion = await appleWalletProvider.updatePassFields(context.supabaseAdmin, cardInstance, cardInstance.card_templates, passFields, {
       reason: 'manual_apple_pass_update'
     });
@@ -378,8 +368,7 @@ Deno.serve(async (request) => {
       {
         pass_version_id: passVersion.id,
         version: passVersion.version,
-        queued_for_push: true,
-        generated_wallet_assets: generatedAssetFallbacks.generatedAssets
+        queued_for_push: true
       },
       null,
       idempotencyReservation
@@ -394,8 +383,7 @@ Deno.serve(async (request) => {
     return json({
       ok: true,
       status: 'queued',
-      passVersion: publicApplePassVersion(passVersion),
-      generatedWalletAssets: generatedAssetFallbacks.generatedAssets
+      passVersion: publicApplePassVersion(passVersion)
     });
   } catch (error) {
     await walletNotificationService.failManualIdempotencyReservation(

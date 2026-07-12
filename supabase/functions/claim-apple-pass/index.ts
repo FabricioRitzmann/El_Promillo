@@ -8,7 +8,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { appleWalletProvider } from '../_shared/appleWalletProvider.ts';
 import { enforcePublicClaimRateLimit } from '../_shared/publicRateLimit.ts';
 import { publicAppleSigningResult } from '../_shared/publicResponses.ts';
-import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 type Row = Record<string, any>;
 
@@ -222,7 +221,7 @@ async function findReusableClaimPassVersion(supabaseAdmin: any, cardInstance: Ro
     return null;
   }
 
-  if (!appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)) {
+  if (!appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data)) {
     return null;
   }
 
@@ -249,7 +248,6 @@ async function logAppleClaimIssue(supabaseAdmin: any, cardInstance: Row, status:
       pass_version_id: passVersion?.id || null,
       version: passVersion?.version || null,
       reused_pass_version: Boolean(options.reusedPassVersion),
-      generated_wallet_assets: options.generatedWalletAssets || [],
       signing: {
         ok: signing.ok,
         status: signing.status,
@@ -343,15 +341,6 @@ Deno.serve(async (request) => {
     }
 
     const appleCardInstance = await appleWalletProvider.ensurePassAuthenticationToken(supabaseAdmin, cardInstance);
-    const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
-      supabaseAdmin,
-      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-      ownerId: appleCardInstance.owner_id,
-      businessId: appleCardInstance.business_id,
-      template: appleCardInstance.card_templates,
-      cardInstance: appleCardInstance,
-      walletPlatform: 'apple'
-    });
     let reusedPassVersion = false;
     let passVersion = await findReusableClaimPassVersion(supabaseAdmin, appleCardInstance);
 
@@ -374,8 +363,7 @@ Deno.serve(async (request) => {
     const status = signing.ok ? 'sent' : signing.status || 'prepared';
 
     await logAppleClaimIssue(supabaseAdmin, appleCardInstance, status, passVersion, signing, {
-      reusedPassVersion,
-      generatedWalletAssets: generatedAssetFallbacks.generatedAssets
+      reusedPassVersion
     });
 
     if (!reusedPassVersion) {

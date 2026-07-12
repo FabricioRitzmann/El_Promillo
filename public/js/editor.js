@@ -1,7 +1,7 @@
 import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
 import { pagePath } from './path.js';
-import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js?v=wallet-preview-watermark-20260712';
+import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
 import {
   CLUB_FEATURE_DEFAULTS,
   OPTIONAL_FEATURE,
@@ -507,7 +507,7 @@ function renderEditorPreview() {
     ...draft,
     business_name: state.business?.name || draft.business_name,
     business_logo_url: state.business?.logo_url || ''
-  }, null, { showWalletInsights: true });
+  });
   renderEditorQrPanel();
 }
 

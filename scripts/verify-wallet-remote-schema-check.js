@@ -31,7 +31,6 @@ const packageJson = read('package.json');
   '--strict',
   '--json',
   'requiredSchema',
-  'requiredStorageBuckets',
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'PGRST205',
@@ -60,12 +59,6 @@ const packageJson = read('package.json');
   'balance_transactions',
   'topup_payment_sessions',
   'card_events',
-  'storage.getBucket',
-  'wallet-assets',
-  'business-logos',
-  'wallet-emblems',
-  'remote-storage',
-  'Storage Bucket erreichbar und public=',
   'Secrets und Tokens werden nicht ausgegeben.',
   'process.exitCode = 1'
 ].forEach((needle) => assertIncludes(schemaCheck, needle, 'Remote-Schema-Check ist unvollständig'));

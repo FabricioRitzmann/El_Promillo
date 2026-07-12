@@ -7,9 +7,6 @@
 
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
-import { editorCardDesignFromTemplate, mapEditorDesignToGoogleWalletObject } from './walletDesign.ts';
-import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts';
-import type { WalletAssetType, WalletAssetUrls } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -30,10 +27,6 @@ const walletPayloadKeys: Record<string, { classes: string; objects: string }> = 
   eventTicketObject: {
     classes: 'eventTicketClasses',
     objects: 'eventTicketObjects'
-  },
-  giftCardObject: {
-    classes: 'giftCardClasses',
-    objects: 'giftCardObjects'
   }
 };
 const supportedObjectTypes = new Set(Object.keys(walletPayloadKeys));
@@ -422,10 +415,6 @@ function objectTypeForTemplate(template: Row) {
     return 'offerObject';
   }
 
-  if (templateType === 'balance_card') {
-    return 'giftCardObject';
-  }
-
   if (['stamp_card', 'streak_card', 'vip_card', 'membership_card'].includes(templateType)) {
     return 'loyaltyObject';
   }
@@ -462,7 +451,7 @@ function invalidObjectTypeResult(objectType: unknown) {
     status: 'failed',
     error_code: 'GOOGLE_WALLET_OBJECT_TYPE_INVALID',
     error_message: 'Google Wallet Object Type ist ungültig.',
-    error_reason: `${stringValue(objectType) || 'leer'} wird nicht unterstützt. Erlaubt sind genericObject, loyaltyObject, offerObject, eventTicketObject und giftCardObject.`
+    error_reason: `${stringValue(objectType) || 'leer'} wird nicht unterstützt. Erlaubt sind genericObject, loyaltyObject, offerObject und eventTicketObject.`
   };
 }
 
@@ -551,13 +540,6 @@ function statusLabel(value: unknown) {
 
 function formatMoney(cents: unknown, currency: unknown) {
   return `${stringValue(currency) || 'CHF'} ${(numberValue(cents) / 100).toFixed(2)}`;
-}
-
-function googleMoneyFromCents(cents: unknown, currency: unknown) {
-  return {
-    micros: String(Math.round(numberValue(cents, 0) * 10000)),
-    currencyCode: stringValue(currency) || 'CHF'
-  };
 }
 
 function cardCodeFor(cardInstance: Row) {
@@ -759,34 +741,8 @@ function statusModules(template: Row, cardInstance: Row, extraRows: Array<{ id: 
     }));
 }
 
-function mergeTextModules(...groups: Array<Array<{ id: string; header: string; body: string }> | undefined>) {
-  const seen = new Set<string>();
-  const modules: Array<{ id: string; header: string; body: string }> = [];
-
-  for (const group of groups) {
-    for (const row of group || []) {
-      const id = stringValue(row.id || row.header).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 32);
-
-      if (!id || !row.body || seen.has(id)) {
-        continue;
-      }
-
-      seen.add(id);
-      modules.push({
-        id,
-        header: row.header,
-        body: row.body
-      });
-    }
-  }
-
-  return modules;
-}
-
-function statusPatchPayload(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = [], options: Row = {}) {
-  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
-  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance);
-  const modules = mergeTextModules(statusModules(template, cardInstance, extraRows), googleDesign.textModulesData);
+function statusPatchPayload(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = []) {
+  const modules = statusModules(template, cardInstance, extraRows);
   const patch: Row = {
     textModulesData: modules
   };
@@ -796,26 +752,14 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
     patch.accountId = cardCodeFor(cardInstance);
     patch.accountName = stringValue(cardInstance.customer_cards?.metadata?.customer_name || cardInstance.customer_cards?.customer_code || cardCodeFor(cardInstance));
     patch.loyaltyPoints = {
-      label: stringValue(primaryStatusRow.header),
+      label: localized(primaryStatusRow.header),
       balance: {
         string: primaryStatusRow.body
       }
     };
-  } else if (objectType === 'loyaltyObject' && googleDesign.loyaltyPoints) {
-    patch.accountId = googleDesign.accountId;
-    patch.accountName = googleDesign.accountName;
-    patch.loyaltyPoints = googleDesign.loyaltyPoints;
-  } else if (objectType === 'giftCardObject') {
-    const customer = cardInstance.customer_cards || {};
-    const metadata = metadataFor(cardInstance);
-    const balanceCents = numberValue(cardInstance.balance_cents, customer.balance_cents, metadata.balance_cents, 0);
-    const currency = stringValue(cardInstance.currency || customer.currency || templateSettings(template).currency || 'CHF');
-
-    patch.cardNumber = cardCodeFor(cardInstance);
-    patch.balance = googleMoneyFromCents(balanceCents, currency);
   }
 
-  return applyGeneratedAssetImages(patch, options.generatedAssetUrls);
+  return patch;
 }
 
 function dateTimeValue(settings: Row) {
@@ -870,76 +814,6 @@ function imageValue(url: unknown, label = 'Logo') {
   };
 }
 
-function mergeImageModules(...moduleSets: unknown[]) {
-  const modules: Row[] = [];
-  const seen = new Set<string>();
-
-  for (const moduleSet of moduleSets) {
-    if (!Array.isArray(moduleSet)) {
-      continue;
-    }
-
-    for (const module of moduleSet) {
-      const row = module && typeof module === 'object' ? module as Row : {};
-      const id = stringValue(row.id);
-
-      if (!id || seen.has(id)) {
-        continue;
-      }
-
-      seen.add(id);
-      modules.push(row);
-    }
-  }
-
-  return modules;
-}
-
-function generatedAssetImageModule(assetType: WalletAssetType, url: string) {
-  const labels: Record<WalletAssetType, string> = {
-    stamp_grid: 'Stempelraster',
-    streak_badge: 'Streak',
-    wallet_background: 'Kartenbild',
-    combined_emblem: 'Logo und Emblem',
-    decorative_title: 'Kartentitel',
-    club_module_badges: 'Clubkarten-Module'
-  };
-  const image = imageValue(url, labels[assetType]);
-
-  return image
-    ? {
-      id: assetType,
-      mainImage: image
-    }
-    : null;
-}
-
-function applyGeneratedAssetImages(payload: Row, assetUrls: WalletAssetUrls = {}) {
-  const backgroundImage = imageValue(assetUrls.wallet_background || assetUrls.combined_emblem, 'Kartenbild');
-
-  if (backgroundImage) {
-    payload.heroImage = backgroundImage;
-  }
-
-  const generatedModules = ([
-    'wallet_background',
-    'combined_emblem',
-    'stamp_grid',
-    'streak_badge',
-    'club_module_badges',
-    'decorative_title'
-  ] as WalletAssetType[])
-    .map((assetType) => assetUrls[assetType] ? generatedAssetImageModule(assetType, assetUrls[assetType] || '') : null)
-    .filter(Boolean);
-  const imageModulesData = mergeImageModules(payload.imageModulesData, generatedModules);
-
-  if (imageModulesData.length) {
-    payload.imageModulesData = imageModulesData;
-  }
-
-  return payload;
-}
-
 function templateBusiness(template: Row) {
   return Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
 }
@@ -968,44 +842,21 @@ function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
     return payload;
   }
 
-  payload.heroImage = payload.heroImage || emblemImage;
-  payload.imageModulesData = mergeImageModules(payload.imageModulesData, [
+  payload.heroImage = emblemImage;
+  payload.imageModulesData = [
     {
       id: 'card_emblem',
       mainImage: emblemImage
     }
-  ]);
+  ];
 
   return payload;
 }
 
-async function generatedGoogleWalletAssetUrls(template: Row, cardInstance: Row, options: Row = {}) {
-  if (options.generatedAssetUrls && typeof options.generatedAssetUrls === 'object') {
-    return options.generatedAssetUrls as WalletAssetUrls;
-  }
-
-  if (!options.supabaseAdmin) {
-    return {};
-  }
-
-  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
-  const assetTypes = walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'google');
-
-  return existingWalletAssetPublicUrls(options.supabaseAdmin, Deno.env.get('SUPABASE_URL') || '', {
-    ownerId: cardInstance.owner_id,
-    businessId: cardInstance.business_id,
-    templateId: cardInstance.template_id,
-    cardInstanceId: cardInstance.id,
-    walletPlatform: 'google'
-  }, assetTypes);
-}
-
 function buildClassPayload(template: Row, objectType: string, classId: string) {
   const settings = settingsForTemplate(template);
-  const editorDesign = editorCardDesignFromTemplate(template);
-  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign);
   const issuerName = businessNameForTemplate(template);
-  const logo = googleDesign.logo || imageValue(businessLogoUrlForTemplate(template), 'Logo');
+  const logo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
 
   if (objectType === 'eventTicketObject') {
     const eventDateTime = dateTimeValue(settings);
@@ -1057,48 +908,6 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
     return offerClass;
   }
 
-  if (objectType === 'giftCardObject') {
-    const giftCardClass: Row = {
-      id: classId,
-      issuerName,
-      merchantName: businessNameForTemplate(template, issuerName),
-      reviewStatus: 'UNDER_REVIEW',
-      cardNumberLabel: stringValue(settings.cardNumberLabel || settings.card_number_label) || 'Kartennummer',
-      allowBarcodeRedemption: true,
-      hexBackgroundColor: googleDesign.hexBackgroundColor
-    };
-
-    if (logo) {
-      giftCardClass.programLogo = logo;
-    }
-
-    if (googleDesign.heroImage) {
-      giftCardClass.heroImage = googleDesign.heroImage;
-    }
-
-    return giftCardClass;
-  }
-
-  if (objectType === 'loyaltyObject') {
-    const loyaltyClass: Row = {
-      id: classId,
-      issuerName,
-      reviewStatus: 'UNDER_REVIEW',
-      programName: stringValue(settings.programName || settings.program_name || template.card_name || issuerName) || issuerName,
-      hexBackgroundColor: googleDesign.hexBackgroundColor
-    };
-
-    if (logo) {
-      loyaltyClass.programLogo = logo;
-    }
-
-    if (googleDesign.heroImage) {
-      loyaltyClass.heroImage = googleDesign.heroImage;
-    }
-
-    return loyaltyClass;
-  }
-
   const classPayload: Row = {
     id: classId,
     issuerName,
@@ -1112,12 +921,10 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
   return classPayload;
 }
 
-function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objectId: string, classId: string, objectType = 'genericObject', options: Row = {}) {
+function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objectId: string, classId: string, objectType = 'genericObject') {
   const cardCode = cardCodeFor(cardInstance);
   const settings = settingsForTemplate(template);
   const metadata = metadataFor(cardInstance);
-  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
-  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance);
   const statusPatch = statusPatchPayload(template, cardInstance, objectType);
 
   if (objectType === 'eventTicketObject') {
@@ -1132,23 +939,19 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       id: objectId,
       classId,
       state: 'ACTIVE',
-      hexBackgroundColor: googleDesign.hexBackgroundColor,
+      hexBackgroundColor: stringValue(template.primary_color || '#fffdf9'),
       ticketNumber,
       ticketType: localized(ticketType, 'Standard'),
       reservationInfo: {
         confirmationCode: ticketNumber
       },
-      barcode: googleDesign.barcode,
+      barcode: {
+        type: 'QR_CODE',
+        value: cardCode,
+        alternateText: cardCode
+      },
       textModulesData: statusPatch.textModulesData
     };
-
-    if (googleDesign.heroImage) {
-      eventObject.heroImage = googleDesign.heroImage;
-    }
-
-    if (googleDesign.imageModulesData.length) {
-      eventObject.imageModulesData = googleDesign.imageModulesData;
-    }
 
     if (holderName) {
       eventObject.ticketHolderName = holderName;
@@ -1163,7 +966,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       };
     }
 
-    return applyObjectEmblemImages(applyGeneratedAssetImages(eventObject, options.generatedAssetUrls), cardInstance);
+    return applyObjectEmblemImages(eventObject, cardInstance);
   }
 
   if (objectType === 'offerObject') {
@@ -1171,7 +974,11 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       id: objectId,
       classId,
       state: 'ACTIVE',
-      barcode: googleDesign.barcode,
+      barcode: {
+        type: 'QR_CODE',
+        value: cardCode,
+        alternateText: cardCode
+      },
       textModulesData: statusPatch.textModulesData
     };
     const validTimeInterval = offerValidTimeInterval(settings, metadata);
@@ -1180,40 +987,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       offerObject.validTimeInterval = validTimeInterval;
     }
 
-    if (googleDesign.heroImage) {
-      offerObject.heroImage = googleDesign.heroImage;
-    }
-
-    if (googleDesign.imageModulesData.length) {
-      offerObject.imageModulesData = googleDesign.imageModulesData;
-    }
-
-    return applyObjectEmblemImages(applyGeneratedAssetImages(offerObject, options.generatedAssetUrls), cardInstance);
-  }
-
-  if (objectType === 'giftCardObject') {
-    const customer = cardInstance.customer_cards || {};
-    const balanceCents = numberValue(cardInstance.balance_cents, customer.balance_cents, metadata.balance_cents, 0);
-    const currency = stringValue(cardInstance.currency || customer.currency || settings.currency || 'CHF');
-    const giftCardObject: Row = {
-      id: objectId,
-      classId,
-      state: 'ACTIVE',
-      cardNumber: cardCode,
-      balance: googleMoneyFromCents(balanceCents, currency),
-      barcode: googleDesign.barcode,
-      textModulesData: statusPatch.textModulesData
-    };
-
-    if (googleDesign.heroImage) {
-      giftCardObject.heroImage = googleDesign.heroImage;
-    }
-
-    if (googleDesign.imageModulesData.length) {
-      giftCardObject.imageModulesData = googleDesign.imageModulesData;
-    }
-
-    return applyObjectEmblemImages(applyGeneratedAssetImages(giftCardObject, options.generatedAssetUrls), cardInstance);
+    return applyObjectEmblemImages(offerObject, cardInstance);
   }
 
   const businessLogo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
@@ -1221,33 +995,29 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     id: objectId,
     classId,
     state: 'ACTIVE',
-    hexBackgroundColor: googleDesign.hexBackgroundColor,
-    cardTitle: googleDesign.cardTitle,
-    header: googleDesign.header,
-    subheader: googleDesign.subheader,
-    barcode: googleDesign.barcode,
+    hexBackgroundColor: stringValue(template.primary_color || '#fffdf9'),
+    cardTitle: localized(template.card_name, 'Kundenkarte'),
+    header: localized(businessNameForTemplate(template, template.card_name || 'Karte'), 'Karte'),
+    subheader: localized(template.description || template.template_type, 'Digitale Karte'),
+    barcode: {
+      type: 'QR_CODE',
+      value: cardCode,
+      alternateText: cardCode
+    },
     textModulesData: statusPatch.textModulesData
   };
 
-  if (googleDesign.logo || businessLogo) {
-    objectPayload.logo = googleDesign.logo || businessLogo;
-  }
-
-  if (googleDesign.heroImage) {
-    objectPayload.heroImage = googleDesign.heroImage;
-  }
-
-  if (googleDesign.imageModulesData.length) {
-    objectPayload.imageModulesData = googleDesign.imageModulesData;
+  if (businessLogo) {
+    objectPayload.logo = businessLogo;
   }
 
   if (objectType === 'loyaltyObject') {
-    objectPayload.accountId = statusPatch.accountId || googleDesign.accountId;
-    objectPayload.accountName = statusPatch.accountName || googleDesign.accountName;
-    objectPayload.loyaltyPoints = statusPatch.loyaltyPoints || googleDesign.loyaltyPoints;
+    objectPayload.accountId = statusPatch.accountId;
+    objectPayload.accountName = statusPatch.accountName;
+    objectPayload.loyaltyPoints = statusPatch.loyaltyPoints;
   }
 
-  return applyObjectEmblemImages(applyGeneratedAssetImages(objectPayload, options.generatedAssetUrls), cardInstance);
+  return applyObjectEmblemImages(objectPayload, cardInstance);
 }
 
 export const googleWalletProvider = {
@@ -1294,7 +1064,7 @@ export const googleWalletProvider = {
     };
   },
 
-  async createObject(template: Row, cardInstance: Row, options: Row = {}) {
+  async createObject(template: Row, cardInstance: Row) {
     const config = googleConfig();
     const objectType = objectTypeForTemplate(template);
     const classResult = await this.createClass(template, objectType);
@@ -1304,11 +1074,7 @@ export const googleWalletProvider = {
     }
 
     const objectId = googleObjectIdFor(config, cardInstance);
-    const generatedAssetUrls = await generatedGoogleWalletAssetUrls(template, cardInstance, options);
-    const payload = buildObjectPayload(config, template, cardInstance, objectId, classResult.classId, objectType, {
-      ...options,
-      generatedAssetUrls
-    });
+    const payload = buildObjectPayload(config, template, cardInstance, objectId, classResult.classId, objectType);
     const result = await googleApi('POST', `/${objectType}`, payload);
 
     if (!result.ok && result.status === 409) {
@@ -1330,7 +1096,7 @@ export const googleWalletProvider = {
     };
   },
 
-  async generateSaveLink(template: Row, cardInstance: Row, options: Row = {}) {
+  async generateSaveLink(template: Row, cardInstance: Row) {
     const config = googleConfig();
 
     if (!config.configured) {
@@ -1341,11 +1107,7 @@ export const googleWalletProvider = {
     const classId = classIdForTemplate(config, template);
     const objectId = googleObjectIdFor(config, cardInstance);
     const classPayload = buildClassPayload(template, objectType, classId);
-    const generatedAssetUrls = await generatedGoogleWalletAssetUrls(template, cardInstance, options);
-    const objectPayload = buildObjectPayload(config, template, cardInstance, objectId, classId, objectType, {
-      ...options,
-      generatedAssetUrls
-    });
+    const objectPayload = buildObjectPayload(config, template, cardInstance, objectId, classId, objectType);
     const payloadKeys = payloadKeysForObjectType(objectType);
     let jwt;
 
@@ -1393,8 +1155,8 @@ export const googleWalletProvider = {
     return googleApi('PATCH', `/${normalizedObjectType}/${encodeURIComponent(objectId)}`, patch);
   },
 
-  statusPatch(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = [], options: Row = {}) {
-    return statusPatchPayload(template, cardInstance, objectType, extraRows, options);
+  statusPatch(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = []) {
+    return statusPatchPayload(template, cardInstance, objectType, extraRows);
   },
 
   async addMessage(objectType: string, objectId: string, title: string, message: string, messageType = 'TEXT') {

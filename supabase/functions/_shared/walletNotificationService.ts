@@ -3,7 +3,6 @@ import { featureEnabled, normalizeTemplateType } from './templateFeatures.ts';
 import { appleWalletProvider } from './appleWalletProvider.ts';
 import { googleWalletProvider } from './googleWalletProvider.ts';
 import { publicApplePushResult, publicWalletProviderResult } from './publicResponses.ts';
-import { ensureWalletAssetFallbacks } from './walletAssetFallbacks.ts';
 
 type Row = Record<string, any>;
 const MANUAL_WALLET_LOG_SELECT = 'id,owner_id,business_id,card_instance_id,wallet_platform,status,action,request_payload,response_payload,error_message,created_at';
@@ -1904,26 +1903,12 @@ function publicQueueProviderResult(platform: string, result: Row = {}) {
   return {
     ...summary,
     pass_version_id: result.pass_version_id || null,
-    generated_pass_version: Boolean(result.generated_pass_version),
-    generated_wallet_assets: Array.isArray(result.generated_wallet_assets)
-      ? result.generated_wallet_assets.map((asset: Row) => ({
-        asset_type: asset.asset_type,
-        asset_path: asset.asset_path,
-        width: asset.width,
-        height: asset.height
-      }))
-      : []
+    generated_pass_version: Boolean(result.generated_pass_version)
   };
 }
 
 function queueDueFilter(nowIso: string) {
   return `next_attempt_at.lte.${nowIso},next_attempt_at.is.null`;
-}
-
-function templateForCardInstance(cardInstance: Row = {}) {
-  return Array.isArray(cardInstance.card_templates)
-    ? cardInstance.card_templates[0]
-    : cardInstance.card_templates;
 }
 
 function validateQueueGooglePatch(patch: Row) {
@@ -1958,14 +1943,6 @@ function validateQueueGooglePatch(patch: Row) {
       `Diese Felder dürfen nicht über Queue-Payloads geändert werden: ${forbiddenKeys.join(', ')}.`
     );
   }
-}
-
-function googleWalletObjectWasNotFound(result: Row) {
-  const message = stringValue(result?.error_message || result?.error_reason || result?.response?.error?.message);
-
-  return !result?.ok
-    && Number(result?.status) === 404
-    && /not found/i.test(message);
 }
 
 async function claimRecipientForProcessing(supabaseAdmin: any, recipient: Row, campaign: Row) {
@@ -3689,15 +3666,6 @@ export const walletNotificationService = {
 
       try {
         assertQueueJobMatchesCardInstance(job, cardInstance);
-        const walletAssetGeneration = await ensureWalletAssetFallbacks({
-          supabaseAdmin: context.supabaseAdmin,
-          supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-          ownerId: job.owner_id,
-          businessId: job.business_id,
-          template: templateForCardInstance(cardInstance),
-          cardInstance,
-          walletPlatform: job.wallet_platform
-        });
 
         let result;
 
@@ -3730,13 +3698,6 @@ export const walletNotificationService = {
               generated_pass_version: true
             };
           }
-
-          if (walletAssetGeneration.generatedAssets.length) {
-            result = {
-              ...result,
-              generated_wallet_assets: walletAssetGeneration.generatedAssets
-            };
-          }
         } else {
           const googleObject = Array.isArray(cardInstance.google_wallet_objects)
             ? cardInstance.google_wallet_objects[0]
@@ -3765,48 +3726,12 @@ export const walletNotificationService = {
             );
           }
 
-          const hasQueueProvidedGooglePatch = job.payload?.patch !== undefined;
-          const patch = hasQueueProvidedGooglePatch
+          const patch = job.payload?.patch !== undefined
             ? job.payload.patch
-            : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [], {
-              generatedAssetUrls: walletAssetGeneration.generatedAssetUrls
-            });
-          if (hasQueueProvidedGooglePatch) {
-            validateQueueGooglePatch(patch);
-          }
+            : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType);
+          validateQueueGooglePatch(patch);
 
           result = await googleWalletProvider.updateObject(objectType, objectId, patch);
-
-          const templateObjectType = googleWalletProvider.normalizeObjectType(
-            googleWalletProvider.objectTypeForTemplate(cardInstance.card_templates)
-          );
-
-          if (googleWalletObjectWasNotFound(result) && objectType === templateObjectType) {
-            const recreateResult = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, {
-              generatedAssetUrls: walletAssetGeneration.generatedAssetUrls
-            });
-
-            result = recreateResult.ok
-              ? {
-                ...recreateResult,
-                action: 'recreate_missing_google_object',
-                fallback: 'recreated_missing_google_object',
-                warning_code: 'GOOGLE_WALLET_OBJECT_RECREATED_AFTER_404',
-                warning_message: 'Google Wallet Object fehlte beim Queue-Patch und wurde aus dem aktuellen Kartenstand neu angelegt.'
-              }
-              : {
-                ...recreateResult,
-                original_update_error_code: result.error_code,
-                original_update_error_message: result.error_message
-              };
-          }
-
-          if (walletAssetGeneration.generatedAssets.length) {
-            result = {
-              ...result,
-              generated_wallet_assets: walletAssetGeneration.generatedAssets
-            };
-          }
 
           if (result.ok) {
             await touchGoogleWalletObjectMapping({

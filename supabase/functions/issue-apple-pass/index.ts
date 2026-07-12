@@ -1,5 +1,4 @@
 import { appleWalletProvider } from '../_shared/appleWalletProvider.ts';
-import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 import { publicApplePassVersion, publicAppleSigningResult, publicWalletOperationPayload } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
 
@@ -363,15 +362,6 @@ Deno.serve(async (request) => {
     }
 
     idempotencyReservation = reservedIdempotency.reservedLog;
-    await ensureWalletAssetFallbacks({
-      supabaseAdmin: context.supabaseAdmin,
-      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-      ownerId: context.ownerId,
-      businessId: context.business.id,
-      template: cardInstance.card_templates,
-      cardInstance,
-      walletPlatform: 'apple'
-    });
     const passVersion = await appleWalletProvider.issuePass(context.supabaseAdmin, cardInstance.card_templates, cardInstance);
     const signing = await appleWalletProvider.signPass(passVersion.pass_json, passVersion.assets || {});
     const status = signing.ok ? 'sent' : signing.status || 'prepared';

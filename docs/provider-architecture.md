@@ -24,8 +24,6 @@ Die App hält Wallet-Provider serverseitig in Supabase Edge Functions. Secrets b
 
 `mapping()` liefert für alle Provider dasselbe interne `walletCardModel` mit Business, Customer, Card, Template, Branding, Codes, Loyalty, Notifications, Geo Locations, Dynamic Fields und Custom Fields. Provider-spezifische Samsung Card Data bleibt zusätzlich über `providerMapping()` bzw. `cardDataForInstance()` verfügbar.
 
-Wenn der Adapter serverseitig mit `supabaseAdmin` aufgerufen wird, erzeugt er vor Apple-, Google- und Samsung-Payloads automatisch die benötigten Wallet-Asset-Fallbacks über `_shared/walletAssetFallbacks.ts`. Dadurch bleiben auch Registry-basierte Nebenpfade auf derselben Design-Parity-Pipeline wie die direkten Edge Functions.
-
 ## Samsung Provider Methoden
 
 `samsungWalletProvider` stellt die MVP-Methoden bereit:

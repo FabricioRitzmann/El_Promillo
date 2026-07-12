@@ -31,7 +31,6 @@ function bodyBetween(source, startNeedle, endNeedle, label) {
 }
 
 const provider = read('supabase/functions/_shared/googleWalletProvider.ts');
-const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const issue = read('supabase/functions/issue-google-wallet-pass/index.ts');
 const saveLink = read('supabase/functions/google-wallet-save-link/index.ts');
 const update = read('supabase/functions/update-google-wallet-pass/index.ts');
@@ -49,7 +48,6 @@ assertIncludes(provider, [
   'loyaltyObject',
   'offerObject',
   'eventTicketObject',
-  'giftCardObject',
   "scope: 'https://www.googleapis.com/auth/wallet_object.issuer'",
   "Deno.env.get('GOOGLE_WALLET_SERVICE_ACCOUNT_JSON')",
   "Deno.env.get('GOOGLE_WALLET_ISSUER_ID')",
@@ -79,30 +77,14 @@ assertIncludes(provider, [
   'function objectTypeForTemplate(template: Row)',
   "templateType === 'event_card'",
   "templateType === 'coupon_card'",
-  "templateType === 'balance_card'",
-  "return 'giftCardObject'",
   "['stamp_card', 'streak_card', 'vip_card', 'membership_card'].includes(templateType)",
   "return 'genericObject'",
-  'giftCardClasses',
-  'giftCardObjects',
   'eventTicketClasses',
   'eventTicketObjects',
   'offerClasses',
   'loyaltyObjects',
-  'genericObjects',
-  "objectType === 'loyaltyObject'",
-  'programName: stringValue(settings.programName || settings.program_name || template.card_name || issuerName) || issuerName'
+  'genericObjects'
 ], 'Google Object-Type Mapping');
-
-assertIncludes(walletDesign, [
-  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
-  'function googleBarcodeType(format: EditorBarcodeFormat)',
-  'googleBarcodeType(editorDesign.barcodeFormat)',
-  'QR_CODE',
-  'AZTEC',
-  'PDF_417',
-  'CODE_128'
-], 'Google Barcodeformat Mapping');
 
 assertIncludes(provider, [
   'function googleObjectIdFor(config: Row, cardInstance: Row)',
@@ -113,14 +95,8 @@ assertIncludes(provider, [
   "template.id || template.card_name || 'wallet_cards'",
   'statusPatchPayload',
   'loyaltyPoints',
-  'label: stringValue(primaryStatusRow.header)',
   'TEXT_AND_NOTIFY'
 ], 'Google Object Identität und Statusfelder');
-
-assertIncludes(walletDesign, [
-  'loyaltyPoints: primaryField',
-  'label: stringValue(primaryField.label)'
-], 'Google Design Loyalty Points nutzen skalare Labels');
 
 assertIncludes(issue, [
   'publicGoogleWalletIssuePayload',
@@ -182,20 +158,20 @@ assertIncludes(issueLogBody, [
 ], 'Google Issue Log Redaction');
 
 assertIncludes(saveLink, [
-  "import { googleWalletProvider } from '../_shared/googleWalletProvider.ts'",
-  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INVALID',
+  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INCOMPLETE',
+  'GOOGLE_WALLET_PRIVATE_KEY_FORMAT',
+  'GOOGLE_WALLET_SAVE_LINK_SIGNING_FAILED',
+  'BEGIN RSA PRIVATE KEY',
+  'googleWalletOrigins',
+  'new URL(text).origin',
   'loadGoogleCardInstance',
-  'googleProviderCardInstance(cardInstance, card)',
-  'GOOGLE_WALLET_SAVE_LINK_PROVIDER_FAILED',
   ".eq('customer_card_id', card.id)",
   'GOOGLE_CLAIM_TOKEN_MISMATCH',
   'acceptedClaimKeys',
-  'ensureWalletAssetFallbacks({',
-  "walletPlatform: 'google'",
-  'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
-  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
-  'const saveUrl = stringValue(saveLinkResult.saveUrl)',
-  'GOOGLE_WALLET_SAVE_LINK_INCOMPLETE',
+  'findReusableGoogleWalletObject',
+  'const jwt = await signJwt',
   'catch (error)',
   'updatedCustomerCard',
   'updatedCardInstance',
@@ -209,7 +185,6 @@ assertIncludes(saveLink, [
   ".select('id')",
   '.maybeSingle()',
   'googleObjectUpsertError || !updatedGoogleObject',
-  'generated_wallet_assets',
   'google_wallet_save_link'
 ], 'Google Public Save Link');
 
@@ -298,7 +273,7 @@ assertIncludes(schema, [
   'class_id text not null',
   'object_id text not null unique',
   'object_type text not null',
-  "check (object_type in ('genericObject', 'loyaltyObject', 'offerObject', 'eventTicketObject', 'giftCardObject'))",
+  "check (object_type in ('genericObject', 'loyaltyObject', 'offerObject', 'eventTicketObject'))",
   'google_wallet_objects_card_instance_unique_idx',
   'validate_google_wallet_objects_direct_consistency',
   'GOOGLE_WALLET_OBJECT_FORBIDDEN',

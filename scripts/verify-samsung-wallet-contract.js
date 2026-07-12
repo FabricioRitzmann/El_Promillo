@@ -62,7 +62,6 @@ const updatePath = 'supabase/functions/update-samsung-wallet-pass/index.ts';
 ].forEach(assertFile);
 
 const provider = read(providerPath);
-const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const addLink = read(addLinkPath);
 const server = read(serverPath);
 const update = read(updatePath);
@@ -117,28 +116,10 @@ assertIncludesAll('Samsung Provider Data-Fetch/Auth', provider, [
   'buildSamsungLoyaltyAttributes',
   'buildSamsungGenericAttributes',
   'QRCODE',
-  "mappedAttributes['barcode.serialType']",
-  "mappedAttributes['barcode.ptFormat']",
-  "mappedAttributes['barcode.ptSubFormat']",
   'detectSupport(userAgent',
   'hasSamsungDeviceHint',
   "'sm-'",
   "'galaxy'"
-]);
-
-assertIncludesAll('Samsung Barcodeformat Mapping', walletDesign, [
-  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
-  'function samsungBarcodeAttributes(format: EditorBarcodeFormat)',
-  'samsungBarcodeAttributes(editorDesign.barcodeFormat)',
-  'QRCODESERIAL',
-  'AZTECSERIAL',
-  'PDF417SERIAL',
-  'BARCODESERIAL',
-  'QR_CODE',
-  'AZTEC',
-  'PDF_417',
-  'CODE_128',
-  'barcode-format-template-limits'
 ]);
 
 assertIncludesAll('Samsung Add-Link Function', addLink, [

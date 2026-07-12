@@ -371,7 +371,7 @@ function checkAssetFiles(results, config) {
   }
 
   const desiredTypes = getPath(config, ['googleWallet', 'desiredPassTypes']);
-  const requiredTypes = ['generic', 'loyalty', 'offer', 'eventTicket', 'giftCard'];
+  const requiredTypes = ['generic', 'loyalty', 'offer', 'eventTicket'];
   const missing = requiredTypes.filter((type) => !Array.isArray(desiredTypes) || !desiredTypes.includes(type));
 
   add(
@@ -379,7 +379,7 @@ function checkAssetFiles(results, config) {
     'local-assets',
     missing.length === 0 ? 'ok' : 'fail',
     'googleWallet.desiredPassTypes',
-    missing.length === 0 ? 'Generic/Loyalty/Offer/Event Ticket/Gift Card vorbereitet' : `fehlt: ${missing.join(', ')}`
+    missing.length === 0 ? 'Generic/Loyalty/Offer/Event Ticket vorbereitet' : `fehlt: ${missing.join(', ')}`
   );
 }
 

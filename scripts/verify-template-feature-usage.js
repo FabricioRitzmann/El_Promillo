@@ -238,13 +238,11 @@ assertAll('supabase/functions/_shared/templateFeatures.ts', 'Edge Function Matri
   if (relativePath.includes('google-wallet-save-link')) {
     assertAll(relativePath, 'Edge Function Google Wallet Save Link', [
       "../_shared/templateFeatures.ts",
-      "../_shared/googleWalletProvider.ts",
-      "../_shared/walletAssetFallbacks.ts",
-      'normalizeTemplateType(card.card_templates)',
-      'googleProviderCardInstance(cardInstance, card)',
-      'ensureWalletAssetFallbacks({',
-      'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
-      "walletPlatform: 'google'",
+      'featureEnabled(template,',
+      'GOOGLE_WALLET_ISSUER_ID',
+      'GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL',
+      'GOOGLE_WALLET_PRIVATE_KEY',
+      'https://pay.google.com/gp/v/save/',
       "from('customer_cards')",
       "from('card_instances')",
       "from('card_events')",

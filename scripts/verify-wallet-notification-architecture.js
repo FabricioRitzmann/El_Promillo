@@ -157,7 +157,6 @@ assertAll('supabase/schema.sql', 'Supabase Wallet-Notification-Schema', [
   'create table if not exists public.google_wallet_objects',
   'google_wallet_objects_object_type_check',
   "'eventTicketObject'",
-  "'giftCardObject'",
   'customer_cards_wallet_object_unique_idx',
   'customer_cards_wallet_object_id_format_check',
   'card_instances_wallet_object_id_format_check',
@@ -675,14 +674,11 @@ assertAll('supabase/functions/process-wallet-update-queue/index.ts', 'Wallet Upd
 
 assertAll('supabase/functions/_shared/walletNotificationService.ts', 'Wallet Queue Google Security', [
   'validateQueueGooglePatch',
-  'googleWalletObjectWasNotFound',
   'QUEUE_GOOGLE_PATCH_FIELD_FORBIDDEN',
   'QUEUE_GOOGLE_OBJECT_TYPE_INVALID',
   'const objectId = stringValue(googleObject?.object_id || cardInstance.google_object_id || cardInstance.wallet_object_id || job.payload?.object_id || job.payload?.objectId)',
   'googleWalletProvider.normalizeObjectType',
   'googleWalletProvider.objectTypeForTemplate',
-  'googleWalletProvider.createObject(cardInstance.card_templates, cardInstance',
-  'GOOGLE_WALLET_OBJECT_RECREATED_AFTER_404',
   'touchGoogleWalletObjectMapping({',
   'id: job.business_id',
   'google_object_id: objectId',
@@ -932,9 +928,6 @@ assertAll('supabase/functions/_shared/walletNotificationService.ts', 'Wallet Rec
 ]);
 
 assertAll('supabase/functions/claim-apple-pass/index.ts', 'Apple Wallet Claim Download', [
-  "../_shared/walletAssetFallbacks.ts",
-  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
-  "walletPlatform: 'apple'",
   'claim_apple_pass',
   'application/vnd.apple.pkpass',
   'findReusableClaimPassVersion',
@@ -942,9 +935,7 @@ assertAll('supabase/functions/claim-apple-pass/index.ts', 'Apple Wallet Claim Do
   'passJsonHasAppleWebServiceFields',
   'APPLE_WEB_SERVICE_CONFIG_MISSING',
   'appleWalletProvider.ensurePassAuthenticationToken',
-  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)',
   'reused_pass_version',
-  'generated_wallet_assets',
   'appleWalletProvider.updatePassFields',
   'appleWalletProvider.signPass',
   'publicAppleSigningResult',
@@ -996,25 +987,30 @@ assertAll('supabase/functions/_shared/googleWalletProvider.ts', 'Google Wallet P
   'eventTicketObject',
   'eventTicketClasses',
   'eventTicketObjects',
-  'giftCardObject',
-  'giftCardClasses',
-  'giftCardObjects',
   'TEXT_AND_NOTIFY',
   'walletobjects.googleapis.com/walletobjects/v1'
 ]);
 
 assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Wallet Save Link', [
-  "../_shared/googleWalletProvider.ts",
-  "../_shared/walletAssetFallbacks.ts",
-  'googleProviderCardInstance(cardInstance, card)',
-  'ensureWalletAssetFallbacks({',
-  "walletPlatform: 'google'",
-  'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
-  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
-  'GOOGLE_WALLET_SAVE_LINK_PROVIDER_FAILED',
-  'GOOGLE_WALLET_SAVE_LINK_INCOMPLETE',
+  'eventTicketObject',
+  'eventTicketClasses',
+  'eventTicketObjects',
+  'objectTypeForTemplate',
+  'payloadKeysForObjectType',
+  'findReusableGoogleWalletObject',
   'logGoogleSaveLink',
+  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INVALID',
+  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INCOMPLETE',
+  'GOOGLE_WALLET_PRIVATE_KEY_FORMAT',
+  'GOOGLE_WALLET_SAVE_LINK_SIGNING_FAILED',
   'catch (error)',
+  'googleWalletOrigins',
+  'normalizedHttpOrigin',
+  'new URL(text).origin',
+  'GOOGLE_WALLET_ORIGINS',
+  'APP_PUBLIC_BASE_URL',
+  'origins: config.origins',
+  'newestSourceTimestamp',
   'google_wallet_save_link',
   'reused_save_link',
   'save_url_present',
@@ -1032,8 +1028,7 @@ assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Wallet 
   'updatedGoogleObject',
   ".select('id')",
   '.maybeSingle()',
-  'googleObjectUpsertError || !updatedGoogleObject',
-  'generated_wallet_assets'
+  'googleObjectUpsertError || !updatedGoogleObject'
 ]);
 
 assert(
@@ -1107,7 +1102,6 @@ assertAll('supabase/functions/issue-google-wallet-pass/index.ts', 'Google Wallet
 }
 
 assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Wallet Update Security', [
-  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'loadGoogleCardContext',
   ".eq('owner_id', context.ownerId)",
   ".eq('business_id', context.business.id)",
@@ -1125,11 +1119,6 @@ assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Walle
   'idempotency_scope: IDEMPOTENCY_SCOPE',
   'request_payload->>idempotency_scope',
   'googleWalletProvider.statusPatch',
-  'const refreshesStatusPatch = !Object.keys(patch).length',
-  'generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
-  "walletPlatform: 'google'",
-  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
-  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'manual_google_object_update',
   "checkPlatformLimits(context, resolved.cardInstance, 'google')",
   "blockedStatus = limits.status === 'skipped' ? 'skipped' : 'limited'",
@@ -1151,7 +1140,6 @@ assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Walle
 ]);
 
 assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wallet Message Logging', [
-  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'validateMessage(title, message)',
   'logGoogleMessage',
   'findExistingManualGoogleMessage',
@@ -1176,11 +1164,6 @@ assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wall
   'googleWalletProvider.normalizeObjectType',
   'GOOGLE_OBJECT_TYPE_INVALID',
   'googleWalletProvider.statusPatch',
-  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
-  "walletPlatform: 'google'",
-  'const fallbackPatch = googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [',
-  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
-  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'touchGoogleWalletObjectMapping',
   'GOOGLE_WALLET_OBJECT_SAVE_FAILED',
   'CARD_WALLET_STATE_UPDATE_FAILED',
@@ -1199,7 +1182,6 @@ assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wall
 ]);
 
 assertAll('supabase/functions/send-apple-wallet-update/index.ts', 'Apple Wallet Push Logging', [
-  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'validateOptionalMessage(message)',
   'logAppleUpdate',
   'manual_apple_push_update',
@@ -1225,9 +1207,6 @@ assertAll('supabase/functions/send-apple-wallet-update/index.ts', 'Apple Wallet 
   'publicApplePushResult',
   '...publicApplePushResult(pushResult)',
   'updatePassFields',
-  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
-  "walletPlatform: 'apple'",
-  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'const passFields = message',
   'updateCardWalletState(context, cardInstance.id',
   'countNotifications: status === ' + "'sent'",
@@ -1320,15 +1299,6 @@ assert(
 );
 
 assert(
-  manualAppleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')") > -1
-    && manualAppleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')")
-      < manualAppleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-    && manualAppleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-      < manualAppleSend.indexOf('appleWalletProvider.updatePassFields'),
-  'Apple Manual Send muss Asset-Fallbacks nach Limitprüfung und vor neuer Pass-Version erzeugen.'
-);
-
-assert(
   manualGoogleSend.indexOf('const existingResult = await findExistingManualGoogleMessage') > -1
     && manualGoogleSend.indexOf('const existingResult = await findExistingManualGoogleMessage')
       < manualGoogleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'google')"),
@@ -1353,15 +1323,6 @@ assert(
     && manualGoogleSend.indexOf('recentManualDuplicate(context, cardInstance')
       < manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify'),
   'Google Manual Send muss identische Nachrichten vor Reservierung, Limitprüfung und Provider-Aufruf deduplizieren.'
-);
-
-assert(
-  manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify') > -1
-    && manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify')
-      < manualGoogleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-    && manualGoogleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-      < manualGoogleSend.indexOf('googleWalletProvider.updateObject'),
-  'Google Manual Send muss Asset-Fallbacks nur vor dem Object-Fallback-Patch erzeugen.'
 );
 
 assert(
@@ -1390,15 +1351,6 @@ assert(
 );
 
 assert(
-  manualApplePassUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')") > -1
-    && manualApplePassUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')")
-      < manualApplePassUpdate.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-    && manualApplePassUpdate.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-      < manualApplePassUpdate.indexOf('appleWalletProvider.updatePassFields'),
-  'Apple Pass Update muss Asset-Fallbacks nach Limitprüfung und vor neuer Pass-Version erzeugen.'
-);
-
-assert(
   manualGoogleObjectUpdate.indexOf('const existingResult = await findExistingManualGoogleObjectUpdate') > -1
     && manualGoogleObjectUpdate.indexOf('const existingResult = await findExistingManualGoogleObjectUpdate')
       < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
@@ -1410,17 +1362,6 @@ assert(
     && manualGoogleObjectUpdate.indexOf('reserveManualIdempotency(context')
       < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
   'Google Object Update muss Idempotency vor dem Provider-Patch reservieren.'
-);
-
-assert(
-  manualGoogleObjectUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, resolved.cardInstance, 'google')") > -1
-    && manualGoogleObjectUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, resolved.cardInstance, 'google')")
-      < manualGoogleObjectUpdate.indexOf('generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-    && manualGoogleObjectUpdate.indexOf('generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
-      < manualGoogleObjectUpdate.indexOf('googleWalletProvider.statusPatch')
-    && manualGoogleObjectUpdate.indexOf('googleWalletProvider.statusPatch')
-      < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
-  'Google Object Refresh muss Asset-Fallbacks nach Limitprüfung und vor dem Provider-Patch erzeugen.'
 );
 
 assert(
@@ -1471,14 +1412,11 @@ assert(
 );
 
 assert(
-  googleSaveLink.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks') > -1
-    && googleSaveLink.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks')
-      < googleSaveLink.indexOf('googleWalletProvider.generateSaveLink')
-    && googleSaveLink.indexOf('googleWalletProvider.generateSaveLink')
-      < googleSaveLink.indexOf(".from('google_wallet_objects')")
-    && !googleSaveLink.includes('findReusableGoogleWalletObject')
-    && !googleSaveLink.includes('const jwt = await signJwt'),
-  'Google Save-Link Claim muss Assets erzeugen und den Save-Link zentral ueber googleWalletProvider neu aufbauen, statt alte lokale JWT-Payloads wiederzuverwenden.'
+  googleSaveLink.indexOf('const reusableWalletObject = await findReusableGoogleWalletObject') > -1
+    && googleSaveLink.indexOf('const reusableWalletObject = await findReusableGoogleWalletObject')
+      < googleSaveLink.indexOf('const jwt = await signJwt')
+    && googleSaveLink.indexOf('if (!reusedSaveLink)') > -1,
+  'Google Save-Link Claim muss vorhandene aktuelle Save-Links vor neuer JWT-Signatur wiederverwenden.'
 );
 
 assert(
@@ -1778,7 +1716,6 @@ assertAll('supabase/test-data.sql', 'Wallet Testdaten', [
   'club_features',
   'offerObject',
   'eventTicketObject',
-  'giftCardObject',
   'on conflict (card_instance_id)',
   'apple_wallet_devices',
   'apple_wallet_registrations',
@@ -1797,19 +1734,14 @@ assertAll('supabase/test-data.sql', 'Wallet Testdaten', [
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 
 [
-  googleProvider
-].forEach((content) => {
-  const label = 'Google Wallet Provider';
+  googleProvider,
+  googleSaveLink
+].forEach((content, index) => {
+  const label = index === 0 ? 'Google Wallet Provider' : 'Google Wallet Save Link';
   assert(content.includes("event_card"), `${label} muss event_card erkennen.`);
   assert(content.includes("return 'eventTicketObject'"), `${label} muss event_card auf eventTicketObject mappen.`);
   assert(content.includes("eventTicketClasses"), `${label} muss eventTicketClasses für Save-JWTs nutzen.`);
   assert(content.includes("eventTicketObjects"), `${label} muss eventTicketObjects für Save-JWTs nutzen.`);
-  assert(content.includes("balance_card"), `${label} muss balance_card erkennen.`);
-  assert(content.includes("return 'giftCardObject'"), `${label} muss balance_card auf giftCardObject mappen.`);
-  assert(content.includes("giftCardClasses"), `${label} muss giftCardClasses für Save-JWTs nutzen.`);
-  assert(content.includes("giftCardObjects"), `${label} muss giftCardObjects für Save-JWTs nutzen.`);
-  assert(content.includes("if (objectType === 'giftCardObject')"), `${label} muss giftCardObject-spezifische Payloads erzeugen.`);
-  assert(content.includes('googleMoneyFromCents'), `${label} muss Guthaben als Google Money fuer giftCardObject vorbereiten.`);
   assert(content.includes("coupon_card"), `${label} muss coupon_card erkennen.`);
   assert(content.includes("return 'offerObject'"), `${label} muss coupon_card auf offerObject mappen.`);
   assert(content.includes("offerClasses"), `${label} muss offerClasses für Save-JWTs nutzen.`);
@@ -1822,12 +1754,11 @@ const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts'
   assert(!content.includes('const settings = templateSettings(template);\n  const settings = templateSettings(template);'), `${label} enthält doppelte Settings-Deklaration.`);
 });
 
-assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Save-Link Provider Identity Security', [
-  'wallet_object_id: cardInstance.google_object_id || cardInstance.wallet_object_id || card.wallet_object_id',
-  'const objectId = stringValue(saveLinkResult.objectId)',
-  'const classId = stringValue(saveLinkResult.classId)',
-  'const objectType = stringValue(saveLinkResult.objectType)',
-  "onConflict: 'card_instance_id'"
+assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Save-Link Class-ID Reuse Security', [
+  'googleClassId(config, card.card_templates)',
+  "eq('class_id', classId)",
+  "eq('object_type', objectType)",
+  'findReusableGoogleWalletObject(supabaseAdmin, card, cardInstance, objectId, classId, objectType)'
 ]);
 
 assertAll('docs/WALLET_INTEGRATION_CONTEXT.md', 'Wallet Integrationskontext', [
@@ -1849,7 +1780,6 @@ assertAll('docs/WALLET_INTEGRATION_CONTEXT.md', 'Wallet Integrationskontext', [
   'Stempel, Streak, VIP, Guthaben',
   'Event Ticket',
   '`eventTicketObject`',
-  '`giftCardObject`',
   'WALLET_CRON_SECRET',
   'location_based'
 ]);

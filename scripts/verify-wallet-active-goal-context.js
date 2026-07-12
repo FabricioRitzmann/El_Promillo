@@ -165,8 +165,7 @@ const configExample = JSON.parse(read('config.example.json'));
   'generic',
   'loyalty',
   'offer',
-  'eventTicket',
-  'giftCard'
+  'eventTicket'
 ].forEach((type) => {
   assert(
     configExample.googleWallet.desiredPassTypes.includes(type),

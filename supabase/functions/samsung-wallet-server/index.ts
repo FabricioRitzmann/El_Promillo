@@ -10,7 +10,6 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { samsungWalletProvider } from '../_shared/samsungWalletProvider.ts';
-import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 type Row = Record<string, any>;
 
@@ -300,18 +299,7 @@ async function handleGetCardData(request: Request, supabaseAdmin: any, cardId: s
   }
 
   const template = templateForInstance(instance);
-  const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
-    supabaseAdmin,
-    supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-    ownerId: instance.owner_id,
-    businessId: instance.business_id,
-    template,
-    cardInstance: instance,
-    walletPlatform: 'samsung'
-  });
-  const payload = await samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, {
-    supabaseAdmin,
-    generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls,
+  const payload = samsungWalletProvider.cardDataForInstance(template, instance, {
     refId,
     fields: new URL(request.url).searchParams.get('fields') || ''
   });

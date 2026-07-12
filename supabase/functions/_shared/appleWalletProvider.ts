@@ -8,15 +8,12 @@ import JSZip from 'https://esm.sh/jszip@3.10.1?target=deno';
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
-import { editorCardDesignFromTemplate, mapEditorDesignToApplePass } from './walletDesign.ts';
-import { walletAssetPublicUrl } from './walletAssets.ts';
-import type { WalletAssetType } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
 const APPLE_PASS_VERSION_RETRY_LIMIT = 3;
 const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024;
-const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png']);
+const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
 const applePassVersionSelect = [
   'id',
@@ -82,7 +79,6 @@ function safeAppleAssetUrl(value: unknown) {
 
   return parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-assets/')
     || parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-emblems/')
-    || parsedUrl.pathname.startsWith('/storage/v1/object/public/business-logos/')
     ? parsedUrl.toString()
     : '';
 }
@@ -180,27 +176,6 @@ function base64ToBytes(value: string) {
   return bytes;
 }
 
-function dataUriMimeType(value: string) {
-  const match = value.match(/^data:([^;,]+)[;,]/i);
-
-  return match ? match[1].toLowerCase() : '';
-}
-
-function isPngBytes(bytes: Uint8Array | null) {
-  return Boolean(
-    bytes
-      && bytes.byteLength <= APPLE_ASSET_MAX_BYTES
-      && bytes[0] === 137
-      && bytes[1] === 80
-      && bytes[2] === 78
-      && bytes[3] === 71
-      && bytes[4] === 13
-      && bytes[5] === 10
-      && bytes[6] === 26
-      && bytes[7] === 10
-  );
-}
-
 function binaryStringToBytes(value: string) {
   const bytes = new Uint8Array(value.length);
 
@@ -213,13 +188,11 @@ function binaryStringToBytes(value: string) {
 
 async function assetBytes(value: unknown) {
   if (value instanceof Uint8Array) {
-    return isPngBytes(value) ? value : null;
+    return value;
   }
 
   if (value instanceof ArrayBuffer) {
-    const bytes = new Uint8Array(value);
-
-    return isPngBytes(bytes) ? bytes : null;
+    return new Uint8Array(value);
   }
 
   if (value && typeof value === 'object') {
@@ -249,42 +222,16 @@ async function assetBytes(value: unknown) {
     const contentLength = Number(response.headers.get('content-length') || '0');
     const contentType = stringValue(response.headers.get('content-type')).split(';')[0].toLowerCase();
 
-    if (contentLength > APPLE_ASSET_MAX_BYTES || (contentType && !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType))) {
+    if (contentLength > APPLE_ASSET_MAX_BYTES || !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)) {
       return null;
     }
 
     const bytes = new Uint8Array(await response.arrayBuffer());
 
-    return isPngBytes(bytes) ? bytes : null;
+    return bytes.byteLength <= APPLE_ASSET_MAX_BYTES ? bytes : null;
   }
 
-  if (/^data:/i.test(text)) {
-    const contentType = dataUriMimeType(text);
-
-    if (contentType && !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)) {
-      return null;
-    }
-  }
-
-  try {
-    const bytes = base64ToBytes(text);
-
-    return isPngBytes(bytes) ? bytes : null;
-  } catch (_error) {
-    return null;
-  }
-}
-
-async function firstApplePngAssetBytes(...values: unknown[]) {
-  for (const value of values) {
-    const bytes = await assetBytes(value);
-
-    if (bytes) {
-      return bytes;
-    }
-  }
-
-  return null;
+  return base64ToBytes(text);
 }
 
 function passSigningConfig() {
@@ -352,46 +299,32 @@ function signManifest(manifestJson: string) {
 async function buildPassPackage(passJson: Row, assets: Row = {}) {
   const files = new Map<string, Uint8Array>();
   const fallbackIcon = base64ToBytes(fallbackIconPngBase64);
-  const configuredIcon = await firstApplePngAssetBytes(
-    assets.icon,
-    assets.iconPng,
-    assets.iconPngBase64,
-    assets.logo,
-    assets.logoPng,
-    assets.logoPngBase64
-  );
+  const configuredIcon = await assetBytes(assets.iconPng || assets.icon || assets.iconPngBase64 || assets.logoPng || assets.logo);
   const icon = configuredIcon || fallbackIcon;
 
   files.set('pass.json', utf8Bytes(JSON.stringify(passJson)));
   files.set('icon.png', icon);
   files.set('icon@2x.png', icon);
 
-  const logo = await firstApplePngAssetBytes(assets.logo, assets.logoPng, assets.logoPngBase64);
+  const logo = await assetBytes(assets.logoPng || assets.logo || assets.logoPngBase64);
 
   if (logo) {
     files.set('logo.png', logo);
     files.set('logo@2x.png', logo);
   }
 
-  const thumbnail = await firstApplePngAssetBytes(assets.thumbnail, assets.thumbnailPng, assets.thumbnailPngBase64);
+  const thumbnail = await assetBytes(assets.thumbnailPng || assets.thumbnail || assets.thumbnailPngBase64);
 
   if (thumbnail) {
     files.set('thumbnail.png', thumbnail);
     files.set('thumbnail@2x.png', thumbnail);
   }
 
-  const strip = await firstApplePngAssetBytes(assets.strip, assets.stripPng, assets.stripPngBase64);
+  const strip = await assetBytes(assets.stripPng || assets.strip || assets.stripPngBase64);
 
   if (strip) {
     files.set('strip.png', strip);
     files.set('strip@2x.png', strip);
-  }
-
-  const background = await firstApplePngAssetBytes(assets.background, assets.backgroundPng, assets.backgroundPngBase64);
-
-  if (background) {
-    files.set('background.png', background);
-    files.set('background@2x.png', background);
   }
 
   const manifest: Row = {};
@@ -725,99 +658,28 @@ function appleTemplateAssetUrls(template: Row, cardInstance: Row = {}) {
   };
 }
 
-function generatedAppleWalletAssetUrl(cardInstance: Row, assetType: WalletAssetType) {
-  return walletAssetPublicUrl(Deno.env.get('SUPABASE_URL') || '', {
-    ownerId: cardInstance.owner_id,
-    businessId: cardInstance.business_id,
-    templateId: cardInstance.template_id,
-    cardInstanceId: cardInstance.id,
-    walletPlatform: 'apple',
-    assetType
-  });
-}
-
-function generatedAppleWalletAssetUrlsForTemplate(template: Row, cardInstance: Row = {}) {
-  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
-  const assetTypes = new Set<WalletAssetType>(
-    editorDesign.assetFallbacks
-      .filter((fallback) => fallback.platforms.includes('apple'))
-      .map((fallback) => fallback.assetType)
-      .filter((assetType): assetType is WalletAssetType => [
-        'stamp_grid',
-        'streak_badge',
-        'wallet_background',
-        'combined_emblem',
-        'decorative_title',
-        'club_module_badges'
-      ].includes(assetType))
-  );
-  const urls: Row = {};
-
-  for (const assetType of assetTypes) {
-    const url = generatedAppleWalletAssetUrl(cardInstance, assetType);
-
-    if (url) {
-      urls[assetType] = url;
-    }
-  }
-
-  return urls;
-}
-
 function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {}) {
   const assets = explicitAssets && typeof explicitAssets === 'object' && !Array.isArray(explicitAssets)
     ? explicitAssets
     : {};
   const { logoUrl, iconUrl, emblemUrl } = appleTemplateAssetUrls(template, cardInstance);
-  const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance);
   const templateAssets: Row = {};
 
   if (logoUrl) {
     templateAssets.logo = logoUrl;
+    templateAssets.logoPng = logoUrl;
   }
 
   if (iconUrl) {
     templateAssets.icon = iconUrl;
+    templateAssets.iconPng = iconUrl;
   }
 
   if (emblemUrl) {
     templateAssets.thumbnail = emblemUrl;
+    templateAssets.thumbnailPng = emblemUrl;
     templateAssets.strip = emblemUrl;
-  }
-
-  if (generatedAssets.wallet_background) {
-    templateAssets.backgroundPng = generatedAssets.wallet_background;
-    templateAssets.background = templateAssets.background || generatedAssets.wallet_background;
-    templateAssets.strip = templateAssets.strip || generatedAssets.wallet_background;
-    templateAssets.stripPng = templateAssets.stripPng || generatedAssets.wallet_background;
-  }
-
-  if (generatedAssets.combined_emblem) {
-    templateAssets.thumbnailPng = generatedAssets.combined_emblem;
-    templateAssets.stripPng = generatedAssets.combined_emblem;
-    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.combined_emblem;
-    templateAssets.strip = templateAssets.strip || generatedAssets.combined_emblem;
-  }
-
-  if (generatedAssets.stamp_grid) {
-    templateAssets.stripPng = generatedAssets.stamp_grid;
-    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.stamp_grid;
-    templateAssets.thumbnailPng = templateAssets.thumbnailPng || generatedAssets.stamp_grid;
-  }
-
-  if (generatedAssets.streak_badge) {
-    templateAssets.thumbnailPng = generatedAssets.streak_badge;
-    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.streak_badge;
-  }
-
-  if (generatedAssets.club_module_badges) {
-    templateAssets.stripPng = generatedAssets.club_module_badges;
-    templateAssets.strip = templateAssets.strip || generatedAssets.club_module_badges;
-  }
-
-  if (generatedAssets.decorative_title) {
-    templateAssets.logo = templateAssets.logo || generatedAssets.decorative_title;
-    templateAssets.logoPng = generatedAssets.decorative_title;
+    templateAssets.stripPng = emblemUrl;
   }
 
   return {
@@ -826,11 +688,10 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
   };
 }
 
-function passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {}) {
+function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
   const { logoUrl, iconUrl } = appleTemplateAssetUrls(template);
-  const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance);
 
-  if (!logoUrl && !iconUrl && Object.keys(generatedAssets).length === 0) {
+  if (!logoUrl && !iconUrl) {
     return true;
   }
 
@@ -846,30 +707,6 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null, ca
     return false;
   }
 
-  if (generatedAssets.wallet_background && !stringValue(assets.backgroundPng || assets.stripPng)) {
-    return false;
-  }
-
-  if (generatedAssets.stamp_grid && !stringValue(assets.stripPng || assets.thumbnailPng)) {
-    return false;
-  }
-
-  if (generatedAssets.streak_badge && !stringValue(assets.thumbnailPng)) {
-    return false;
-  }
-
-  if (generatedAssets.club_module_badges && !stringValue(assets.stripPng)) {
-    return false;
-  }
-
-  if (generatedAssets.combined_emblem && !stringValue(assets.stripPng || assets.thumbnailPng)) {
-    return false;
-  }
-
-  if (generatedAssets.decorative_title && !stringValue(assets.logoPng || assets.logoPngBase64)) {
-    return false;
-  }
-
   return true;
 }
 
@@ -879,18 +716,6 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
-  const editorDesign = editorCardDesignFromTemplate(template, cardInstance, { latestMessage });
-  const appleDesign = mapEditorDesignToApplePass(editorDesign, cardInstance);
-  const appleBarcodes = appleDesign.barcodes.length
-    ? appleDesign.barcodes
-    : [
-      {
-        format: 'PKBarcodeFormatQR',
-        message: cardCode,
-        messageEncoding: 'iso-8859-1',
-        altText: cardCode
-      }
-    ];
   const featureRows = walletFeatureRows(template, cardInstance);
   const headerRow = latestMessage
     ? {
@@ -921,7 +746,34 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     });
   }
 
-  const defaultBackFields = [
+  const generic = {
+    headerFields: [
+      {
+        ...headerRow,
+        changeMessage: '%@'
+      }
+    ],
+    primaryFields: [
+      {
+        key: 'cardName',
+        label: businessNameForTemplate(template),
+        value: stringValue(template.card_name || 'Kundenkarte')
+      }
+    ],
+    secondaryFields: [
+      {
+        key: 'cardId',
+        label: 'Karten-ID',
+        value: cardCode
+      },
+      {
+        key: 'type',
+        label: 'Typ',
+        value: templateTypeLabel(template)
+      }
+    ],
+    auxiliaryFields: auxiliaryFields.slice(0, 4),
+    backFields: [
       {
         key: 'messageBack',
         label: 'Letzte Nachricht',
@@ -953,45 +805,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         label: 'Belohnung',
         value: rewardText
       }] : [])
-      .filter((field) => field.value);
-  const backFieldKeys = new Set(defaultBackFields.map((field) => field.key));
-  const mappedBackFields = appleDesign.fieldSets.backFields.filter((field) => field.value && !backFieldKeys.has(field.key));
-  const generic = {
-    headerFields: latestMessage
-      ? [
-        {
-          ...headerRow,
-          changeMessage: '%@'
-        }
-      ]
-      : appleDesign.fieldSets.headerFields,
-    primaryFields: appleDesign.fieldSets.primaryFields.length
-      ? appleDesign.fieldSets.primaryFields
-      : [
-        {
-          key: 'cardName',
-          label: businessNameForTemplate(template),
-          value: stringValue(template.card_name || 'Kundenkarte')
-        }
-      ],
-    secondaryFields: appleDesign.fieldSets.secondaryFields.length
-      ? appleDesign.fieldSets.secondaryFields
-      : [
-        {
-          key: 'cardId',
-          label: 'Karten-ID',
-          value: cardCode
-        },
-        {
-          key: 'type',
-          label: 'Typ',
-          value: templateTypeLabel(template)
-        }
-      ],
-    auxiliaryFields: latestMessage
-      ? auxiliaryFields.slice(0, 4)
-      : (appleDesign.fieldSets.auxiliaryFields.length ? appleDesign.fieldSets.auxiliaryFields : auxiliaryFields.slice(0, 4)),
-    backFields: defaultBackFields.concat(mappedBackFields)
+      .filter((field) => field.value)
   };
 
   const passJson: Row = {
@@ -1001,11 +815,18 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     teamIdentifier: config.teamId,
     organizationName: businessNameForTemplate(template, 'Wallet Cards'),
     description: stringValue(template.description || template.card_name || 'Digitale Walletkarte'),
-    backgroundColor: appleDesign.colors.backgroundColor,
-    foregroundColor: appleDesign.colors.foregroundColor,
-    labelColor: appleDesign.colors.labelColor,
-    barcodes: appleBarcodes,
-    [appleDesign.passStyle]: generic
+    backgroundColor: stringValue(template.primary_color || '#fffdf9'),
+    foregroundColor: stringValue(template.text_color || '#8b4f2f'),
+    labelColor: stringValue(template.text_color || '#8b4f2f'),
+    barcodes: [
+      {
+        format: 'PKBarcodeFormatQR',
+        message: cardCode,
+        messageEncoding: 'iso-8859-1',
+        altText: cardCode
+      }
+    ],
+    generic
   };
 
   if (authenticationToken && configuredHttpsUrl(config.webServiceBaseUrl)) {
@@ -1017,19 +838,8 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     passJson.relevantDate = fields.relevantDate;
   }
 
-  const passLocations = Array.isArray(fields.locations) && fields.locations.length
-    ? fields.locations
-    : appleDesign.locations;
-  const passBeacons = Array.isArray(fields.beacons) && fields.beacons.length
-    ? fields.beacons
-    : appleDesign.beacons;
-
-  if (passLocations.length) {
-    passJson.locations = passLocations;
-  }
-
-  if (passBeacons.length) {
-    passJson.beacons = passBeacons;
+  if (Array.isArray(fields.locations) && fields.locations.length) {
+    passJson.locations = fields.locations;
   }
 
   return passJson;
@@ -1190,8 +1000,8 @@ export const appleWalletProvider = {
     return ensurePassAuthenticationToken(supabaseAdmin, cardInstance);
   },
 
-  passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {}) {
-    return passVersionHasTemplateAssets(template, passVersion, cardInstance);
+  passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
+    return passVersionHasTemplateAssets(template, passVersion);
   },
 
   async issuePass(supabaseAdmin: any, template: Row, cardInstance: Row) {

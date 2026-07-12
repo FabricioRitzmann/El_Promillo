@@ -171,7 +171,6 @@ assertAll('supabase/functions/_shared/googleWalletProvider.ts', 'Direkter Google
   'loyaltyObject',
   'offerObject',
   'eventTicketObject',
-  'giftCardObject',
   'walletobjects.googleapis.com/walletobjects/v1'
 ]);
 
@@ -281,8 +280,7 @@ assertAll('supabase/test-data.sql', 'Wallet Testdaten laut Prompt', [
   'genericObject',
   'loyaltyObject',
   'offerObject',
-  'eventTicketObject',
-  'giftCardObject'
+  'eventTicketObject'
 ]);
 
 assertAll('package.json', 'pnpm check muss Prompt-Coverage absichern', [

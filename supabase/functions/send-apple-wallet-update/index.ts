@@ -1,7 +1,6 @@
 import { appleWalletProvider } from '../_shared/appleWalletProvider.ts';
 import { publicApplePassVersion, publicApplePushOperationPayload, publicApplePushResult } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
-import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
@@ -313,15 +312,6 @@ Deno.serve(async (request) => {
         message
       }
       : {};
-    const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
-      supabaseAdmin: context.supabaseAdmin,
-      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
-      ownerId: context.ownerId,
-      businessId: context.business.id,
-      template: cardInstance.card_templates,
-      cardInstance,
-      walletPlatform: 'apple'
-    });
     const passVersion = await appleWalletProvider.updatePassFields(context.supabaseAdmin, cardInstance, cardInstance.card_templates, passFields, {
       reason: 'manual_apple_push_update',
       enqueue: false
@@ -334,8 +324,7 @@ Deno.serve(async (request) => {
       pass_version_id: passVersion?.id || null,
       warning_code: pushPrepared ? pushResult.error_code || 'APPLE_PUSH_NOT_SENT_PASS_PREPARED' : null,
       warning_message: pushPrepared ? pushResult.error_message || pushResult.error_reason || 'Apple-Pass wurde aktualisiert, aber kein sichtbarer APNS-Push gesendet.' : null,
-      push: pushResult,
-      generated_wallet_assets: generatedAssetFallbacks.generatedAssets
+      push: pushResult
     };
 
     await logAppleUpdate(
@@ -357,8 +346,7 @@ Deno.serve(async (request) => {
     return json({
       ...publicApplePushResult(pushResult),
       status,
-      passVersion: publicApplePassVersion(passVersion),
-      generatedWalletAssets: generatedAssetFallbacks.generatedAssets
+      passVersion: publicApplePassVersion(passVersion)
     }, status === 'failed' ? 502 : 200);
   } catch (error) {
     await walletNotificationService.failManualIdempotencyReservation(

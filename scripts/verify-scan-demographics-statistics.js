@@ -38,8 +38,6 @@ const deployScript = read('scripts/deploy-wallet-functions.sh');
   'first_scanned_at timestamptz',
   'scan_count integer default 0',
   'scan_event_id uuid references public.scan_events',
-  'wallet_emblem_update_logs',
-  "update_type = 'emblem_changed'",
   'scan_events_customer_gender_check',
   'unlocked operators can read own scan events',
   'revoke select, insert, update, delete on public.scan_events from authenticated'
@@ -51,8 +49,6 @@ const deployScript = read('scripts/deploy-wallet-functions.sh');
   'loadLocalCardInstanceForScan',
   'insertLocalScanEvent',
   'CLUB_FEATURE_NOT_ENABLED',
-  'recordLocalWalletEmblemUpdate',
-  "update_type: 'emblem_changed'",
   'demographics_were_collected',
   'scan_count',
   "app.post('/api/statistics/scans'"
@@ -64,8 +60,6 @@ const deployScript = read('scripts/deploy-wallet-functions.sh');
   'loadCardInstanceForScan',
   'insertScanEvent',
   'CLUB_FEATURE_NOT_ENABLED',
-  'recordWalletEmblemUpdate',
-  "update_type: 'emblem_changed'",
   'demographics_were_collected',
   'scan_count'
 ].forEach((needle) => assertIncludes(scannerEdge, needle, 'Scanner Edge Function muss Erstscan und scan_events unterstützen'));

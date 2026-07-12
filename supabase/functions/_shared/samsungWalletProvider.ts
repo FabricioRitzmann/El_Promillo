@@ -6,9 +6,6 @@
 
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { normalizeTemplateType } from './templateFeatures.ts';
-import { editorCardDesignFromTemplate, mapEditorDesignToSamsungWalletCard } from './walletDesign.ts';
-import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts';
-import type { WalletAssetUrls } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -333,48 +330,12 @@ function normalizeRefId(value: unknown) {
   return /^[A-Za-z0-9_-]{8,32}$/.test(text) ? text : '';
 }
 
-function samsungGeneratedMainImage(assetUrls: WalletAssetUrls = {}) {
-  return stringValue(
-    assetUrls.wallet_background
-      || assetUrls.combined_emblem
-      || assetUrls.club_module_badges
-      || assetUrls.stamp_grid
-      || assetUrls.streak_badge
-      || assetUrls.decorative_title
-  );
-}
-
-async function generatedSamsungWalletAssetUrls(template: Row, instance: Row, options: Row = {}) {
-  if (options.generatedAssetUrls && typeof options.generatedAssetUrls === 'object') {
-    return options.generatedAssetUrls as WalletAssetUrls;
-  }
-
-  if (!options.supabaseAdmin) {
-    return {};
-  }
-
-  const editorDesign = editorCardDesignFromTemplate(template, instance);
-  const assetTypes = walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'samsung');
-
-  return existingWalletAssetPublicUrls(options.supabaseAdmin, Deno.env.get('SUPABASE_URL') || '', {
-    ownerId: instance.owner_id,
-    businessId: instance.business_id,
-    templateId: instance.template_id,
-    cardInstanceId: instance.card_instance_id || instance.id,
-    walletPlatform: 'samsung'
-  }, assetTypes);
-}
-
-function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}, options: Row = {}) {
+function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
   const business = firstBusiness(template) || {};
   const providerName = textLimit(business.name || template.business_name || 'El Promillo', 32, 'El Promillo');
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
-  const generatedMainImage = samsungGeneratedMainImage(options.generatedAssetUrls);
   const linkUrl = appLinkUrl(template);
-  const editorDesign = editorCardDesignFromTemplate(template, instance);
-  const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
-  const mappedAttributes = samsungDesign.attributes;
 
   if (!imageUrl || !linkUrl) {
     return providerStructuredError(
@@ -386,40 +347,35 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}, o
   }
 
   return {
-    title: textLimit(mappedAttributes.title || title, 32, title),
-    subtitle1: textLimit(mappedAttributes.subtitle1 || rewardOrDescription(template, instance), 32),
+    title,
+    subtitle1: textLimit(rewardOrDescription(template, instance), 32),
     providerName,
-    noticeDesc: textLimit(mappedAttributes.noticeDesc || template.description || template.reward_text || '', 5000),
+    noticeDesc: textLimit(template.description || template.reward_text || '', 5000),
     logoImage: imageUrl,
     'logoImage.darkUrl': imageUrl,
     'logoImage.lightUrl': imageUrl,
     appLinkLogo: imageUrl,
     appLinkName: textLimit(providerName, 32, 'El Promillo'),
     appLinkData: linkUrl,
-    mainImg: generatedMainImage || stringValue(mappedAttributes.mainImg || imageUrl),
-    bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
-    fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
-    'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
-    'barcode.serialType': stringValue(mappedAttributes['barcode.serialType'] || 'QRCODE'),
-    'barcode.ptFormat': stringValue(mappedAttributes['barcode.ptFormat'] || 'QRCODESERIAL'),
-    'barcode.ptSubFormat': stringValue(mappedAttributes['barcode.ptSubFormat'] || 'QR_CODE'),
-    amount: stringValue(mappedAttributes.amount || templateProgressText(template, instance)),
-    balance: stringValue(mappedAttributes.balance || rewardOrDescription(template, instance)),
-    level: textLimit(mappedAttributes.level || instance.vip_level || instance.vip_status || template.vip_tier || '', 16),
+    bgColor: hexColor(template.primary_color, '#fffdf9'),
+    fontColor: samsungFontColor(template.text_color),
+    'barcode.value': stringValue(instance.customer_code || instance.card_instance_number || instance.ref_id),
+    'barcode.serialType': 'QRCODE',
+    'barcode.ptFormat': 'QRCODESERIAL',
+    'barcode.ptSubFormat': 'QR_CODE',
+    amount: templateProgressText(template, instance),
+    balance: rewardOrDescription(template, instance),
+    level: textLimit(instance.vip_level || instance.vip_status || template.vip_tier || '', 16),
     merchantName: providerName
   };
 }
 
-function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}, options: Row = {}) {
+function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}) {
   const business = firstBusiness(template) || {};
   const providerName = textLimit(business.name || template.business_name || 'El Promillo', 32, 'El Promillo');
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
-  const generatedMainImage = samsungGeneratedMainImage(options.generatedAssetUrls);
   const startDate = Date.parse(stringValue(template.settings?.eventDate || template.created_at)) || Date.now();
-  const editorDesign = editorCardDesignFromTemplate(template, instance);
-  const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
-  const mappedAttributes = samsungDesign.attributes;
 
   if (!imageUrl) {
     return providerStructuredError(
@@ -431,17 +387,17 @@ function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}, o
   }
 
   return {
-    title: textLimit(mappedAttributes.title || title, 32, title),
+    title,
     providerName,
-    mainImg: generatedMainImage || stringValue(mappedAttributes.mainImg || imageUrl),
+    mainImg: imageUrl,
     startDate,
-    bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
-    fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
-    'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
-    'barcode.serialType': stringValue(mappedAttributes['barcode.serialType'] || 'QRCODE'),
-    'barcode.ptFormat': stringValue(mappedAttributes['barcode.ptFormat'] || 'QRCODESERIAL'),
-    'barcode.ptSubFormat': stringValue(mappedAttributes['barcode.ptSubFormat'] || 'QR_CODE'),
-    noticeDesc: textLimit(mappedAttributes.noticeDesc || template.description || rewardOrDescription(template, instance), 5000)
+    bgColor: hexColor(template.primary_color, '#fffdf9'),
+    fontColor: samsungFontColor(template.text_color),
+    'barcode.value': stringValue(instance.customer_code || instance.card_instance_number || instance.ref_id),
+    'barcode.serialType': 'QRCODE',
+    'barcode.ptFormat': 'QRCODESERIAL',
+    'barcode.ptSubFormat': 'QR_CODE',
+    noticeDesc: textLimit(template.description || rewardOrDescription(template, instance), 5000)
   };
 }
 
@@ -456,8 +412,8 @@ function buildCardDataPayload(template: Row = {}, instance: Row = {}, options: R
   const createdAt = Date.parse(stringValue(instance.created_at)) || Date.now();
   const updatedAt = Date.parse(stringValue(instance.updated_at || instance.last_synced_at)) || Date.now();
   const attributes = config.cardType === 'generic'
-    ? buildSamsungGenericAttributes(template, instance, options)
-    : buildSamsungLoyaltyAttributes(template, instance, options);
+    ? buildSamsungGenericAttributes(template, instance)
+    : buildSamsungLoyaltyAttributes(template, instance);
 
   if (attributes?.ok === false) {
     return attributes;
@@ -863,15 +819,6 @@ export const samsungWalletProvider = {
 
   cardDataForInstance(template: Row, instance: Row, options: Row = {}) {
     return buildCardDataPayload(template, instance, options);
-  },
-
-  async cardDataForInstanceWithAssets(template: Row, instance: Row, options: Row = {}) {
-    const generatedAssetUrls = await generatedSamsungWalletAssetUrls(template, instance, options);
-
-    return buildCardDataPayload(template, instance, {
-      ...options,
-      generatedAssetUrls
-    });
   },
 
   verifyPartnerServerAuthorization(request: Request, expected: Row) {

@@ -24,7 +24,6 @@ function assertIncludes(content, needle, message) {
   'Demo VIP Karte',
   'Demo Guthabenkarte',
   'Demo Garderobenkarte',
-  'Demo Generische Karte',
   'Demo Eventkarte',
   'Demo Couponkarte',
   'Demo Clubkarte Basis',
@@ -87,8 +86,7 @@ function assertIncludes(content, needle, message) {
   'genericObject',
   'loyaltyObject',
   'offerObject',
-  'eventTicketObject',
-  'giftCardObject'
+  'eventTicketObject'
 ].forEach((objectType) => assertIncludes(testData, objectType, 'Wallet-Testdaten müssen alle gewünschten Google-Wallet-Object-Typen enthalten'));
 
 [
@@ -96,7 +94,6 @@ function assertIncludes(content, needle, message) {
   "'vip_card'",
   "'balance_card'",
   "'cloakroom_card'",
-  "'generic_card'",
   "'event_card'",
   "'coupon_card'",
   "'club_card'"
@@ -120,8 +117,8 @@ function assertIncludes(content, needle, message) {
 ].forEach((needle) => assertIncludes(testData, needle, 'Wallet-Testdaten müssen card_instances und Google-Objekte idempotent vorbereiten'));
 
 assertIncludes(readme, 'Event-, Coupon- und Clubkarten-Templates', 'README muss die erweiterten Testdaten erwähnen');
-assertIncludes(readme, '`genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject` und `giftCardObject`', 'README muss die Google-Wallet-Testtypen dokumentieren');
+assertIncludes(readme, '`genericObject`, `loyaltyObject`, `offerObject` und `eventTicketObject`', 'README muss die Google-Wallet-Testtypen dokumentieren');
 assertIncludes(context, 'Event-, Coupon- und Clubkarten-Templates', 'Wallet-Kontext muss die erweiterten Testdaten erwähnen');
-assertIncludes(context, '`genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject` und `giftCardObject`', 'Wallet-Kontext muss die Google-Wallet-Testtypen dokumentieren');
+assertIncludes(context, '`genericObject`, `loyaltyObject`, `offerObject` und `eventTicketObject`', 'Wallet-Kontext muss die Google-Wallet-Testtypen dokumentieren');
 
 console.log('Wallet-Testdaten decken Demo-Business, Karten, Kampagnen und Google-Object-Typen ab.');

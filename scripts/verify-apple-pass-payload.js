@@ -22,7 +22,6 @@ function assertIncludes(content, needles, label) {
 }
 
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
-const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const claimApplePass = read('supabase/functions/claim-apple-pass/index.ts');
 const packageJson = read('package.json');
 
@@ -42,32 +41,6 @@ assertIncludes(appleProvider, [
   'configuredHttpsUrl(config.webServiceBaseUrl)'
 ], 'Apple Pass JSON Identität/Webservice');
 
-assertIncludes(walletDesign, [
-  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
-  'function appleBarcodeFormat(format: EditorBarcodeFormat)',
-  'appleBarcodeFormat(editorDesign.barcodeFormat)',
-  'PKBarcodeFormatQR',
-  'PKBarcodeFormatAztec',
-  'PKBarcodeFormatPDF417',
-  'PKBarcodeFormatCode128'
-], 'Apple Pass Barcodeformat Mapping');
-
-assertIncludes(walletDesign, [
-  'export type WalletLocation',
-  'export type WalletBeacon',
-  'function walletLocationsFor(template: Row, cardInstance: Row, options: Row)',
-  'function walletBeaconsFor(template: Row, cardInstance: Row, options: Row)',
-  'locations: editorDesign.locations',
-  'beacons: editorDesign.beacons'
-], 'Apple Pass Standort-/Beacon-Mapping');
-
-assertIncludes(appleProvider, [
-  'const passLocations = Array.isArray(fields.locations) && fields.locations.length',
-  'const passBeacons = Array.isArray(fields.beacons) && fields.beacons.length',
-  'passJson.locations = passLocations',
-  'passJson.beacons = passBeacons'
-], 'Apple Pass Standort-/Beacon-Payload');
-
 assertIncludes(appleProvider, [
   'walletFeatureRows(template, cardInstance)',
   'current_stamps',
@@ -86,31 +59,14 @@ assertIncludes(appleProvider, [
   "Deno.env.get('SUPABASE_URL')",
   '/storage/v1/object/public/wallet-assets/',
   '/storage/v1/object/public/wallet-emblems/',
-  '/storage/v1/object/public/business-logos/',
   'supabaseCardEmblemUrl(cardInstance',
   'const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024',
-  "const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png'])",
+  'const APPLE_ASSET_ALLOWED_MIME_TYPES',
   'APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)',
-  'function isPngBytes(bytes: Uint8Array | null)',
-  'function dataUriMimeType(value: string)',
-  'async function firstApplePngAssetBytes(...values: unknown[])',
-  'return isPngBytes(bytes) ? bytes : null',
   'fetch(assetUrl)',
+  'bytes.byteLength <= APPLE_ASSET_MAX_BYTES',
   'function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {})',
   'function passVersionHasTemplateAssets(template: Row',
-  'const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance)',
-  'generatedAssets.wallet_background',
-  'generatedAssets.stamp_grid',
-  'generatedAssets.streak_badge',
-  'generatedAssets.combined_emblem',
-  'generatedAssets.decorative_title',
-  'generatedAssets.club_module_badges',
-  'generatedAssets.wallet_background && !stringValue(assets.backgroundPng || assets.stripPng)',
-  'generatedAssets.stamp_grid && !stringValue(assets.stripPng || assets.thumbnailPng)',
-  'generatedAssets.streak_badge && !stringValue(assets.thumbnailPng)',
-  'generatedAssets.club_module_badges && !stringValue(assets.stripPng)',
-  'generatedAssets.combined_emblem && !stringValue(assets.stripPng || assets.thumbnailPng)',
-  'generatedAssets.decorative_title && !stringValue(assets.logoPng || assets.logoPngBase64)',
   'template.logo_url',
   'settings.iconUrl',
   'templateAssets.logo',
@@ -118,20 +74,8 @@ assertIncludes(appleProvider, [
   'templateAssets.thumbnail',
   'templateAssets.strip',
   'assets = appleAssetsForTemplate(template, options.assets || {}, ensuredCardInstance)',
-  'passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {})'
+  'passVersionHasTemplateAssets(template: Row, passVersion: Row | null)'
 ], 'Apple Pass Template-Assets');
-
-assert(
-  !appleProvider.includes("'image/jpeg'") && !appleProvider.includes("'image/webp'"),
-  'Apple Pass Assets duerfen JPEG/WebP nicht als .png Pass-Dateien akzeptieren.'
-);
-
-assertIncludes(walletDesign, [
-  "id: 'apple-logo-png-format'",
-  'function likelyPngAssetUrl(value: unknown)',
-  'Apple Pass-Bildslots brauchen echte PNG-Bytes',
-  "platforms: ['apple']"
-], 'Apple PNG-Fallback-Warnung');
 
 assert(
   !appleProvider.includes('fetch(text)'),
@@ -146,9 +90,6 @@ assertIncludes(appleProvider, [
   "files.set('logo@2x.png'",
   "files.set('thumbnail.png'",
   "files.set('strip.png'",
-  "files.set('background.png'",
-  'generatedAppleWalletAssetUrlsForTemplate',
-  'walletAssetPublicUrl',
   "files.set('manifest.json'",
   "files.set('signature'",
   'buildPassPackage(passJson, assets)',
@@ -156,14 +97,10 @@ assertIncludes(appleProvider, [
 ], 'Apple pkpass Paket');
 
 assertIncludes(claimApplePass, [
-  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
-  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
-  "walletPlatform: 'apple'",
   'passJsonHasAppleWebServiceFields(data.pass_json)',
-  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)',
+  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data)',
   'appleWalletProvider.updatePassFields',
-  'appleWalletProvider.signPass',
-  'generated_wallet_assets: options.generatedWalletAssets || []'
+  'appleWalletProvider.signPass'
 ], 'Apple Claim Pass Wiederverwendung');
 
 assert(

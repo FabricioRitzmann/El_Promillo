@@ -122,7 +122,7 @@ Evidenz:
 - Updates: `update-google-wallet-pass`
 - Messages: `send-google-wallet-message`
 - Tabellen: `google_wallet_objects`
-- Object-Typen: `genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject`, `giftCardObject`
+- Object-Typen: `genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject`
 - Contract-Check: `scripts/verify-google-wallet-contract.js` prüft Provider, Save-Link, Messages, SQL-Isolation, Redaction und Limits.
 
 Externes Gate:

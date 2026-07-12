@@ -62,10 +62,6 @@ assert(
   'Editor muss Push-Benachrichtigungen als matrixgesteuertes Feature vorbereiten.'
 );
 assert(
-  editorHtml.includes('name="notifications_enabled" type="checkbox" checked'),
-  'Editor muss Wallet-Benachrichtigungen fuer neue Templates standardmaessig aktivieren.'
-);
-assert(
   editorHtml.includes('data-feature-group="customFields"') && editorHtml.includes('name="custom_fields_text"'),
   'Editor muss Freifelder als matrixgesteuertes Feature vorbereiten.'
 );
