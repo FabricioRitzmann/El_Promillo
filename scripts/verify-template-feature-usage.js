@@ -15,6 +15,12 @@ function assertIncludes(source, needle, label) {
   }
 }
 
+function assertNotIncludes(source, needle, label) {
+  if (source.includes(needle)) {
+    throw new Error(`${label} darf nicht enthalten: ${needle}`);
+  }
+}
+
 function assertAll(relativePath, label, needles) {
   const source = read(relativePath);
 
@@ -82,9 +88,9 @@ assertAll('public/js/ui.js', 'Wallet Preview', [
   'return `<img${classAttribute}',
   "businessLogoMarkup(business, 'wallet-logo-placeholder')",
   'wallet-qr-placeholder',
-  'wallet-code-meta',
   'walletPreviewHtml'
 ]);
+assertNotIncludes(read('public/js/ui.js'), 'wallet-code-meta', 'Wallet Preview zeigt im QR-Feld keinen Textblock');
 
 assertAll('public/js/claim.js', 'Public Wallet Download Page', [
   "import { byId, escapeHtml, showMessage, walletPreviewHtml } from './ui.js'",

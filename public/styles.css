@@ -2007,25 +2007,25 @@ textarea {
 
 .wallet-code {
   min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.56rem;
+  min-height: 4.92rem;
+  display: flex;
   align-items: center;
-  padding-top: 0.54rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.24);
+  justify-content: center;
+  padding-top: 0.5rem;
 }
 
 .wallet-qr-placeholder {
-  width: 3.2rem;
+  width: 4.25rem;
   aspect-ratio: 1;
   position: relative;
   flex: 0 0 auto;
-  border-radius: 0.32rem;
+  border: 0.26rem solid rgba(255, 250, 242, 0.96);
+  border-radius: 0.38rem;
   background:
     linear-gradient(90deg, rgba(32, 28, 25, 0.86) 50%, transparent 0) 0 0 / 0.58rem 0.58rem,
     linear-gradient(rgba(32, 28, 25, 0.7) 50%, transparent 0) 0 0 / 0.42rem 0.42rem,
     #fffaf2;
-  box-shadow: inset 0 0 0 0.22rem #fffaf2, 0 4px 12px rgba(39, 31, 25, 0.18);
+  box-shadow: 0 4px 12px rgba(39, 31, 25, 0.18);
   overflow: hidden;
 }
 
@@ -2063,32 +2063,6 @@ textarea {
   background:
     linear-gradient(90deg, rgba(32, 28, 25, 0.88) 42%, transparent 0 58%, rgba(32, 28, 25, 0.88) 0) 0 0 / 0.44rem 0.44rem,
     linear-gradient(rgba(32, 28, 25, 0.78) 42%, transparent 0 58%, rgba(32, 28, 25, 0.78) 0) 0 0 / 0.32rem 0.32rem;
-}
-
-.wallet-code-meta {
-  min-width: 0;
-  display: grid;
-  gap: 0.14rem;
-  font-size: 0.74rem;
-  line-height: 1.25;
-}
-
-.wallet-code-meta span {
-  min-width: 0;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  opacity: 0.78;
-  overflow-wrap: anywhere;
-}
-
-.wallet-code-meta strong {
-  min-width: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.76rem;
-  font-weight: 780;
-  overflow-wrap: anywhere;
 }
 
 .detail-grid {
