@@ -6,6 +6,37 @@ const loginForm = byId('loginForm');
 const registerForm = byId('registerForm');
 const authMessage = byId('authMessage');
 
+function submitFormOnEnter(form) {
+  form?.addEventListener('keydown', (event) => {
+    if (
+      event.key !== 'Enter'
+      || event.defaultPrevented
+      || event.isComposing
+      || event.altKey
+      || event.ctrlKey
+      || event.metaKey
+      || event.shiftKey
+    ) {
+      return;
+    }
+
+    const target = event.target;
+
+    if (!target || String(target.tagName || '').toUpperCase() !== 'INPUT') {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit();
+      return;
+    }
+
+    form.querySelector('button[type="submit"]')?.click();
+  });
+}
+
 async function initAuthPage() {
   const client = await createSupabaseRestClient();
   const existingSession = await client.ensureSession();
@@ -14,6 +45,9 @@ async function initAuthPage() {
     await redirectAfterLogin(client, existingSession);
     return;
   }
+
+  submitFormOnEnter(loginForm);
+  submitFormOnEnter(registerForm);
 
   loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
