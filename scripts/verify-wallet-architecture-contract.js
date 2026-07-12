@@ -163,6 +163,8 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
 
 [
   'walletCardModel',
+  'ensureWalletAssetFallbacks',
+  'withWalletAssetFallbacks',
   'hasSamsungDeviceHint',
   'business',
   'customer',
@@ -174,6 +176,11 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
   'dynamicFields',
   'customFields',
   'providerMapping',
+  'generatedAssetUrls',
+  'googleWalletProvider.createObject(template, instance, assetOptions)',
+  'googleWalletProvider.generateSaveLink(template, instance, assetOptions)',
+  'googleWalletProvider.statusPatch(template, instance, objectType, [], assetOptions)',
+  'samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, assetOptions)',
   'walletProviderFor'
 ].forEach((needle) => {
   assert(providerRegistry.includes(needle), `Wallet Provider Registry Vertrag fehlt: ${needle}`);

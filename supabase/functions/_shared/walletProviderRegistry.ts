@@ -2,6 +2,8 @@ import { appleWalletProvider } from './appleWalletProvider.ts';
 import { googleWalletProvider } from './googleWalletProvider.ts';
 import { samsungWalletProvider } from './samsungWalletProvider.ts';
 import { normalizeTemplateType } from './templateFeatures.ts';
+import { ensureWalletAssetFallbacks } from './walletAssetFallbacks.ts';
+import type { WalletAssetUrls, WalletPlatform } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -38,6 +40,41 @@ function providerPrepared(provider: string, action: string, reason: string) {
     error_code: `${provider.toUpperCase()}_${action.toUpperCase()}_CONTEXT_REQUIRED`,
     error_message: `${provider} ${action} braucht zusätzlichen serverseitigen Kontext.`,
     error_reason: reason
+  };
+}
+
+function objectValue(value: unknown): Row {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Row
+    : {};
+}
+
+function walletAssetUrls(value: unknown): WalletAssetUrls {
+  return objectValue(value) as WalletAssetUrls;
+}
+
+async function withWalletAssetFallbacks(walletPlatform: WalletPlatform, template: Row, instance: Row, options: Row = {}) {
+  if (!options.supabaseAdmin) {
+    return options;
+  }
+
+  const generated = await ensureWalletAssetFallbacks({
+    supabaseAdmin: options.supabaseAdmin,
+    supabaseUrl: options.supabaseUrl || Deno.env.get('SUPABASE_URL') || '',
+    ownerId: options.ownerId,
+    businessId: options.businessId,
+    template,
+    cardInstance: instance,
+    walletPlatform
+  });
+
+  return {
+    ...options,
+    generatedAssets: generated.generatedAssets,
+    generatedAssetUrls: {
+      ...generated.generatedAssetUrls,
+      ...walletAssetUrls(options.generatedAssetUrls)
+    }
   };
 }
 
@@ -151,6 +188,8 @@ export const walletProviders = {
         return providerPrepared('apple', 'create', 'Apple Pass-Erzeugung braucht den Supabase Admin Client, damit Pass-Versionen und Auth-Token serverseitig gespeichert werden.');
       }
 
+      await withWalletAssetFallbacks('apple', template, instance, options);
+
       return appleWalletProvider.issuePass(options.supabaseAdmin, template, instance);
     },
 
@@ -158,6 +197,8 @@ export const walletProviders = {
       if (!options.supabaseAdmin || !options.template) {
         return providerPrepared('apple', 'update', 'Apple Pass-Updates brauchen Supabase Admin Client und Template-Kontext.');
       }
+
+      await withWalletAssetFallbacks('apple', options.template, instance, options);
 
       return appleWalletProvider.updatePassFields(options.supabaseAdmin, instance, options.template, fields, {
         reason: 'wallet_provider_registry_update'
@@ -209,19 +250,27 @@ export const walletProviders = {
   },
 
   google: {
-    create(template: Row, instance: Row) {
-      return googleWalletProvider.createObject(template, instance);
+    async create(template: Row, instance: Row, options: Row = {}) {
+      const assetOptions = await withWalletAssetFallbacks('google', template, instance, options);
+
+      return googleWalletProvider.createObject(template, instance, assetOptions);
     },
 
-    update(instance: Row, fields: Row = {}, options: Row = {}) {
-      const objectType = stringValue(options.objectType || googleWalletProvider.objectTypeForTemplate(options.template || {}));
+    async update(instance: Row, fields: Row = {}, options: Row = {}) {
+      const template = objectValue(options.template);
+      const objectType = stringValue(options.objectType || googleWalletProvider.objectTypeForTemplate(template));
       const objectId = stringValue(options.objectId || instance.google_object_id || instance.wallet_object_id);
 
       if (!objectType || !objectId) {
         return providerPrepared('google', 'update', 'Google Updates brauchen objectType und objectId aus google_wallet_objects oder card_instances.');
       }
 
-      return googleWalletProvider.updateObject(objectType, objectId, fields);
+      const assetOptions = await withWalletAssetFallbacks('google', template, instance, options);
+      const patch = Object.keys(fields || {}).length
+        ? fields
+        : googleWalletProvider.statusPatch(template, instance, objectType, [], assetOptions);
+
+      return googleWalletProvider.updateObject(objectType, objectId, patch);
     },
 
     async delete(_instance: Row, _options: Row = {}) {
@@ -232,12 +281,14 @@ export const walletProviders = {
       return providerPrepared('google', 'revoke', 'Google Revoke wird im MVP als Object-Status-/Message-Update modelliert.');
     },
 
-    generateAddLink(template: Row, instance: Row) {
-      return googleWalletProvider.generateSaveLink(template, instance);
+    async generateAddLink(template: Row, instance: Row, options: Row = {}) {
+      const assetOptions = await withWalletAssetFallbacks('google', template, instance, options);
+
+      return googleWalletProvider.generateSaveLink(template, instance, assetOptions);
     },
 
-    async generateQRCode(template: Row, instance: Row) {
-      const link = await googleWalletProvider.generateSaveLink(template, instance);
+    async generateQRCode(template: Row, instance: Row, options: Row = {}) {
+      const link = await this.generateAddLink(template, instance, options);
       return link.ok ? { ...link, qrData: link.saveUrl } : link;
     },
 
@@ -269,12 +320,16 @@ export const walletProviders = {
       return walletCardModel(template, instance);
     },
 
-    providerMapping(template: Row, instance: Row, options: Row = {}) {
-      return samsungWalletProvider.mapping(template, instance, options);
+    async providerMapping(template: Row, instance: Row, options: Row = {}) {
+      const assetOptions = await withWalletAssetFallbacks('samsung', template, instance, options);
+
+      return samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, assetOptions);
     },
 
-    cardDataForInstance(template: Row, instance: Row, options: Row = {}) {
-      return samsungWalletProvider.cardDataForInstance(template, instance, options);
+    async cardDataForInstance(template: Row, instance: Row, options: Row = {}) {
+      const assetOptions = await withWalletAssetFallbacks('samsung', template, instance, options);
+
+      return samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, assetOptions);
     }
   }
 };

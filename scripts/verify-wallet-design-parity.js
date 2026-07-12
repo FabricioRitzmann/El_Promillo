@@ -55,6 +55,7 @@ const walletAssetFallbacks = read('supabase/functions/_shared/walletAssetFallbac
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
+const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry.ts');
 const walletNotificationService = read('supabase/functions/_shared/walletNotificationService.ts');
 const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
 const issueApplePass = read('supabase/functions/issue-apple-pass/index.ts');
@@ -253,6 +254,19 @@ assertIncludes('Samsung Server Asset Optionen', samsungWalletServer, [
   'fields: new URL(request.url).searchParams.get'
 ]);
 
+assertIncludes('Wallet Provider Registry nutzt Asset-Fallbacks', providerRegistry, [
+  "import { ensureWalletAssetFallbacks } from './walletAssetFallbacks.ts'",
+  'async function withWalletAssetFallbacks',
+  "withWalletAssetFallbacks('apple'",
+  "withWalletAssetFallbacks('google'",
+  "withWalletAssetFallbacks('samsung'",
+  'generatedAssetUrls',
+  'googleWalletProvider.createObject(template, instance, assetOptions)',
+  'googleWalletProvider.generateSaveLink(template, instance, assetOptions)',
+  'googleWalletProvider.statusPatch(template, instance, objectType, [], assetOptions)',
+  'samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, assetOptions)'
+]);
+
 assertIncludes('Serverseitige Wallet Asset Generierung', generateWalletAsset, [
   "import { isWalletAssetType, supportedWalletAssetTypes, walletAssetStoragePath } from '../_shared/walletAssets.ts'",
   "import { encodeWalletAssetPng, MAX_WALLET_ASSET_BYTES, renderWalletAsset } from '../_shared/walletAssetRenderer.ts'",
@@ -408,6 +422,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToSamsungWalletCard',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
+  'Provider Registry bleibt auf derselben Pipeline',
   'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',
   'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',

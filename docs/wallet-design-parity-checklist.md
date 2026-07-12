@@ -20,6 +20,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Server-seitige Asset-Generierung | `supabase/functions/generate-wallet-asset/index.ts` |
 | Gemeinsamer Asset-Renderer | `_shared/walletAssetRenderer.ts` wird von `generate-wallet-asset`, Initial-Issue und der Update Queue genutzt |
 | Automatische Asset-Fallbacks | `_shared/walletAssetFallbacks.ts` erzeugt PNG-Fallbacks fuer Apple-/Google-Issue, Samsung Partner-Server und Queue-Updates |
+| Provider Registry bleibt auf derselben Pipeline | `walletProviderRegistry.ts` erzeugt bei serverseitigem `supabaseAdmin` ebenfalls PNG-Fallbacks, bevor Apple/Google/Samsung-Provider-Payloads entstehen |
 | Apple `.pkpass` nimmt generierte PNG-Fallbacks | `_shared/walletAssets.ts`, `appleWalletProvider.ts` fuer `stamp_grid`, `streak_badge`, `wallet_background`, `club_module_badges` |
 | Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline | `issue-google-wallet-pass` und `google-wallet-save-link` erzeugen benoetigte PNG-Fallbacks serverseitig und verwenden `googleWalletProvider.ts` fuer `heroImage`/`imageModulesData` |
 | Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |
