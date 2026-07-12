@@ -903,33 +903,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
       label: featureRows[0]?.label || 'Status',
       value: featureRows[0]?.value || statusLabel(cardInstance.customer_cards?.status || cardInstance.status)
     };
-  const primaryFields = appleDesign.fieldSets.primaryFields.length
-    ? appleDesign.fieldSets.primaryFields
-    : [
-      {
-        key: 'cardName',
-        label: businessNameForTemplate(template),
-        value: stringValue(template.card_name || 'Kundenkarte')
-      }
-    ];
-  const secondaryFields = appleDesign.fieldSets.secondaryFields.length
-    ? appleDesign.fieldSets.secondaryFields
-    : [
-      {
-        key: 'cardId',
-        label: 'Karten-ID',
-        value: cardCode
-      },
-      {
-        key: 'type',
-        label: 'Typ',
-        value: templateTypeLabel(template)
-      }
-    ];
-  const visibleFieldKeys = new Set(primaryFields.concat(secondaryFields).map((field) => stringValue(field.key)));
-  const auxiliaryRows = latestMessage
-    ? featureRows.filter((row) => !visibleFieldKeys.has(row.key))
-    : featureRows.slice(1);
+  const auxiliaryRows = latestMessage ? featureRows : featureRows.slice(1);
   const rewardText = rewardTextForTemplate(template);
   const auxiliaryFields = auxiliaryRows.map((row) => ({
     key: row.key,
@@ -991,8 +965,29 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         }
       ]
       : appleDesign.fieldSets.headerFields,
-    primaryFields,
-    secondaryFields,
+    primaryFields: appleDesign.fieldSets.primaryFields.length
+      ? appleDesign.fieldSets.primaryFields
+      : [
+        {
+          key: 'cardName',
+          label: businessNameForTemplate(template),
+          value: stringValue(template.card_name || 'Kundenkarte')
+        }
+      ],
+    secondaryFields: appleDesign.fieldSets.secondaryFields.length
+      ? appleDesign.fieldSets.secondaryFields
+      : [
+        {
+          key: 'cardId',
+          label: 'Karten-ID',
+          value: cardCode
+        },
+        {
+          key: 'type',
+          label: 'Typ',
+          value: templateTypeLabel(template)
+        }
+      ],
     auxiliaryFields: latestMessage
       ? auxiliaryFields.slice(0, 4)
       : (appleDesign.fieldSets.auxiliaryFields.length ? appleDesign.fieldSets.auxiliaryFields : auxiliaryFields.slice(0, 4)),
