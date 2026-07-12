@@ -59,8 +59,10 @@ const publicClaimGuards = {
     'walletObjectId',
     'GOOGLE_CLAIM_TOKEN_MISMATCH',
     'acceptedClaimKeys.has(walletObjectId)',
-    'signJwt(payload, config.privateKey)',
-    'https://pay.google.com/gp/v/save/'
+    "../_shared/googleWalletProvider.ts",
+    "../_shared/walletAssetFallbacks.ts",
+    'ensureWalletAssetFallbacks({',
+    'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance'
   ],
   'samsung-wallet-add-link': [
     'enforcePublicClaimRateLimit(supabaseAdmin, request, \'samsung-wallet-add-link\')',

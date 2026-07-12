@@ -158,20 +158,20 @@ assertIncludes(issueLogBody, [
 ], 'Google Issue Log Redaction');
 
 assertIncludes(saveLink, [
-  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON',
-  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INVALID',
-  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INCOMPLETE',
-  'GOOGLE_WALLET_PRIVATE_KEY_FORMAT',
-  'GOOGLE_WALLET_SAVE_LINK_SIGNING_FAILED',
-  'BEGIN RSA PRIVATE KEY',
-  'googleWalletOrigins',
-  'new URL(text).origin',
+  "import { googleWalletProvider } from '../_shared/googleWalletProvider.ts'",
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'loadGoogleCardInstance',
+  'googleProviderCardInstance(cardInstance, card)',
+  'GOOGLE_WALLET_SAVE_LINK_PROVIDER_FAILED',
   ".eq('customer_card_id', card.id)",
   'GOOGLE_CLAIM_TOKEN_MISMATCH',
   'acceptedClaimKeys',
-  'findReusableGoogleWalletObject',
-  'const jwt = await signJwt',
+  'ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'const saveUrl = stringValue(saveLinkResult.saveUrl)',
+  'GOOGLE_WALLET_SAVE_LINK_INCOMPLETE',
   'catch (error)',
   'updatedCustomerCard',
   'updatedCardInstance',
@@ -185,6 +185,7 @@ assertIncludes(saveLink, [
   ".select('id')",
   '.maybeSingle()',
   'googleObjectUpsertError || !updatedGoogleObject',
+  'generated_wallet_assets',
   'google_wallet_save_link'
 ], 'Google Public Save Link');
 

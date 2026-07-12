@@ -992,25 +992,17 @@ assertAll('supabase/functions/_shared/googleWalletProvider.ts', 'Google Wallet P
 ]);
 
 assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Wallet Save Link', [
-  'eventTicketObject',
-  'eventTicketClasses',
-  'eventTicketObjects',
-  'objectTypeForTemplate',
-  'payloadKeysForObjectType',
-  'findReusableGoogleWalletObject',
+  "../_shared/googleWalletProvider.ts",
+  "../_shared/walletAssetFallbacks.ts",
+  'googleProviderCardInstance(cardInstance, card)',
+  'ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'GOOGLE_WALLET_SAVE_LINK_PROVIDER_FAILED',
+  'GOOGLE_WALLET_SAVE_LINK_INCOMPLETE',
   'logGoogleSaveLink',
-  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INVALID',
-  'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_INCOMPLETE',
-  'GOOGLE_WALLET_PRIVATE_KEY_FORMAT',
-  'GOOGLE_WALLET_SAVE_LINK_SIGNING_FAILED',
   'catch (error)',
-  'googleWalletOrigins',
-  'normalizedHttpOrigin',
-  'new URL(text).origin',
-  'GOOGLE_WALLET_ORIGINS',
-  'APP_PUBLIC_BASE_URL',
-  'origins: config.origins',
-  'newestSourceTimestamp',
   'google_wallet_save_link',
   'reused_save_link',
   'save_url_present',
@@ -1028,7 +1020,8 @@ assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Wallet 
   'updatedGoogleObject',
   ".select('id')",
   '.maybeSingle()',
-  'googleObjectUpsertError || !updatedGoogleObject'
+  'googleObjectUpsertError || !updatedGoogleObject',
+  'generated_wallet_assets'
 ]);
 
 assert(
@@ -1412,11 +1405,14 @@ assert(
 );
 
 assert(
-  googleSaveLink.indexOf('const reusableWalletObject = await findReusableGoogleWalletObject') > -1
-    && googleSaveLink.indexOf('const reusableWalletObject = await findReusableGoogleWalletObject')
-      < googleSaveLink.indexOf('const jwt = await signJwt')
-    && googleSaveLink.indexOf('if (!reusedSaveLink)') > -1,
-  'Google Save-Link Claim muss vorhandene aktuelle Save-Links vor neuer JWT-Signatur wiederverwenden.'
+  googleSaveLink.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks') > -1
+    && googleSaveLink.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks')
+      < googleSaveLink.indexOf('googleWalletProvider.generateSaveLink')
+    && googleSaveLink.indexOf('googleWalletProvider.generateSaveLink')
+      < googleSaveLink.indexOf(".from('google_wallet_objects')")
+    && !googleSaveLink.includes('findReusableGoogleWalletObject')
+    && !googleSaveLink.includes('const jwt = await signJwt'),
+  'Google Save-Link Claim muss Assets erzeugen und den Save-Link zentral ueber googleWalletProvider neu aufbauen, statt alte lokale JWT-Payloads wiederzuverwenden.'
 );
 
 assert(
@@ -1734,10 +1730,9 @@ assertAll('supabase/test-data.sql', 'Wallet Testdaten', [
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 
 [
-  googleProvider,
-  googleSaveLink
-].forEach((content, index) => {
-  const label = index === 0 ? 'Google Wallet Provider' : 'Google Wallet Save Link';
+  googleProvider
+].forEach((content) => {
+  const label = 'Google Wallet Provider';
   assert(content.includes("event_card"), `${label} muss event_card erkennen.`);
   assert(content.includes("return 'eventTicketObject'"), `${label} muss event_card auf eventTicketObject mappen.`);
   assert(content.includes("eventTicketClasses"), `${label} muss eventTicketClasses für Save-JWTs nutzen.`);
@@ -1754,11 +1749,12 @@ const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts'
   assert(!content.includes('const settings = templateSettings(template);\n  const settings = templateSettings(template);'), `${label} enthält doppelte Settings-Deklaration.`);
 });
 
-assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Save-Link Class-ID Reuse Security', [
-  'googleClassId(config, card.card_templates)',
-  "eq('class_id', classId)",
-  "eq('object_type', objectType)",
-  'findReusableGoogleWalletObject(supabaseAdmin, card, cardInstance, objectId, classId, objectType)'
+assertAll('supabase/functions/google-wallet-save-link/index.ts', 'Google Save-Link Provider Identity Security', [
+  'wallet_object_id: cardInstance.google_object_id || cardInstance.wallet_object_id || card.wallet_object_id',
+  'const objectId = stringValue(saveLinkResult.objectId)',
+  'const classId = stringValue(saveLinkResult.classId)',
+  'const objectType = stringValue(saveLinkResult.objectType)',
+  "onConflict: 'card_instance_id'"
 ]);
 
 assertAll('docs/WALLET_INTEGRATION_CONTEXT.md', 'Wallet Integrationskontext', [

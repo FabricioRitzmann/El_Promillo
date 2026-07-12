@@ -59,6 +59,7 @@ const walletNotificationService = read('supabase/functions/_shared/walletNotific
 const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
 const issueApplePass = read('supabase/functions/issue-apple-pass/index.ts');
 const issueGoogleWalletPass = read('supabase/functions/issue-google-wallet-pass/index.ts');
+const googleWalletSaveLink = read('supabase/functions/google-wallet-save-link/index.ts');
 const samsungWalletServer = read('supabase/functions/samsung-wallet-server/index.ts');
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
@@ -208,6 +209,22 @@ assertIncludes('Google Issue Asset Optionen', issueGoogleWalletPass, [
   'googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)',
   'googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)'
 ]);
+
+assertIncludes('Public Google Save-Link nutzt zentrale Design- und Asset-Pipeline', googleWalletSaveLink, [
+  "import { googleWalletProvider } from '../_shared/googleWalletProvider.ts'",
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'function googleProviderCardInstance(cardInstance',
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'generated_wallet_assets'
+]);
+
+assert(
+  !googleWalletSaveLink.includes('buildGoogleWalletPayload') && !googleWalletSaveLink.includes('async function signJwt'),
+  'google-wallet-save-link darf keinen eigenen Google-Wallet-JWT/Payload-Builder mehr enthalten.'
+);
 
 assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   "import { editorCardDesignFromTemplate, mapEditorDesignToSamsungWalletCard } from './walletDesign.ts'",
@@ -391,7 +408,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToSamsungWalletCard',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
-  'Google Issue/Save-Link nutzt vorhandene PNG-Fallbacks',
+  'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',
   'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'pnpm run check',

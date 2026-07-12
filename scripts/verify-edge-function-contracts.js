@@ -66,7 +66,9 @@ const publicServiceRoleFunctions = {
   'google-wallet-save-link': [
     'walletObjectId',
     'GOOGLE_CLAIM_TOKEN_MISMATCH',
-    'https://pay.google.com/gp/v/save/'
+    "../_shared/googleWalletProvider.ts",
+    "../_shared/walletAssetFallbacks.ts",
+    'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance'
   ],
   'apple-wallet-webservice': [
     'applePassToken(request)',

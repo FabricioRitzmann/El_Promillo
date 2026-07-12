@@ -137,11 +137,11 @@ assertIncludes(googleWalletSaveLink, [
   'const googleCustomerCardSelect = [',
   'const googleClaimCardSelect = [',
   'const googleCardInstanceSelect = [',
-  'const googleWalletObjectSelect = [',
   '.select(googleCardInstanceSelect)',
-  '.select(googleWalletObjectSelect)',
-  '.select(googleClaimCardSelect)'
-], 'google-wallet-save-link muss Karten, Templates und Wallet-Objects mit expliziten Select-Listen laden');
+  '.select(googleClaimCardSelect)',
+  ".from('google_wallet_objects')",
+  '.upsert({'
+], 'google-wallet-save-link muss Karten und Templates mit expliziten Select-Listen laden und Wallet-Objects gezielt speichern');
 assertExcludes(googleWalletSaveLink, [
   ".select('*')",
   '.select("*")',

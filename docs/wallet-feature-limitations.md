@@ -43,7 +43,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Status, Karten-ID, VIP, Guthaben, Coupon, Mitgliedschaft und Garderobe gehen in `textModulesData`.
 - QR wird als `QR_CODE` gesetzt.
 - Stempel/Streak werden als Textmodule gesetzt und koennen spaeter als `imageModulesData` aus serverseitigen Assets ergaenzt werden.
-- Im Issue-/Save-Link-Pfad prueft `googleWalletProvider.ts` vorhandene Dateien im Bucket `wallet-assets` und setzt nur existierende PNGs als `heroImage`/`imageModulesData`.
+- Im Issue- und öffentlichen Claim-Save-Link-Pfad erzeugen die Edge Functions benoetigte PNG-Fallbacks serverseitig und nutzen danach `googleWalletProvider.ts`, der nur existierende HTTPS-PNGs als `heroImage`/`imageModulesData` setzt.
 - Der passendste vorhandene Object-Type wird genutzt: Generic, Loyalty, Offer oder Event Ticket.
 
 ## Samsung Wallet
@@ -133,7 +133,7 @@ Wenn zu viele Module aktiv sind:
 
 Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.
 
-Initiale Wallet-Erstellungen erzeugen benoetigte Fallback-PNGs ebenfalls serverseitig: `issue-apple-pass`, `issue-google-wallet-pass` und der Samsung Partner-Server-GET nutzen `_shared/walletAssetFallbacks.ts`, bevor die jeweilige Wallet-Payload gebaut wird.
+Initiale Wallet-Erstellungen erzeugen benoetigte Fallback-PNGs ebenfalls serverseitig: `issue-apple-pass`, `issue-google-wallet-pass`, `google-wallet-save-link` und der Samsung Partner-Server-GET nutzen `_shared/walletAssetFallbacks.ts`, bevor die jeweilige Wallet-Payload gebaut wird.
 
 ```json
 {
