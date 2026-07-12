@@ -101,6 +101,98 @@ function drawBrandBands(rgba: Uint8Array, width: number, height: number, backgro
   }
 }
 
+const titleGlyphs: Record<string, string[]> = {
+  ' ': ['000', '000', '000', '000', '000', '000', '000'],
+  '-': ['00000', '00000', '00000', '11110', '00000', '00000', '00000'],
+  '&': ['01100', '10010', '10100', '01000', '10101', '10010', '01101'],
+  '?': ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
+  '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
+  '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+  '2': ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+  '3': ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+  '4': ['10010', '10010', '10010', '11111', '00010', '00010', '00010'],
+  '5': ['11111', '10000', '10000', '11110', '00001', '00001', '11110'],
+  '6': ['01110', '10000', '10000', '11110', '10001', '10001', '01110'],
+  '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+  '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+  '9': ['01110', '10001', '10001', '01111', '00001', '00001', '01110'],
+  A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+  B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+  C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
+  D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+  E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+  F: ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
+  G: ['01111', '10000', '10000', '10011', '10001', '10001', '01111'],
+  H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+  I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+  J: ['00111', '00010', '00010', '00010', '10010', '10010', '01100'],
+  K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+  L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+  M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+  N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
+  O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+  P: ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
+  Q: ['01110', '10001', '10001', '10001', '10101', '10010', '01101'],
+  R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+  S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+  T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
+  U: ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
+  V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
+  W: ['10001', '10001', '10001', '10101', '10101', '10101', '01010'],
+  X: ['10001', '10001', '01010', '00100', '01010', '10001', '10001'],
+  Y: ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
+  Z: ['11111', '00001', '00010', '00100', '01000', '10000', '11111']
+};
+
+function normalizeTitleText(value: unknown, fallback = 'KARTE') {
+  return stringValue(value || fallback)
+    .toUpperCase()
+    .replace(/Ä/g, 'AE')
+    .replace(/Ö/g, 'OE')
+    .replace(/Ü/g, 'UE')
+    .replace(/É|È|Ê/g, 'E')
+    .replace(/Á|À|Â/g, 'A')
+    .replace(/Ó|Ò|Ô/g, 'O')
+    .replace(/[^A-Z0-9 &-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function glyphWidth(character: string) {
+  return (titleGlyphs[character] || titleGlyphs['?'])[0].length;
+}
+
+function textPixelWidth(text: string) {
+  return [...text].reduce((sum, character, index) => sum + glyphWidth(character) + (index === 0 ? 0 : 1), 0);
+}
+
+function fittedTextScale(text: string, maxWidth: number, maxScale: number) {
+  const rawWidth = Math.max(1, textPixelWidth(text));
+
+  return Math.max(2, Math.min(maxScale, Math.floor(maxWidth / rawWidth)));
+}
+
+function drawGlyph(rgba: Uint8Array, width: number, x: number, y: number, character: string, scale: number, color: [number, number, number]) {
+  const glyph = titleGlyphs[character] || titleGlyphs['?'];
+
+  glyph.forEach((row, rowIndex) => {
+    [...row].forEach((bit, colIndex) => {
+      if (bit === '1') {
+        fillRect(rgba, width, x + colIndex * scale, y + rowIndex * scale, scale, scale, color, 255);
+      }
+    });
+  });
+}
+
+function drawTextLine(rgba: Uint8Array, width: number, text: string, centerX: number, y: number, scale: number, color: [number, number, number]) {
+  let x = Math.round(centerX - (textPixelWidth(text) * scale) / 2);
+
+  for (const character of text) {
+    drawGlyph(rgba, width, x, y, character, scale, color);
+    x += (glyphWidth(character) + 1) * scale;
+  }
+}
+
 function renderStampGrid(width: number, height: number, template: Row, cardInstance: Row, background: [number, number, number], foreground: [number, number, number]) {
   const customer = cardInstance.customer_cards || {};
   const metadata = cardInstance.metadata || {};
@@ -185,6 +277,29 @@ function renderClubBadges(width: number, height: number, design: ReturnType<type
   return rgba;
 }
 
+function renderDecorativeTitle(width: number, height: number, design: ReturnType<typeof editorCardDesignFromTemplate>, background: [number, number, number], foreground: [number, number, number]) {
+  const rgba = createCanvas(width, height, background);
+  const title = normalizeTitleText(design.title || design.cardName, 'KARTE').slice(0, 28);
+  const subtitle = normalizeTitleText(design.subtitle, '').slice(0, 34);
+  const panel = blend(background, foreground, 0.10);
+  const rule = blend(background, foreground, 0.36);
+  const titleScale = fittedTextScale(title, width - 96, 9);
+  const subtitleScale = subtitle ? fittedTextScale(subtitle, width - 132, 4) : 0;
+  const titleY = Math.round(height / 2 - (7 * titleScale) / 2 - (subtitle ? 16 : 0));
+
+  drawBrandBands(rgba, width, height, background, foreground);
+  fillRect(rgba, width, 34, 38, width - 68, height - 76, panel, 255);
+  fillRect(rgba, width, 54, 56, width - 108, 5, rule, 255);
+  fillRect(rgba, width, 54, height - 61, width - 108, 5, rule, 255);
+  drawTextLine(rgba, width, title, width / 2, titleY, titleScale, foreground);
+
+  if (subtitle && subtitleScale) {
+    drawTextLine(rgba, width, subtitle, width / 2, titleY + 7 * titleScale + 22, subtitleScale, rule);
+  }
+
+  return rgba;
+}
+
 export function renderWalletAsset(assetType: WalletAssetType, template: Row, cardInstance: Row, walletPlatform: WalletPlatform) {
   const design = editorCardDesignFromTemplate(template, cardInstance);
   const background = hexToRgb(design.backgroundColor, [255, 253, 249]);
@@ -211,6 +326,13 @@ export function renderWalletAsset(assetType: WalletAssetType, template: Row, car
     return {
       ...size,
       rgba: renderClubBadges(size.width, size.height, design, background, foreground)
+    };
+  }
+
+  if (assetType === 'decorative_title') {
+    return {
+      ...size,
+      rgba: renderDecorativeTitle(size.width, size.height, design, background, foreground)
     };
   }
 

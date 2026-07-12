@@ -150,9 +150,11 @@ assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
   'streak-layout-not-native',
   'front-field-overflow',
   'missing-brand-asset',
+  'decorativeTitle',
   "assetType: 'stamp_grid'",
   "assetType: 'streak_badge'",
   "assetType: 'wallet_background'",
+  "assetType: 'decorative_title'",
   "assetType: 'club_module_badges'",
   "'asset'",
   "'details'",
@@ -181,6 +183,9 @@ assertIncludes('Wallet Asset Renderer', walletAssetRenderer, [
   'renderStampGrid',
   'renderStreakBadge',
   'renderClubBadges',
+  'renderDecorativeTitle',
+  'titleGlyphs',
+  'drawTextLine',
   'renderBackground',
   'CompressionStream('
 ]);
@@ -221,6 +226,7 @@ assertIncludes('Apple Provider Design Mapping', appleProvider, [
   'generatedAssets.stamp_grid',
   'generatedAssets.streak_badge',
   'generatedAssets.wallet_background',
+  'generatedAssets.decorative_title',
   'generatedAssets.club_module_badges',
   "files.set('background.png'"
 ]);
@@ -526,6 +532,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Stempelraster',
   'Clubkarte',
   'club_module_badges',
+  'decorative_title',
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'emblem_changed',
@@ -552,6 +559,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Clubkarte',
   '## Asset-Fallbacks',
   'club_module_badges',
+  'decorative_title',
   'generate-wallet-asset` ist implementiert',
   '## Update Queue',
   'enqueue_wallet_update_after_template_design_change()',
@@ -580,6 +588,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'Initial-Scan-Emblemwechsel',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
+  'decorative_title',
   'Provider Registry bleibt auf derselben Pipeline',
   'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',
   'Google Guthabenkarte nutzt Gift Card Mapping',

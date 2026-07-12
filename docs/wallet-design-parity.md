@@ -65,7 +65,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Clubkarte Module | VIP, Guthaben, Garderobe, Coupon, Mitgliedschaft optional | Priorisierte Felder, Ueberlauf auf Rueckseite, optional `club_module_badges` PNG | Loyalty/Generic Textmodule plus vorhandenes `club_module_badges` Bildmodul | Begrenzte Attribute + Details plus vorhandenes `club_module_badges` als `mainImg` | Nein | Zu viele Module fuer feste Wallet-Front | Prioritaet: ID, VIP, Guthaben, Mitgliedschaft, Coupon, Garderobe, Details; Badge-Asset als Fallback | Implementiert |
 | Push-Hinweistext | Editor Notification/Message | Pass Web Service + APNS Update, latestMessage Feld | `TEXT_AND_NOTIFY` oder Object Patch | Samsung Server API Update Notification vorbereitet | Teilweise | Push-Mechaniken sind plattformspezifisch | Message separat behandeln, sichtbare Felder patchen | Bestehende Logik bleibt bestehen |
 | Footer / Rueckseite / Details | Footer-Code und Zusatzinfos | `backFields` | `textModulesData` | `noticeDesc` und Attribute | Teilweise | Kein gemeinsames Rueckseitenmodell | Details pro Plattform in native Detailfelder verschieben | Implementiert |
-| Custom Font | Web/CSS moeglich | Nicht als echte Pass-Schrift steuerbar | Nicht steuerbar | Templateabhaengig | Nein | Wallets rendern native Templates | Systemschrift oder serverseitig gerendertes Bild | Warnung implementiert; dekoratives PNG-Asset vorbereitet |
+| Custom Font | Web/CSS moeglich | Nicht als echte Pass-Schrift steuerbar | Nicht steuerbar | Templateabhaengig | Nein | Wallets rendern native Templates | Systemschrift oder `decorative_title` PNG als serverseitiges Titelbild | Warnung implementiert; dekoratives PNG-Asset wird bei fehlendem Logo oder `decorativeTitle`/`titleAsImage` generiert |
 
 ## Template-Abdeckung
 
@@ -86,7 +86,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 
 | Fall | Verhalten |
 |---|---|
-| Custom Font | Native Systemschrift; dekorative Schrift nur als serverseitig generiertes Bild |
+| Custom Font | Native Systemschrift; `decorative_title` wird serverseitig als PNG erzeugt, wenn kein Logo vorhanden ist oder ein Titelbild-Flag gesetzt wird |
 | Komplexes Stempelraster | Textfeld `x/y`; optional `generate-wallet-asset` mit `asset_type=stamp_grid` |
 | Komplexer Hintergrund | Gueltige Hintergrundfarbe plus Hero/Strip/Main-Image |
 | Clubkarten-Modul-Badges | Mehrere aktive Clubmodule bleiben native Felder/Details; optionales `club_module_badges` PNG fuer Apple-Bundle, Google-ImageModule und Samsung-`mainImg` |

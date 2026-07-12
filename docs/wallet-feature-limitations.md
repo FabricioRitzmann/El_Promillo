@@ -132,6 +132,7 @@ Wenn zu viele Module aktiv sind:
 - `stamp_grid` fuer komplexe Stempelraster.
 - `streak_badge` fuer dekorative Streak-Anzeigen.
 - `wallet_background` fuer komplexe Hintergruende/Texturen.
+- `decorative_title` fuer Editor-Titel, die nicht als native Wallet-Schrift steuerbar sind.
 - `club_module_badges` fuer mehrere aktive Clubkarten-Module.
 
 Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.

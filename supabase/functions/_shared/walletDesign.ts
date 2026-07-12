@@ -61,6 +61,7 @@ export type EditorCardDesign = {
   beacons: WalletBeacon[];
   cardInstanceNumber?: string;
   rewardText?: string;
+  decorativeTitle: boolean;
   fields: EditorCardField[];
   activeFeatures: {
     stamps: boolean;
@@ -165,6 +166,26 @@ function numberValue(...values: unknown[]) {
   }
 
   return 0;
+}
+
+function booleanFlag(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    const text = stringValue(value).toLowerCase();
+
+    if (['true', '1', 'yes', 'on'].includes(text)) {
+      return true;
+    }
+
+    if (['false', '0', 'no', 'off'].includes(text)) {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 function optionalNumber(value: unknown) {
@@ -895,6 +916,14 @@ function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'as
     });
   }
 
+  if (design.decorativeTitle && design.title) {
+    fallbacks.push({
+      assetType: 'decorative_title',
+      reason: 'Dekorative Editor-Titel koennen nicht als Wallet-Font erzwungen werden und brauchen ein serverseitiges Titel-PNG.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
   if (design.templateType === 'club_card' && activeClubModules > 1) {
     fallbacks.push({
       assetType: 'club_module_badges',
@@ -917,6 +946,16 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
   const subtitle = stringValue(options.subtitle || business.name || template.business_name || templateTypeLabel(template));
   const description = stringValue(template.description || settings.description || templateTypeLabel(template));
   const logoUrl = businessLogoUrlForTemplate(template);
+  const decorativeTitle = booleanFlag(
+    options.decorativeTitle,
+    options.decorative_title,
+    settings.decorativeTitle,
+    settings.decorative_title,
+    settings.titleAsImage,
+    settings.title_as_image,
+    settings.customFont,
+    settings.custom_font
+  ) || !logoUrl;
   const emblemUrl = safeHttpsUrl(
     options.emblemUrl
       || cardInstance.resolved_emblem_url
@@ -967,6 +1006,7 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
     beacons,
     cardInstanceNumber,
     rewardText,
+    decorativeTitle,
     fields: baseFields.filter((item) => item.value),
     activeFeatures
   };
