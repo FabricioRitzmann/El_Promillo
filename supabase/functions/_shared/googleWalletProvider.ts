@@ -796,7 +796,7 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
     patch.accountId = cardCodeFor(cardInstance);
     patch.accountName = stringValue(cardInstance.customer_cards?.metadata?.customer_name || cardInstance.customer_cards?.customer_code || cardCodeFor(cardInstance));
     patch.loyaltyPoints = {
-      label: localized(primaryStatusRow.header),
+      label: stringValue(primaryStatusRow.header),
       balance: {
         string: primaryStatusRow.body
       }
@@ -1077,6 +1077,26 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
     }
 
     return giftCardClass;
+  }
+
+  if (objectType === 'loyaltyObject') {
+    const loyaltyClass: Row = {
+      id: classId,
+      issuerName,
+      reviewStatus: 'UNDER_REVIEW',
+      programName: stringValue(settings.programName || settings.program_name || template.card_name || issuerName) || issuerName,
+      hexBackgroundColor: googleDesign.hexBackgroundColor
+    };
+
+    if (logo) {
+      loyaltyClass.programLogo = logo;
+    }
+
+    if (googleDesign.heroImage) {
+      loyaltyClass.heroImage = googleDesign.heroImage;
+    }
+
+    return loyaltyClass;
   }
 
   const classPayload: Row = {

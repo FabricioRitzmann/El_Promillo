@@ -1960,6 +1960,14 @@ function validateQueueGooglePatch(patch: Row) {
   }
 }
 
+function googleWalletObjectWasNotFound(result: Row) {
+  const message = stringValue(result?.error_message || result?.error_reason || result?.response?.error?.message);
+
+  return !result?.ok
+    && Number(result?.status) === 404
+    && /not found/i.test(message);
+}
+
 async function claimRecipientForProcessing(supabaseAdmin: any, recipient: Row, campaign: Row) {
   const nowIso = new Date().toISOString();
   const { data, error } = await supabaseAdmin
@@ -3757,14 +3765,41 @@ export const walletNotificationService = {
             );
           }
 
-          const patch = job.payload?.patch !== undefined
+          const hasQueueProvidedGooglePatch = job.payload?.patch !== undefined;
+          const patch = hasQueueProvidedGooglePatch
             ? job.payload.patch
             : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [], {
               generatedAssetUrls: walletAssetGeneration.generatedAssetUrls
             });
-          validateQueueGooglePatch(patch);
+          if (hasQueueProvidedGooglePatch) {
+            validateQueueGooglePatch(patch);
+          }
 
           result = await googleWalletProvider.updateObject(objectType, objectId, patch);
+
+          const templateObjectType = googleWalletProvider.normalizeObjectType(
+            googleWalletProvider.objectTypeForTemplate(cardInstance.card_templates)
+          );
+
+          if (googleWalletObjectWasNotFound(result) && objectType === templateObjectType) {
+            const recreateResult = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, {
+              generatedAssetUrls: walletAssetGeneration.generatedAssetUrls
+            });
+
+            result = recreateResult.ok
+              ? {
+                ...recreateResult,
+                action: 'recreate_missing_google_object',
+                fallback: 'recreated_missing_google_object',
+                warning_code: 'GOOGLE_WALLET_OBJECT_RECREATED_AFTER_404',
+                warning_message: 'Google Wallet Object fehlte beim Queue-Patch und wurde aus dem aktuellen Kartenstand neu angelegt.'
+              }
+              : {
+                ...recreateResult,
+                original_update_error_code: result.error_code,
+                original_update_error_message: result.error_message
+              };
+          }
 
           if (walletAssetGeneration.generatedAssets.length) {
             result = {

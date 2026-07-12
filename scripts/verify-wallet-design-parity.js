@@ -451,6 +451,11 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
 
 assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-preview-stack',
+  'aspect-ratio: 2 / 3;',
+  'grid-template-rows: auto minmax(0, 1fr) auto;',
+  '.wallet-front',
+  '.wallet-feature-list',
+  '.wallet-feature-overflow',
   '.wallet-platform-previews',
   '.wallet-platform-preview-grid',
   '.wallet-platform-preview-card',

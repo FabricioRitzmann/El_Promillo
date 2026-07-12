@@ -506,7 +506,9 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     || streakComplete
   );
   const progress = featureRows[0]?.value || card?.status || 'Aktiv';
-  const featureRowsHtml = featureRows.map((row) => {
+  const walletFrontRows = featureRows.slice(0, 4);
+  const overflowFeatureCount = Math.max(0, featureRows.length - walletFrontRows.length);
+  const featureRowsHtml = walletFrontRows.map((row) => {
     const isBrandedFeature = row.feature === 'stamps' || row.feature === 'streak';
     const iconUrl = row.feature === 'stamps'
       ? settings.stampIconUrl || cardEmblemUrl
@@ -530,6 +532,9 @@ export function walletPreviewHtml(template, card = null, options = {}) {
       </div>
     `;
   }).join('');
+  const overflowFeatureHtml = overflowFeatureCount
+    ? `<div class="wallet-feature-overflow">+${escapeHtml(overflowFeatureCount)} Details auf der Rueckseite</div>`
+    : '';
   const stampSlots = featureEnabled(template, 'stamps')
     ? stampSlotsHtml(stampValue, stampsRequired, settings.stampIconUrl || cardEmblemUrl)
     : '';
@@ -552,15 +557,20 @@ export function walletPreviewHtml(template, card = null, options = {}) {
           ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
           <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
         </div>
-        <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
-        <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
-        <div class="wallet-meta">
-          <span>${escapeHtml(cardTypeLabel(template))}</span>
-          <strong>${escapeHtml(progress)}</strong>
+        <div class="wallet-front">
+          <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
+          <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
+          <div class="wallet-meta">
+            <span>${escapeHtml(cardTypeLabel(template))}</span>
+            <strong>${escapeHtml(progress)}</strong>
+          </div>
+          <div class="wallet-feature-list">
+            ${featureRowsHtml}
+            ${overflowFeatureHtml}
+          </div>
+          ${stampSlots}
+          ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
         </div>
-        ${featureRowsHtml}
-        ${stampSlots}
-        ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
         <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
       </div>
       ${walletInsights}

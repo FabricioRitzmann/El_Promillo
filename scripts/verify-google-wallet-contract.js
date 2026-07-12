@@ -89,7 +89,9 @@ assertIncludes(provider, [
   'eventTicketObjects',
   'offerClasses',
   'loyaltyObjects',
-  'genericObjects'
+  'genericObjects',
+  "objectType === 'loyaltyObject'",
+  'programName: stringValue(settings.programName || settings.program_name || template.card_name || issuerName) || issuerName'
 ], 'Google Object-Type Mapping');
 
 assertIncludes(walletDesign, [
@@ -111,8 +113,14 @@ assertIncludes(provider, [
   "template.id || template.card_name || 'wallet_cards'",
   'statusPatchPayload',
   'loyaltyPoints',
+  'label: stringValue(primaryStatusRow.header)',
   'TEXT_AND_NOTIFY'
 ], 'Google Object Identität und Statusfelder');
+
+assertIncludes(walletDesign, [
+  'loyaltyPoints: primaryField',
+  'label: stringValue(primaryField.label)'
+], 'Google Design Loyalty Points nutzen skalare Labels');
 
 assertIncludes(issue, [
   'publicGoogleWalletIssuePayload',

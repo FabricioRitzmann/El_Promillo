@@ -58,13 +58,26 @@ function configured(value) {
 function parseEnvValue(rawValue) {
   const value = String(rawValue || '').trim();
 
-  if (value.startsWith('"') && value.endsWith('"')) {
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    const quote = value[0];
+    const inner = value.slice(1, -1);
+
+    if (quote === "'" && /^[\[{]/.test(inner.trim())) {
+      return inner.replaceAll("\\'", "'");
+    }
+
     try {
-      return JSON.parse(value);
+      return quote === '"'
+        ? JSON.parse(value)
+        : inner
+          .replaceAll('\\n', '\n')
+          .replaceAll("\\'", "'")
+          .replaceAll('\\\\', '\\');
     } catch {
-      return value.slice(1, -1)
+      return inner
         .replaceAll('\\n', '\n')
         .replaceAll('\\"', '"')
+        .replaceAll("\\'", "'")
         .replaceAll('\\\\', '\\');
     }
   }

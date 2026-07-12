@@ -42,6 +42,9 @@ const packageJson = read('package.json');
   'GOOGLE_WALLET_SERVICE_ACCOUNT_JSON',
   'google-service-account*.json',
   'certs/*.p8',
+  "value.startsWith(\"'\") && value.endsWith(\"'\")",
+  "/^[\\[{]/.test(inner.trim())",
+  'return inner.replaceAll("\\\\\'", "\'")',
   'secretsPrinted: false',
   'certificatesPrinted: false',
   'process.exitCode = 1'

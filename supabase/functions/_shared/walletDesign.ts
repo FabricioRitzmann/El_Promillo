@@ -1209,7 +1209,7 @@ export function mapEditorDesignToGoogleWalletObject(editorDesign: EditorCardDesi
     accountName: editorDesign.title,
     loyaltyPoints: primaryField
       ? {
-        label: localized(primaryField.label),
+        label: stringValue(primaryField.label),
         balance: {
           string: primaryField.value
         }

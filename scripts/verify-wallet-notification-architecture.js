@@ -675,11 +675,14 @@ assertAll('supabase/functions/process-wallet-update-queue/index.ts', 'Wallet Upd
 
 assertAll('supabase/functions/_shared/walletNotificationService.ts', 'Wallet Queue Google Security', [
   'validateQueueGooglePatch',
+  'googleWalletObjectWasNotFound',
   'QUEUE_GOOGLE_PATCH_FIELD_FORBIDDEN',
   'QUEUE_GOOGLE_OBJECT_TYPE_INVALID',
   'const objectId = stringValue(googleObject?.object_id || cardInstance.google_object_id || cardInstance.wallet_object_id || job.payload?.object_id || job.payload?.objectId)',
   'googleWalletProvider.normalizeObjectType',
   'googleWalletProvider.objectTypeForTemplate',
+  'googleWalletProvider.createObject(cardInstance.card_templates, cardInstance',
+  'GOOGLE_WALLET_OBJECT_RECREATED_AFTER_404',
   'touchGoogleWalletObjectMapping({',
   'id: job.business_id',
   'google_object_id: objectId',
