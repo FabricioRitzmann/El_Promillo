@@ -154,6 +154,7 @@ assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
   "assetType: 'stamp_grid'",
   "assetType: 'streak_badge'",
   "assetType: 'wallet_background'",
+  'design.backgroundImageUrl || design.textureUrl || design.logoUrl || design.emblemUrl',
   "assetType: 'combined_emblem'",
   "assetType: 'decorative_title'",
   "assetType: 'club_module_badges'",
@@ -189,6 +190,8 @@ assertIncludes('Wallet Asset Renderer', walletAssetRenderer, [
   'titleGlyphs',
   'drawTextLine',
   'renderBackground',
+  'watermarkLabel',
+  'renderBackground(size.width, size.height, design, cardInstance',
   'CompressionStream('
 ]);
 
@@ -435,6 +438,10 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'secondaryFields: sortedFrontFields.slice(2, 4)',
   'auxiliaryFields: sortedFrontFields.slice(4, 7)',
   'function walletBarcodePreviewHtml(format, value)',
+  'function walletBackgroundFieldHtml(imageUrl)',
+  'const backgroundFieldImageUrl = eventBackgroundImageUrl || template.logo_url || businessLogoUrl(business)',
+  'wallet-background-field',
+  'wallet-background-watermark',
   'function walletPlatformStyleLabels(template)',
   'Wallet-Hinweise',
   'Plattform-Vorschau',
@@ -463,6 +470,8 @@ assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-feature-list',
   '.wallet-feature-overflow',
   '.wallet-front-structured',
+  '.wallet-background-field',
+  '.wallet-background-watermark',
   '.wallet-pass-primary-fields',
   '.wallet-pass-secondary-fields',
   '.wallet-pass-auxiliary-fields',

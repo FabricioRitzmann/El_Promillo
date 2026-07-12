@@ -934,10 +934,10 @@ function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'as
     });
   }
 
-  if (design.backgroundImageUrl || design.textureUrl) {
+  if (design.backgroundImageUrl || design.textureUrl || design.logoUrl || design.emblemUrl) {
     fallbacks.push({
       assetType: 'wallet_background',
-      reason: 'CSS-Hintergruende und Texturen muessen pro Wallet in ein akzeptiertes Bildfeld uebersetzt werden.',
+      reason: 'Hintergrundbilder, Logos und Wasserzeichen muessen pro Wallet in ein akzeptiertes Bildfeld uebersetzt werden.',
       platforms: ['apple', 'google', 'samsung']
     });
   }

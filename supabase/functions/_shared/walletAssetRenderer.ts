@@ -247,12 +247,29 @@ function renderStreakBadge(width: number, height: number, template: Row, cardIns
   return rgba;
 }
 
-function renderBackground(width: number, height: number, background: [number, number, number], foreground: [number, number, number]) {
+function renderBackground(width: number, height: number, design: ReturnType<typeof editorCardDesignFromTemplate>, cardInstance: Row, background: [number, number, number], foreground: [number, number, number]) {
   const rgba = createCanvas(width, height, background);
+  const panel = blend(background, foreground, 0.10);
+  const ring = blend(background, foreground, 0.34);
+  const soft = blend(background, foreground, 0.18);
+  const panelWidth = Math.min(188, Math.round(width * 0.32));
+  const panelInset = Math.max(24, Math.round(width * 0.04));
+  const panelX = width - panelInset - panelWidth;
+  const panelY = Math.max(20, Math.round(height * 0.13));
+  const panelHeight = height - panelY * 2;
+  const centerX = width - panelInset - Math.round(panelWidth * 0.32);
+  const centerY = Math.round(height / 2);
+  const radius = Math.max(38, Math.min(64, Math.round(height * 0.28)));
+  const labelScale = Math.max(4, Math.min(6, Math.floor(radius / 9)));
+  const watermarkLabel = emblemLabel(cardInstance) || brandInitials(design);
 
   drawBrandBands(rgba, width, height, background, foreground);
-  drawCircle(rgba, width, width - 98, 92, 78, blend(background, foreground, 0.18), 255);
-  drawCircle(rgba, width, width - 98, 92, 46, blend(background, foreground, 0.34), 255);
+  fillRect(rgba, width, panelX, panelY, panelWidth, panelHeight, panel, 255);
+  fillRect(rgba, width, panelX, panelY, 5, panelHeight, soft, 255);
+  drawCircle(rgba, width, centerX, centerY, radius + 16, soft, 255);
+  drawCircle(rgba, width, centerX, centerY, radius, ring, 255);
+  drawCircle(rgba, width, centerX, centerY, Math.max(18, radius - 18), background, 255);
+  drawTextLine(rgba, width, watermarkLabel, centerX, centerY - Math.round((7 * labelScale) / 2), labelScale, foreground);
 
   return rgba;
 }
@@ -404,7 +421,7 @@ export function renderWalletAsset(assetType: WalletAssetType, template: Row, car
 
   return {
     ...size,
-    rgba: renderBackground(size.width, size.height, background, foreground)
+    rgba: renderBackground(size.width, size.height, design, cardInstance, background, foreground)
   };
 }
 
