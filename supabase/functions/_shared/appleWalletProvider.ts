@@ -9,6 +9,8 @@ import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
 import { editorCardDesignFromTemplate, mapEditorDesignToApplePass } from './walletDesign.ts';
+import { walletAssetPublicUrl } from './walletAssets.ts';
+import type { WalletAssetType } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -326,6 +328,13 @@ async function buildPassPackage(passJson: Row, assets: Row = {}) {
   if (strip) {
     files.set('strip.png', strip);
     files.set('strip@2x.png', strip);
+  }
+
+  const background = await assetBytes(assets.backgroundPng || assets.background || assets.backgroundPngBase64);
+
+  if (background) {
+    files.set('background.png', background);
+    files.set('background@2x.png', background);
   }
 
   const manifest: Row = {};
@@ -659,11 +668,50 @@ function appleTemplateAssetUrls(template: Row, cardInstance: Row = {}) {
   };
 }
 
+function generatedAppleWalletAssetUrl(cardInstance: Row, assetType: WalletAssetType) {
+  return walletAssetPublicUrl(Deno.env.get('SUPABASE_URL') || '', {
+    ownerId: cardInstance.owner_id,
+    businessId: cardInstance.business_id,
+    templateId: cardInstance.template_id,
+    cardInstanceId: cardInstance.id,
+    walletPlatform: 'apple',
+    assetType
+  });
+}
+
+function generatedAppleWalletAssetUrlsForTemplate(template: Row, cardInstance: Row = {}) {
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
+  const assetTypes = new Set<WalletAssetType>(
+    editorDesign.assetFallbacks
+      .filter((fallback) => fallback.platforms.includes('apple'))
+      .map((fallback) => fallback.assetType)
+      .filter((assetType): assetType is WalletAssetType => [
+        'stamp_grid',
+        'streak_badge',
+        'wallet_background',
+        'decorative_title',
+        'club_module_badges'
+      ].includes(assetType))
+  );
+  const urls: Row = {};
+
+  for (const assetType of assetTypes) {
+    const url = generatedAppleWalletAssetUrl(cardInstance, assetType);
+
+    if (url) {
+      urls[assetType] = url;
+    }
+  }
+
+  return urls;
+}
+
 function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {}) {
   const assets = explicitAssets && typeof explicitAssets === 'object' && !Array.isArray(explicitAssets)
     ? explicitAssets
     : {};
   const { logoUrl, iconUrl, emblemUrl } = appleTemplateAssetUrls(template, cardInstance);
+  const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance);
   const templateAssets: Row = {};
 
   if (logoUrl) {
@@ -681,6 +729,35 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
     templateAssets.thumbnailPng = emblemUrl;
     templateAssets.strip = emblemUrl;
     templateAssets.stripPng = emblemUrl;
+  }
+
+  if (generatedAssets.wallet_background) {
+    templateAssets.background = generatedAssets.wallet_background;
+    templateAssets.backgroundPng = generatedAssets.wallet_background;
+    templateAssets.strip = templateAssets.strip || generatedAssets.wallet_background;
+    templateAssets.stripPng = templateAssets.stripPng || generatedAssets.wallet_background;
+  }
+
+  if (generatedAssets.stamp_grid) {
+    templateAssets.strip = generatedAssets.stamp_grid;
+    templateAssets.stripPng = generatedAssets.stamp_grid;
+    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.stamp_grid;
+    templateAssets.thumbnailPng = templateAssets.thumbnailPng || generatedAssets.stamp_grid;
+  }
+
+  if (generatedAssets.streak_badge) {
+    templateAssets.thumbnail = generatedAssets.streak_badge;
+    templateAssets.thumbnailPng = generatedAssets.streak_badge;
+  }
+
+  if (generatedAssets.club_module_badges) {
+    templateAssets.strip = generatedAssets.club_module_badges;
+    templateAssets.stripPng = generatedAssets.club_module_badges;
+  }
+
+  if (generatedAssets.decorative_title) {
+    templateAssets.logo = templateAssets.logo || generatedAssets.decorative_title;
+    templateAssets.logoPng = templateAssets.logoPng || generatedAssets.decorative_title;
   }
 
   return {

@@ -39,6 +39,7 @@ function listFiles(directory) {
 
 [
   'supabase/functions/_shared/walletDesign.ts',
+  'supabase/functions/_shared/walletAssets.ts',
   'supabase/functions/generate-wallet-asset/index.ts',
   'docs/wallet-design-parity.md',
   'docs/wallet-feature-limitations.md',
@@ -46,6 +47,7 @@ function listFiles(directory) {
 ].forEach(assertFile);
 
 const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
+const walletAssets = read('supabase/functions/_shared/walletAssets.ts');
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
@@ -92,14 +94,28 @@ assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
   "assetType: 'stamp_grid'",
   "assetType: 'streak_badge'",
   "assetType: 'wallet_background'",
+  "assetType: 'club_module_badges'",
   "'asset'",
   "'details'",
   "'partial'",
   "'unsupported'"
 ]);
 
+assertIncludes('Wallet Asset Pfadvertrag', walletAssets, [
+  "export type WalletPlatform = 'apple' | 'google' | 'samsung'",
+  "export type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'decorative_title' | 'club_module_badges'",
+  "export const walletAssetBucket = 'wallet-assets'",
+  'supportedWalletAssetTypes',
+  'isWalletAssetType',
+  'walletAssetFolderPath',
+  'walletAssetStoragePath',
+  'walletAssetPublicUrl',
+  '/storage/v1/object/public/'
+]);
+
 assertIncludes('Apple Provider Design Mapping', appleProvider, [
   "import { editorCardDesignFromTemplate, mapEditorDesignToApplePass } from './walletDesign.ts'",
+  "import { walletAssetPublicUrl } from './walletAssets.ts'",
   'const editorDesign = editorCardDesignFromTemplate(template, cardInstance',
   'const appleDesign = mapEditorDesignToApplePass(editorDesign, cardInstance)',
   'appleDesign.colors.backgroundColor',
@@ -112,7 +128,13 @@ assertIncludes('Apple Provider Design Mapping', appleProvider, [
   'appleDesign.fieldSets.primaryFields',
   'appleDesign.fieldSets.secondaryFields',
   'appleDesign.fieldSets.auxiliaryFields',
-  'appleDesign.fieldSets.backFields'
+  'appleDesign.fieldSets.backFields',
+  'generatedAppleWalletAssetUrlsForTemplate',
+  'generatedAssets.stamp_grid',
+  'generatedAssets.streak_badge',
+  'generatedAssets.wallet_background',
+  'generatedAssets.club_module_badges',
+  "files.set('background.png'"
 ]);
 
 assertIncludes('Google Provider Design Mapping', googleProvider, [
@@ -142,12 +164,15 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
 ]);
 
 assertIncludes('Serverseitige Wallet Asset Generierung', generateWalletAsset, [
+  "import { isWalletAssetType, supportedWalletAssetTypes, walletAssetStoragePath } from '../_shared/walletAssets.ts'",
   'Deno.serve(async (request)',
   'walletNotificationService.context(request)',
   'card_instance_id',
   'wallet_platform',
   'asset_type',
-  "supportedAssetTypes = new Set(['stamp_grid', 'streak_badge', 'wallet_background', 'decorative_title', 'club_module_badges'])",
+  'isWalletAssetType(assetType)',
+  'supportedWalletAssetTypes.join',
+  'walletAssetStoragePath({',
   '.eq(' + "'owner_id', context.ownerId)",
   '.eq(' + "'business_id', context.business.id)",
   "from('wallet-assets')",
@@ -239,6 +264,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Custom Font',
   'Stempelraster',
   'Clubkarte',
+  'club_module_badges',
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
@@ -261,6 +287,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '### Funktioniert Bei Apple + Samsung, Aber Nicht Google',
   '## Clubkarte',
   '## Asset-Fallbacks',
+  'club_module_badges',
   'generate-wallet-asset` ist implementiert',
   '## Update Queue',
   'enqueue_wallet_update_after_template_design_change()',
@@ -281,6 +308,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToGoogleWalletObject',
   'mapEditorDesignToSamsungWalletCard',
   'generate-wallet-asset',
+  'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'pnpm run check',
   'node scripts/wallet-remote-schema-check.js --strict',

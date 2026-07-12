@@ -21,6 +21,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Farben werden auf `backgroundColor`, `foregroundColor` und `labelColor` gemappt.
 - QR wird als `PKBarcodeFormatQR` gesetzt.
 - Stempel/Streak koennen zusaetzlich ueber `generate-wallet-asset` als Bild vorbereitet werden.
+- Bereits erzeugte Apple-Fallbacks werden ueber `_shared/walletAssets.ts` deterministisch gefunden und als `strip.png`, `thumbnail.png` oder `background.png` in das `.pkpass` aufgenommen.
 - Business-Logo/Emblem werden als Apple-kompatible Assets genutzt, wenn die URL sicher und oeffentlich ist.
 
 ## Google Wallet
@@ -126,8 +127,9 @@ Wenn zu viele Module aktiv sind:
 - `stamp_grid` fuer komplexe Stempelraster.
 - `streak_badge` fuer dekorative Streak-Anzeigen.
 - `wallet_background` fuer komplexe Hintergruende/Texturen.
+- `club_module_badges` fuer mehrere aktive Clubkarten-Module.
 
-Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`.
+Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.
 
 ```json
 {

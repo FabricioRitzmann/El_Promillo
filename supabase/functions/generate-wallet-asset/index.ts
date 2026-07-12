@@ -1,12 +1,11 @@
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
 import { editorCardDesignFromTemplate } from '../_shared/walletDesign.ts';
+import { isWalletAssetType, supportedWalletAssetTypes, walletAssetStoragePath } from '../_shared/walletAssets.ts';
+import type { WalletAssetType, WalletPlatform } from '../_shared/walletAssets.ts';
 
 type Row = Record<string, any>;
-type WalletPlatform = 'apple' | 'google' | 'samsung';
-type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'decorative_title' | 'club_module_badges';
 
 const supportedPlatforms = new Set(['apple', 'google', 'samsung']);
-const supportedAssetTypes = new Set(['stamp_grid', 'streak_badge', 'wallet_background', 'decorative_title', 'club_module_badges']);
 const MAX_WALLET_ASSET_BYTES = 2 * 1024 * 1024;
 
 const cardTemplateSelect = [
@@ -103,12 +102,12 @@ function normalizePlatform(value: unknown): WalletPlatform {
 function normalizeAssetType(value: unknown): WalletAssetType {
   const assetType = stringValue(value).toLowerCase().replace(/-/g, '_');
 
-  if (!supportedAssetTypes.has(assetType)) {
+  if (!isWalletAssetType(assetType)) {
     throw createStructuredError(
       400,
       'WALLET_ASSET_TYPE_INVALID',
       'Wallet-Asset-Typ ist ungueltig.',
-      'Erlaubt sind stamp_grid, streak_badge, wallet_background, decorative_title oder club_module_badges.'
+      `Erlaubt sind ${supportedWalletAssetTypes.join(', ')}.`
     );
   }
 
@@ -450,17 +449,6 @@ async function loadCardInstance(context: Row, cardInstanceId: string) {
   };
 }
 
-function storagePath(context: Row, cardInstance: Row, assetType: WalletAssetType, walletPlatform: WalletPlatform) {
-  return [
-    context.ownerId,
-    context.business.id,
-    stringValue(cardInstance.template_id),
-    stringValue(cardInstance.id),
-    walletPlatform,
-    `${assetType}.png`
-  ].map((part) => encodeURIComponent(part)).join('/');
-}
-
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -503,7 +491,23 @@ Deno.serve(async (request) => {
       );
     }
 
-    const assetPath = storagePath(context, cardInstance, assetType, walletPlatform);
+    const assetPath = walletAssetStoragePath({
+      ownerId: context.ownerId,
+      businessId: context.business.id,
+      templateId: cardInstance.template_id,
+      cardInstanceId: cardInstance.id,
+      walletPlatform,
+      assetType
+    });
+
+    if (!assetPath) {
+      throw createStructuredError(
+        500,
+        'WALLET_ASSET_PATH_FAILED',
+        'Wallet-Asset-Pfad konnte nicht erstellt werden.',
+        'Owner, Business, Template, Karteninstanz, Plattform und Asset-Typ muessen fuer Storage vollstaendig sein.'
+      );
+    }
     const { error: uploadError } = await context.supabaseAdmin.storage
       .from('wallet-assets')
       .upload(assetPath, pngBytes, {

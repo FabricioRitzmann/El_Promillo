@@ -486,6 +486,13 @@ function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbac
 
 function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbacks'>): EditorCardDesign['assetFallbacks'] {
   const fallbacks: EditorCardDesign['assetFallbacks'] = [];
+  const activeClubModules = [
+    design.activeFeatures.vip,
+    design.activeFeatures.balance,
+    design.activeFeatures.cloakroom,
+    design.activeFeatures.coupon,
+    design.activeFeatures.membership
+  ].filter(Boolean).length;
 
   if (design.activeFeatures.stamps) {
     fallbacks.push({
@@ -507,6 +514,14 @@ function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'as
     fallbacks.push({
       assetType: 'wallet_background',
       reason: 'CSS-Hintergruende und Texturen muessen pro Wallet in ein akzeptiertes Bildfeld uebersetzt werden.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
+  if (design.templateType === 'club_card' && activeClubModules > 1) {
+    fallbacks.push({
+      assetType: 'club_module_badges',
+      reason: 'Aktive Clubkarten-Module brauchen in Wallets je nach Plattform eine kompakte Badge-Grafik.',
       platforms: ['apple', 'google', 'samsung']
     });
   }

@@ -33,10 +33,10 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Bereich | Datei | Status |
 |---|---|---|
 | Zentrale Editor-Design-Abstraktion | `supabase/functions/_shared/walletDesign.ts` | Implementiert |
-| Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, QR, Feldprioritaet, Assets/Fallback-Hinweise |
+| Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, QR, Feldprioritaet, Assets/Fallback-Hinweise und generierte PNG-Fallbacks im `.pkpass` |
 | Google Mapping | `mapEditorDesignToGoogleWalletObject` und `googleWalletProvider.ts` | Implementiert fuer Farben, QR, Logo/Hero/Image-Module, Textmodule |
 | Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, QR, priorisierte Felder |
-| Komplexe Asset-Generierung | `generate-wallet-asset` | Implementiert fuer PNG-Fallbacks in `wallet-assets` |
+| Komplexe Asset-Generierung | `generate-wallet-asset`, `_shared/walletAssets.ts` | Implementiert fuer PNG-Fallbacks in `wallet-assets` mit gemeinsamem Storage-Pfadvertrag |
 | Plattformwarnungen im Editor | `public/js/ui.js`, `public/styles.css` | Implementiert fuer sichtbare Info/Warning/Critical Hinweise |
 | Plattformspezifische Editor-Previews | `public/js/ui.js`, `public/styles.css` | Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor |
 | Update Queue fuer Design-Aenderungen | `supabase/schema.sql`, `wallet_update_queue`, `samsung_wallet_events` | Implementiert fuer Apple/Google Queue-Jobs und Samsung Update-Vorbereitung |
@@ -49,7 +49,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Emblem nach Initial-Scan | Demografie-/Gender-Emblem ersetzt Fallback | `thumbnail`/`strip` Asset, wenn oeffentliches Supabase Asset | `heroImage`/`imageModulesData` | `mainImg`/Logo-nahe Attribute, wenn Template erlaubt | Teilweise | Wallets erlauben keine freie Overlay-Position | Emblem als Plattform-Bildfeld oder generiertes kombiniertes Asset | Implementiert |
 | Hintergrundfarbe | Editor CSS Variable `--card-bg` | `backgroundColor` | `hexBackgroundColor` fuer passende Object-Typen | `bgColor` | Teilweise | Rendering/Contrast-Regeln variieren | Naechste gueltige Hex-Farbe, Textfarbe separat pruefen | Implementiert |
 | Textfarbe | Editor CSS Variable `--card-fg` | `foregroundColor`, `labelColor` | Eingeschraenkt, nicht fuer alle Textbereiche | `fontColor` hell/dunkel statt freier Farbe | Nein | Google/Samsung kontrollieren viele Textfarben selbst | Kontraststarke Systemfarbe bzw. hell/dunkel Mapping | Implementiert |
-| Hintergrundbild / Textur | Event-Bild als CSS Background | Je nach Pass-Style `strip`/`background`/`thumbnail`, Apple Watch eingeschraenkt | `heroImage` oder `imageModulesData` | `mainImg` oder Template-spezifisches Bildfeld | Nein | Kein freies CSS Background Layering | Bild als Hero/Strip/Main-Image, Farbe als Fallback | Teilweise implementiert; Asset-Generator offen |
+| Hintergrundbild / Textur | Event-Bild als CSS Background | Je nach Pass-Style `strip`/`background`/`thumbnail`, Apple Watch eingeschraenkt | `heroImage` oder `imageModulesData` | `mainImg` oder Template-spezifisches Bildfeld | Nein | Kein freies CSS Background Layering | Bild als Hero/Strip/Main-Image, Farbe als Fallback | Implementiert; Apple nimmt vorhandene `wallet_background` PNGs in das Pass-Bundle auf |
 | Titel | Grosse Editor-Typo | Native Felder, Pass-Style Layout | `cardTitle`/`header` | `title` | Teilweise | Schriftart und Position nicht frei | Systemschrift oder dekorativer Titel als Bild | Implementiert |
 | Untertitel/Beschreibung | Beschreibung unter Titel | Secondary/back fields | `subheader`, Textmodule | `subtitle1`, `noticeDesc` | Teilweise | Laenge und Umbruch variieren | Kurze Vorderseite, volle Beschreibung in Details | Implementiert |
 | Karten-ID | Footer-Code | Sichtbares Feld und Barcode-AltText | `accountId`/Textmodul/Barcode | Barcode-Wert und Details | Ja | Layoutposition ist unterschiedlich | Hoechste Feldprioritaet, auch in Details | Implementiert |
@@ -61,7 +61,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Garderobe | Aktiv/Bereit | Vorderseite oder Rueckseite | Textmodul | Notice/Details | Teilweise | Kein natives Cloakroom-Feld | Status als priorisiertes Textfeld | Implementiert |
 | Couponstatus | Titel + Bereit/Eingeloest | `coupon` Pass-Style oder Feld | `offerObject` plus Textmodul | `coupon`/loyalty Attribute je nach Samsung Card | Teilweise | Validierungs- und Fine-Print-Felder variieren | Couponstatus vorne, Bedingungen in Details | Implementiert |
 | Mitgliedschaft | Status/Nummer/Ablauf | Vorderseite + Rueckseite | Loyalty/Textmodule | Loyalty/Membership-Attribute, abhaengig vom Template | Teilweise | Samsung Membership ist partner-/templateabhaengig | Nummer/Status vorne, Ablauf in Details | Implementiert |
-| Clubkarte Module | VIP, Guthaben, Garderobe, Coupon, Mitgliedschaft optional | Priorisierte Felder, Ueberlauf auf Rueckseite | Loyalty/Generic Textmodule | Begrenzte Attribute + Details | Nein | Zu viele Module fuer feste Wallet-Front | Prioritaet: ID, VIP, Guthaben, Mitgliedschaft, Coupon, Garderobe, Details | Implementiert |
+| Clubkarte Module | VIP, Guthaben, Garderobe, Coupon, Mitgliedschaft optional | Priorisierte Felder, Ueberlauf auf Rueckseite, optional `club_module_badges` PNG | Loyalty/Generic Textmodule | Begrenzte Attribute + Details | Nein | Zu viele Module fuer feste Wallet-Front | Prioritaet: ID, VIP, Guthaben, Mitgliedschaft, Coupon, Garderobe, Details; Badge-Asset als Fallback | Implementiert |
 | Push-Hinweistext | Editor Notification/Message | Pass Web Service + APNS Update, latestMessage Feld | `TEXT_AND_NOTIFY` oder Object Patch | Samsung Server API Update Notification vorbereitet | Teilweise | Push-Mechaniken sind plattformspezifisch | Message separat behandeln, sichtbare Felder patchen | Bestehende Logik bleibt bestehen |
 | Footer / Rueckseite / Details | Footer-Code und Zusatzinfos | `backFields` | `textModulesData` | `noticeDesc` und Attribute | Teilweise | Kein gemeinsames Rueckseitenmodell | Details pro Plattform in native Detailfelder verschieben | Implementiert |
 | Custom Font | Web/CSS moeglich | Nicht als echte Pass-Schrift steuerbar | Nicht steuerbar | Templateabhaengig | Nein | Wallets rendern native Templates | Systemschrift oder serverseitig gerendertes Bild | Warnung implementiert; dekoratives PNG-Asset vorbereitet |
@@ -88,6 +88,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Custom Font | Native Systemschrift; dekorative Schrift nur als serverseitig generiertes Bild |
 | Komplexes Stempelraster | Textfeld `x/y`; optional `generate-wallet-asset` mit `asset_type=stamp_grid` |
 | Komplexer Hintergrund | Gueltige Hintergrundfarbe plus Hero/Strip/Main-Image |
+| Clubkarten-Modul-Badges | Mehrere aktive Clubmodule bleiben native Felder/Details; optionales `club_module_badges` PNG fuer Apple-Bundle-Fallback |
 | Zu viele Felder | Priorisierte Vorderseite, Rest in Apple `backFields`, Google `textModulesData`, Samsung `noticeDesc` |
 | Nicht unterstuetztes Feature | Als Text/Details darstellen und Warnung ausgeben |
 | Ungueltige Farbe | Fallback `#fffdf9`/`#8b4f2f` oder Samsung hell/dunkel |
