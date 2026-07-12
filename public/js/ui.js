@@ -1,5 +1,5 @@
 import { cardFeatureRows, featureEnabled, normalizeTemplateType, templateTypeLabel, templateSettings } from './templateFeatures.js';
-import { cardEmblemImageUrl, cardEmblemMeta } from './cardEmblems.js';
+import { cardEmblemImageUrl } from './cardEmblems.js';
 import { assetPath } from './path.js';
 
 const appBrandMarkUrl = assetPath('assets/el-promillo-emblem-cutout.png');
@@ -418,6 +418,186 @@ function walletPlatformStyleLabels(template) {
   };
 }
 
+function compactWalletText(value) {
+  return String(value ?? '').trim();
+}
+
+function walletPreviewField(key, label, value, priority, options = {}) {
+  return {
+    key,
+    label,
+    value: compactWalletText(value),
+    priority,
+    front: options.front !== false
+  };
+}
+
+function walletPreviewStatusLabel(value) {
+  const status = compactWalletText(value).toLowerCase();
+
+  return {
+    active: 'Aktiv',
+    issued: 'Aktiv',
+    redeemed: 'Eingeloest',
+    blocked: 'Gesperrt',
+    paused: 'Pausiert'
+  }[status] || compactWalletText(value || 'Aktiv');
+}
+
+function walletPreviewFieldPriority(row, template) {
+  const templateType = normalizeTemplateType(template);
+  const feature = row.feature || row.key || '';
+
+  if (feature === 'vip') {
+    return 30;
+  }
+
+  if (feature === 'balance') {
+    return 40;
+  }
+
+  if (feature === 'membership') {
+    return 50;
+  }
+
+  if (feature === 'membership_expiry' || feature === 'membershipStatus') {
+    return templateType === 'club_card' ? 55 : 50;
+  }
+
+  if (feature === 'redemption' || feature === 'coupon') {
+    return 60;
+  }
+
+  if (feature === 'cloakroom') {
+    return 70;
+  }
+
+  if (feature === 'checkin') {
+    return 75;
+  }
+
+  if (feature === 'stamps' || feature === 'streak') {
+    return 80;
+  }
+
+  return 90;
+}
+
+function walletPreviewFieldKey(row, template) {
+  const templateType = normalizeTemplateType(template);
+
+  if (templateType === 'club_card' && row.feature === 'membership') {
+    return row.label === 'Mitgliedsnummer' ? 'membershipNumber' : 'membership';
+  }
+
+  if (row.feature === 'membership_expiry') {
+    return 'membershipStatus';
+  }
+
+  if (row.feature === 'redemption') {
+    return 'redemption';
+  }
+
+  return row.key || row.feature || row.label || 'field';
+}
+
+function walletPreviewFeatureFields(template, card, featureRows) {
+  const templateType = normalizeTemplateType(template);
+  const customerCard = card?.customer_cards || {};
+  const fields = featureRows.map((row) => walletPreviewField(
+    walletPreviewFieldKey(row, template),
+    row.label,
+    row.value,
+    walletPreviewFieldPriority(row, template),
+    { front: !(templateType === 'club_card' && row.feature === 'membership_expiry') }
+  ));
+
+  if (!fields.length) {
+    fields.push(walletPreviewField('status', 'Status', walletPreviewStatusLabel(customerCard.status || card?.status), 90));
+  }
+
+  return fields;
+}
+
+function walletStructuredFieldSets(template, card, context = {}) {
+  const settings = context.settings || templateSettings(template);
+  const featureRows = context.featureRows || cardFeatureRows(template, card);
+  const cardInstanceNumber = context.cardInstanceNumber
+    || card?.card_instance_number
+    || card?.metadata?.card_instance_number
+    || card?.customer_code
+    || 'Karten-ID';
+  const title = compactWalletText(context.title || template.card_name || 'Karte');
+  const description = compactWalletText(template.description || settings.description || cardTypeLabel(template));
+  const fields = [
+    walletPreviewField('cardId', 'Karten-ID', cardInstanceNumber, 10),
+    walletPreviewField('cardName', 'Karte', title, 20),
+    ...walletPreviewFeatureFields(template, card, featureRows),
+    walletPreviewField('type', 'Typ', cardTypeLabel(template), 95, { front: false }),
+    walletPreviewField('description', 'Beschreibung', description, 100, { front: false })
+  ];
+  const rewardText = compactWalletText(template.reward_text || settings.rewardText || settings.reward_text);
+
+  if (rewardText) {
+    fields.push(walletPreviewField('reward', 'Belohnung', rewardText, 85, { front: false }));
+  }
+
+  const sortedFrontFields = fields
+    .filter((field) => field.front && field.value)
+    .sort((left, right) => left.priority - right.priority);
+  const usedFrontKeys = new Set(sortedFrontFields.slice(0, 7).map((field) => field.key));
+  const backFields = fields
+    .filter((field) => field.value && (!usedFrontKeys.has(field.key) || !field.front))
+    .sort((left, right) => left.priority - right.priority);
+
+  return {
+    headerFields: sortedFrontFields.slice(0, 1),
+    primaryFields: sortedFrontFields.slice(1, 2),
+    secondaryFields: sortedFrontFields.slice(2, 4),
+    auxiliaryFields: sortedFrontFields.slice(4, 7),
+    backFields
+  };
+}
+
+function walletFieldHtml(field, className = '') {
+  if (!field?.value) {
+    return '';
+  }
+
+  return `
+    <div class="wallet-pass-field ${escapeHtml(className)}">
+      <span>${escapeHtml(field.label)}</span>
+      <strong>${escapeHtml(field.value)}</strong>
+    </div>
+  `;
+}
+
+function walletFieldSetHtml(fields, className = '', emptyLabel = '') {
+  const visibleFields = fields.filter((field) => field?.value);
+
+  if (!visibleFields.length) {
+    return emptyLabel ? `<div class="wallet-pass-empty">${escapeHtml(emptyLabel)}</div>` : '';
+  }
+
+  return `
+    <div class="${escapeHtml(className)}">
+      ${visibleFields.map((field) => walletFieldHtml(field)).join('')}
+    </div>
+  `;
+}
+
+function walletBarcodePreviewHtml(format, value) {
+  const isQr = format.key === 'qr';
+  const barcodeClass = isQr ? 'wallet-barcode-qr' : 'wallet-barcode-bars';
+
+  return `
+    <div class="wallet-barcode-preview" aria-label="${escapeHtml(`${format.label} ${value}`)}">
+      <div class="${barcodeClass}" aria-hidden="true"></div>
+      <div class="wallet-barcode-meta">${escapeHtml(format.label)} · ${escapeHtml(value)}</div>
+    </div>
+  `;
+}
+
 function walletPlatformPreviewsHtml(template, card, context = {}) {
   const featureRows = context.featureRows || cardFeatureRows(template, card);
   const cardInstanceNumber = context.cardInstanceNumber || card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
@@ -427,13 +607,15 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
   const labels = walletPlatformStyleLabels(template);
   const title = template.card_name || 'Karte';
   const description = template.description || cardTypeLabel(template);
-  const firstRows = [
-    { label: 'Karten-ID', value: cardInstanceNumber },
-    ...featureRows
+  const fieldSets = walletStructuredFieldSets(template, card, { ...context, settings, featureRows, cardInstanceNumber });
+  const appleRows = [
+    ...fieldSets.headerFields,
+    ...fieldSets.primaryFields,
+    ...fieldSets.secondaryFields,
+    ...fieldSets.auxiliaryFields
   ];
-  const appleRows = firstRows.slice(0, 4);
-  const googleRows = firstRows.concat(template.reward_text ? [{ label: 'Belohnung', value: template.reward_text }] : []);
-  const samsungRows = firstRows.slice(0, 3).concat(description ? [{ label: 'Details', value: description }] : []);
+  const googleRows = appleRows.concat(template.reward_text ? [{ label: 'Belohnung', value: template.reward_text }] : []);
+  const samsungRows = appleRows.slice(0, 3).concat(description ? [{ label: 'Details', value: description }] : []);
 
   return `
     <div class="wallet-platform-previews" aria-label="Wallet-Plattformvorschau">
@@ -478,8 +660,6 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     logo_url: template.business_logo_url,
     company_logo_url: template.company_logo_url
   };
-  const stampValue = card ? Number(card.stamp_count || 0) : 0;
-  const streakValue = card ? Number(card.streak_count || 0) : 0;
   const settings = templateSettings(template);
   const eventBackgroundImageUrl = featureEnabled(template, 'eventBackgroundImage')
     ? settings.eventBackgroundImageUrl
@@ -488,56 +668,19 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     ? ` background-image: linear-gradient(rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.36)), url('${escapeCssUrl(eventBackgroundImageUrl)}'); background-size: cover; background-position: center;`
     : '';
   const cardEmblemUrl = cardEmblemImageUrl(card || {}, { fallbackUrl: appBrandMarkUrl });
-  const cardEmblem = cardEmblemMeta(card || {});
   const cardInstanceNumber = card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
-  const stampsRequired = Number(template.stamps_required || 10);
-  const streakGoal = Number(template.streak_goal || settings.streakGoal || 0);
-  const templateType = normalizeTemplateType(template);
   const featureRows = cardFeatureRows(template, card);
-  const stampComplete = featureEnabled(template, 'stamps') && card && stampValue >= stampsRequired;
-  const streakComplete = featureEnabled(template, 'streak') && card && streakGoal > 0 && streakValue >= streakGoal;
-  const rewardVisible = Boolean(template.reward_text) && (
-    !card
-    || templateType === 'generic_card'
-    || featureEnabled(template, 'vip')
-    || featureEnabled(template, 'redemption')
-    || featureEnabled(template, 'membership')
-    || stampComplete
-    || streakComplete
-  );
-  const progress = featureRows[0]?.value || card?.status || 'Aktiv';
-  const walletFrontRows = featureRows.slice(0, 4);
-  const overflowFeatureCount = Math.max(0, featureRows.length - walletFrontRows.length);
-  const featureRowsHtml = walletFrontRows.map((row) => {
-    const isBrandedFeature = row.feature === 'stamps' || row.feature === 'streak';
-    const iconUrl = row.feature === 'stamps'
-      ? settings.stampIconUrl || cardEmblemUrl
-      : row.feature === 'streak'
-        ? settings.streakIconUrl || cardEmblemUrl
-        : '';
-    const valueHtml = row.feature === 'streak'
-      ? `
-        <strong class="wallet-streak-value">
-          <img class="wallet-streak-value-icon" src="${escapeHtml(cardEmblemUrl)}" alt="${escapeHtml(cardEmblem.label)}">
-          <span>${escapeHtml(row.value)}</span>
-        </strong>
-      `
-      : `<strong>${escapeHtml(row.value)}</strong>`;
-
-    return `
-      <div class="wallet-feature-row">
-        ${featureIconHtml(iconUrl, row.iconText || row.label.slice(0, 2).toUpperCase(), { brand: isBrandedFeature })}
-        <span>${escapeHtml(row.label)}</span>
-        ${valueHtml}
-      </div>
-    `;
-  }).join('');
-  const overflowFeatureHtml = overflowFeatureCount
-    ? `<div class="wallet-feature-overflow">+${escapeHtml(overflowFeatureCount)} Details auf der Rueckseite</div>`
+  const fieldSets = walletStructuredFieldSets(template, card, { settings, featureRows, cardInstanceNumber });
+  const headerFieldsHtml = fieldSets.headerFields.map((field) => walletFieldHtml(field, 'wallet-pass-header-field')).join('');
+  const primaryFieldsHtml = walletFieldSetHtml(fieldSets.primaryFields, 'wallet-pass-primary-fields');
+  const secondaryFieldsHtml = walletFieldSetHtml(fieldSets.secondaryFields, 'wallet-pass-secondary-fields');
+  const auxiliaryFieldsHtml = walletFieldSetHtml(fieldSets.auxiliaryFields, 'wallet-pass-auxiliary-fields');
+  const overflowFeatureHtml = fieldSets.backFields.length
+    ? `<div class="wallet-feature-overflow">+${escapeHtml(fieldSets.backFields.length)} Details auf der Rueckseite</div>`
     : '';
-  const stampSlots = featureEnabled(template, 'stamps')
-    ? stampSlotsHtml(stampValue, stampsRequired, settings.stampIconUrl || cardEmblemUrl)
-    : '';
+  const barcodeFormat = walletBarcodeFormat(template, card, { settings });
+  const barcodeValue = walletBarcodeValue(template, card, { settings, cardInstanceNumber });
+  const barcodeHtml = walletBarcodePreviewHtml(barcodeFormat, barcodeValue);
   const platformWarnings = walletPlatformWarningsHtml(template, card, {
     settings,
     featureRows,
@@ -554,24 +697,27 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     <div class="wallet-preview-stack">
       <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
         <div class="wallet-top">
-          ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
-          <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
-        </div>
-        <div class="wallet-front">
-          <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
-          <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
-          <div class="wallet-meta">
-            <span>${escapeHtml(cardTypeLabel(template))}</span>
-            <strong>${escapeHtml(progress)}</strong>
+          <div class="wallet-brand-lockup">
+            ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
+            <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
           </div>
-          <div class="wallet-feature-list">
-            ${featureRowsHtml}
+          <div class="wallet-header-fields">
+            ${headerFieldsHtml}
+          </div>
+        </div>
+        <div class="wallet-front wallet-front-structured">
+          <div class="wallet-pass-main">
+            ${primaryFieldsHtml}
+            ${secondaryFieldsHtml}
+            ${auxiliaryFieldsHtml}
             ${overflowFeatureHtml}
           </div>
-          ${stampSlots}
-          ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
+          ${barcodeHtml}
         </div>
-        <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
+        <div class="wallet-code">
+          <span>${escapeHtml(walletPlatformStyleLabels(template).apple)}</span>
+          <strong>${escapeHtml(cardTypeLabel(template))}</strong>
+        </div>
       </div>
       ${walletInsights}
     </div>

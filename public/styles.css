@@ -1629,7 +1629,7 @@ textarea {
 }
 
 .wallet-top {
-  justify-content: flex-start;
+  justify-content: space-between;
   font-weight: 650;
   font-size: 0.86rem;
 }
@@ -1661,6 +1661,52 @@ textarea {
   object-fit: cover;
 }
 
+.wallet-brand-lockup,
+.wallet-header-fields {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.wallet-brand-lockup {
+  flex: 1 1 auto;
+}
+
+.wallet-header-fields {
+  flex: 0 1 42%;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.wallet-pass-field {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+  line-height: 1.08;
+}
+
+.wallet-pass-field span {
+  min-width: 0;
+  opacity: 0.82;
+  font-size: 0.64rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.wallet-pass-field strong {
+  min-width: 0;
+  color: currentColor;
+  font-size: 0.86rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.wallet-pass-header-field strong {
+  font-size: 0.78rem;
+}
+
 .wallet-front {
   min-height: 0;
   display: grid;
@@ -1668,6 +1714,97 @@ textarea {
   align-content: start;
   gap: clamp(0.38rem, 1.55vw, 0.58rem);
   overflow: hidden;
+}
+
+.wallet-front-structured {
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  gap: clamp(0.55rem, 2vw, 0.75rem);
+}
+
+.wallet-pass-main {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: clamp(0.48rem, 1.8vw, 0.68rem);
+  overflow: hidden;
+}
+
+.wallet-pass-primary-fields {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.wallet-pass-primary-fields .wallet-pass-field strong {
+  font-family: var(--font-display);
+  font-size: clamp(1.62rem, 7vw, 2.28rem);
+  font-weight: 720;
+  line-height: 0.98;
+}
+
+.wallet-pass-secondary-fields,
+.wallet-pass-auxiliary-fields {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wallet-pass-secondary-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wallet-pass-auxiliary-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wallet-pass-secondary-fields .wallet-pass-field strong,
+.wallet-pass-auxiliary-fields .wallet-pass-field strong {
+  font-size: 1.02rem;
+}
+
+.wallet-barcode-preview {
+  width: min(8.2rem, 58%);
+  justify-self: center;
+  display: grid;
+  gap: 0.34rem;
+  place-items: center;
+  color: #111;
+}
+
+.wallet-barcode-qr {
+  width: min(7rem, 100%);
+  aspect-ratio: 1;
+  border: 0.38rem solid #fff;
+  border-radius: 0.18rem;
+  background:
+    linear-gradient(#000 0 0) 12% 12% / 22% 22% no-repeat,
+    linear-gradient(#000 0 0) 66% 12% / 22% 22% no-repeat,
+    linear-gradient(#000 0 0) 12% 66% / 22% 22% no-repeat,
+    repeating-conic-gradient(#000 0 25%, transparent 0 50%) 50% 50% / 18% 18%,
+    repeating-linear-gradient(90deg, #000 0 0.28rem, transparent 0.28rem 0.52rem),
+    #fff;
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.08);
+}
+
+.wallet-barcode-bars {
+  width: min(8rem, 100%);
+  height: 3.4rem;
+  border: 0.38rem solid #fff;
+  border-radius: 0.18rem;
+  background: repeating-linear-gradient(90deg, #000 0 0.12rem, #fff 0.12rem 0.24rem, #000 0.24rem 0.36rem, #fff 0.36rem 0.58rem);
+  box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.08);
+}
+
+.wallet-barcode-meta {
+  max-width: 100%;
+  color: currentColor;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 720;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .wallet-title {
@@ -2008,11 +2145,24 @@ textarea {
 .wallet-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
   padding-top: 0.55rem;
   border-top: 1px solid rgba(255, 255, 255, 0.24);
   font-size: 0.74rem;
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+.wallet-code span,
+.wallet-code strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wallet-code strong {
+  text-align: right;
 }
 
 .detail-grid {
