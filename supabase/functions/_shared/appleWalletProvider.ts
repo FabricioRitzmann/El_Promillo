@@ -16,7 +16,7 @@ type Row = Record<string, any>;
 
 const APPLE_PASS_VERSION_RETRY_LIMIT = 3;
 const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024;
-const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png']);
 
 const applePassVersionSelect = [
   'id',
@@ -82,6 +82,7 @@ function safeAppleAssetUrl(value: unknown) {
 
   return parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-assets/')
     || parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-emblems/')
+    || parsedUrl.pathname.startsWith('/storage/v1/object/public/business-logos/')
     ? parsedUrl.toString()
     : '';
 }
@@ -179,6 +180,27 @@ function base64ToBytes(value: string) {
   return bytes;
 }
 
+function dataUriMimeType(value: string) {
+  const match = value.match(/^data:([^;,]+)[;,]/i);
+
+  return match ? match[1].toLowerCase() : '';
+}
+
+function isPngBytes(bytes: Uint8Array | null) {
+  return Boolean(
+    bytes
+      && bytes.byteLength <= APPLE_ASSET_MAX_BYTES
+      && bytes[0] === 137
+      && bytes[1] === 80
+      && bytes[2] === 78
+      && bytes[3] === 71
+      && bytes[4] === 13
+      && bytes[5] === 10
+      && bytes[6] === 26
+      && bytes[7] === 10
+  );
+}
+
 function binaryStringToBytes(value: string) {
   const bytes = new Uint8Array(value.length);
 
@@ -191,11 +213,13 @@ function binaryStringToBytes(value: string) {
 
 async function assetBytes(value: unknown) {
   if (value instanceof Uint8Array) {
-    return value;
+    return isPngBytes(value) ? value : null;
   }
 
   if (value instanceof ArrayBuffer) {
-    return new Uint8Array(value);
+    const bytes = new Uint8Array(value);
+
+    return isPngBytes(bytes) ? bytes : null;
   }
 
   if (value && typeof value === 'object') {
@@ -225,16 +249,42 @@ async function assetBytes(value: unknown) {
     const contentLength = Number(response.headers.get('content-length') || '0');
     const contentType = stringValue(response.headers.get('content-type')).split(';')[0].toLowerCase();
 
-    if (contentLength > APPLE_ASSET_MAX_BYTES || !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)) {
+    if (contentLength > APPLE_ASSET_MAX_BYTES || (contentType && !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType))) {
       return null;
     }
 
     const bytes = new Uint8Array(await response.arrayBuffer());
 
-    return bytes.byteLength <= APPLE_ASSET_MAX_BYTES ? bytes : null;
+    return isPngBytes(bytes) ? bytes : null;
   }
 
-  return base64ToBytes(text);
+  if (/^data:/i.test(text)) {
+    const contentType = dataUriMimeType(text);
+
+    if (contentType && !APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)) {
+      return null;
+    }
+  }
+
+  try {
+    const bytes = base64ToBytes(text);
+
+    return isPngBytes(bytes) ? bytes : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function firstApplePngAssetBytes(...values: unknown[]) {
+  for (const value of values) {
+    const bytes = await assetBytes(value);
+
+    if (bytes) {
+      return bytes;
+    }
+  }
+
+  return null;
 }
 
 function passSigningConfig() {
@@ -302,35 +352,42 @@ function signManifest(manifestJson: string) {
 async function buildPassPackage(passJson: Row, assets: Row = {}) {
   const files = new Map<string, Uint8Array>();
   const fallbackIcon = base64ToBytes(fallbackIconPngBase64);
-  const configuredIcon = await assetBytes(assets.iconPng || assets.icon || assets.iconPngBase64 || assets.logoPng || assets.logo);
+  const configuredIcon = await firstApplePngAssetBytes(
+    assets.icon,
+    assets.iconPng,
+    assets.iconPngBase64,
+    assets.logo,
+    assets.logoPng,
+    assets.logoPngBase64
+  );
   const icon = configuredIcon || fallbackIcon;
 
   files.set('pass.json', utf8Bytes(JSON.stringify(passJson)));
   files.set('icon.png', icon);
   files.set('icon@2x.png', icon);
 
-  const logo = await assetBytes(assets.logoPng || assets.logo || assets.logoPngBase64);
+  const logo = await firstApplePngAssetBytes(assets.logo, assets.logoPng, assets.logoPngBase64);
 
   if (logo) {
     files.set('logo.png', logo);
     files.set('logo@2x.png', logo);
   }
 
-  const thumbnail = await assetBytes(assets.thumbnailPng || assets.thumbnail || assets.thumbnailPngBase64);
+  const thumbnail = await firstApplePngAssetBytes(assets.thumbnail, assets.thumbnailPng, assets.thumbnailPngBase64);
 
   if (thumbnail) {
     files.set('thumbnail.png', thumbnail);
     files.set('thumbnail@2x.png', thumbnail);
   }
 
-  const strip = await assetBytes(assets.stripPng || assets.strip || assets.stripPngBase64);
+  const strip = await firstApplePngAssetBytes(assets.strip, assets.stripPng, assets.stripPngBase64);
 
   if (strip) {
     files.set('strip.png', strip);
     files.set('strip@2x.png', strip);
   }
 
-  const background = await assetBytes(assets.backgroundPng || assets.background || assets.backgroundPngBase64);
+  const background = await firstApplePngAssetBytes(assets.background, assets.backgroundPng, assets.backgroundPngBase64);
 
   if (background) {
     files.set('background.png', background);
@@ -717,55 +774,50 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
 
   if (logoUrl) {
     templateAssets.logo = logoUrl;
-    templateAssets.logoPng = logoUrl;
   }
 
   if (iconUrl) {
     templateAssets.icon = iconUrl;
-    templateAssets.iconPng = iconUrl;
   }
 
   if (emblemUrl) {
     templateAssets.thumbnail = emblemUrl;
-    templateAssets.thumbnailPng = emblemUrl;
     templateAssets.strip = emblemUrl;
-    templateAssets.stripPng = emblemUrl;
   }
 
   if (generatedAssets.wallet_background) {
-    templateAssets.background = generatedAssets.wallet_background;
     templateAssets.backgroundPng = generatedAssets.wallet_background;
+    templateAssets.background = templateAssets.background || generatedAssets.wallet_background;
     templateAssets.strip = templateAssets.strip || generatedAssets.wallet_background;
     templateAssets.stripPng = templateAssets.stripPng || generatedAssets.wallet_background;
   }
 
   if (generatedAssets.combined_emblem) {
-    templateAssets.thumbnail = generatedAssets.combined_emblem;
     templateAssets.thumbnailPng = generatedAssets.combined_emblem;
-    templateAssets.strip = generatedAssets.combined_emblem;
     templateAssets.stripPng = generatedAssets.combined_emblem;
+    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.combined_emblem;
+    templateAssets.strip = templateAssets.strip || generatedAssets.combined_emblem;
   }
 
   if (generatedAssets.stamp_grid) {
-    templateAssets.strip = generatedAssets.stamp_grid;
     templateAssets.stripPng = generatedAssets.stamp_grid;
     templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.stamp_grid;
     templateAssets.thumbnailPng = templateAssets.thumbnailPng || generatedAssets.stamp_grid;
   }
 
   if (generatedAssets.streak_badge) {
-    templateAssets.thumbnail = generatedAssets.streak_badge;
     templateAssets.thumbnailPng = generatedAssets.streak_badge;
+    templateAssets.thumbnail = templateAssets.thumbnail || generatedAssets.streak_badge;
   }
 
   if (generatedAssets.club_module_badges) {
-    templateAssets.strip = generatedAssets.club_module_badges;
     templateAssets.stripPng = generatedAssets.club_module_badges;
+    templateAssets.strip = templateAssets.strip || generatedAssets.club_module_badges;
   }
 
   if (generatedAssets.decorative_title) {
     templateAssets.logo = templateAssets.logo || generatedAssets.decorative_title;
-    templateAssets.logoPng = templateAssets.logoPng || generatedAssets.decorative_title;
+    templateAssets.logoPng = generatedAssets.decorative_title;
   }
 
   return {
@@ -794,27 +846,27 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null, ca
     return false;
   }
 
-  if (generatedAssets.wallet_background && !stringValue(assets.background || assets.backgroundPng || assets.strip || assets.stripPng)) {
+  if (generatedAssets.wallet_background && !stringValue(assets.backgroundPng || assets.stripPng)) {
     return false;
   }
 
-  if (generatedAssets.stamp_grid && !stringValue(assets.strip || assets.stripPng || assets.thumbnail || assets.thumbnailPng)) {
+  if (generatedAssets.stamp_grid && !stringValue(assets.stripPng || assets.thumbnailPng)) {
     return false;
   }
 
-  if (generatedAssets.streak_badge && !stringValue(assets.thumbnail || assets.thumbnailPng)) {
+  if (generatedAssets.streak_badge && !stringValue(assets.thumbnailPng)) {
     return false;
   }
 
-  if (generatedAssets.club_module_badges && !stringValue(assets.strip || assets.stripPng)) {
+  if (generatedAssets.club_module_badges && !stringValue(assets.stripPng)) {
     return false;
   }
 
-  if (generatedAssets.combined_emblem && !stringValue(assets.strip || assets.stripPng || assets.thumbnail || assets.thumbnailPng)) {
+  if (generatedAssets.combined_emblem && !stringValue(assets.stripPng || assets.thumbnailPng)) {
     return false;
   }
 
-  if (generatedAssets.decorative_title && !stringValue(assets.logo || assets.logoPng)) {
+  if (generatedAssets.decorative_title && !stringValue(assets.logoPng || assets.logoPngBase64)) {
     return false;
   }
 

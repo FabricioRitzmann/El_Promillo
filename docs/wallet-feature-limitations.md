@@ -22,7 +22,8 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Barcode wird aus Editor-/Template-Konfiguration normalisiert; QR ist Default, Aztec/PDF417/Code128 werden als `PKBarcodeFormatAztec`, `PKBarcodeFormatPDF417` oder `PKBarcodeFormatCode128` gesetzt.
 - Stempel/Streak koennen zusaetzlich ueber `generate-wallet-asset` als Bild vorbereitet werden.
 - Bereits erzeugte Apple-Fallbacks werden ueber `_shared/walletAssets.ts` deterministisch gefunden und als `strip.png`, `thumbnail.png` oder `background.png` in das `.pkpass` aufgenommen.
-- Business-Logo/Emblem werden als Apple-kompatible Assets genutzt, wenn die URL sicher und oeffentlich ist.
+- Business-Logo/Emblem werden als Apple-kompatible Assets genutzt, wenn die URL sicher und oeffentlich ist und die geladenen Bytes echte PNGs sind.
+- Wenn ein Logo als JPEG/WebP oder ohne klaren PNG-Pfad hochgeladen wurde, erzeugt Apple serverseitig ein `decorative_title` PNG als Fallback, statt Fremdbytes unter `.png` zu verpacken.
 
 ## Google Wallet
 
@@ -133,7 +134,7 @@ Wenn zu viele Module aktiv sind:
 - `streak_badge` fuer dekorative Streak-Anzeigen.
 - `wallet_background` fuer komplexe Hintergruende/Texturen.
 - `combined_emblem` fuer eine gemeinsame Branding-/Titel-/Emblemflaeche bei begrenzten Wallet-Bildslots.
-- `decorative_title` fuer Editor-Titel, die nicht als native Wallet-Schrift steuerbar sind.
+- `decorative_title` fuer Editor-Titel, die nicht als native Wallet-Schrift steuerbar sind, und als Apple-PNG-Fallback fuer Logos mit unsicherem Bildformat.
 - `club_module_badges` fuer mehrere aktive Clubkarten-Module.
 
 Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.

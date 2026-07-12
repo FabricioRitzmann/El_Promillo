@@ -86,12 +86,16 @@ assertIncludes(appleProvider, [
   "Deno.env.get('SUPABASE_URL')",
   '/storage/v1/object/public/wallet-assets/',
   '/storage/v1/object/public/wallet-emblems/',
+  '/storage/v1/object/public/business-logos/',
   'supabaseCardEmblemUrl(cardInstance',
   'const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024',
-  'const APPLE_ASSET_ALLOWED_MIME_TYPES',
+  "const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png'])",
   'APPLE_ASSET_ALLOWED_MIME_TYPES.has(contentType)',
+  'function isPngBytes(bytes: Uint8Array | null)',
+  'function dataUriMimeType(value: string)',
+  'async function firstApplePngAssetBytes(...values: unknown[])',
+  'return isPngBytes(bytes) ? bytes : null',
   'fetch(assetUrl)',
-  'bytes.byteLength <= APPLE_ASSET_MAX_BYTES',
   'function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {})',
   'function passVersionHasTemplateAssets(template: Row',
   'const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance)',
@@ -101,6 +105,12 @@ assertIncludes(appleProvider, [
   'generatedAssets.combined_emblem',
   'generatedAssets.decorative_title',
   'generatedAssets.club_module_badges',
+  'generatedAssets.wallet_background && !stringValue(assets.backgroundPng || assets.stripPng)',
+  'generatedAssets.stamp_grid && !stringValue(assets.stripPng || assets.thumbnailPng)',
+  'generatedAssets.streak_badge && !stringValue(assets.thumbnailPng)',
+  'generatedAssets.club_module_badges && !stringValue(assets.stripPng)',
+  'generatedAssets.combined_emblem && !stringValue(assets.stripPng || assets.thumbnailPng)',
+  'generatedAssets.decorative_title && !stringValue(assets.logoPng || assets.logoPngBase64)',
   'template.logo_url',
   'settings.iconUrl',
   'templateAssets.logo',
@@ -110,6 +120,18 @@ assertIncludes(appleProvider, [
   'assets = appleAssetsForTemplate(template, options.assets || {}, ensuredCardInstance)',
   'passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {})'
 ], 'Apple Pass Template-Assets');
+
+assert(
+  !appleProvider.includes("'image/jpeg'") && !appleProvider.includes("'image/webp'"),
+  'Apple Pass Assets duerfen JPEG/WebP nicht als .png Pass-Dateien akzeptieren.'
+);
+
+assertIncludes(walletDesign, [
+  "id: 'apple-logo-png-format'",
+  'function likelyPngAssetUrl(value: unknown)',
+  'Apple Pass-Bildslots brauchen echte PNG-Bytes',
+  "platforms: ['apple']"
+], 'Apple PNG-Fallback-Warnung');
 
 assert(
   !appleProvider.includes('fetch(text)'),

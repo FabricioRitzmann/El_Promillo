@@ -15,13 +15,13 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: SERVE_STATIC_FRONTEND
-        value: false
+        value: true
       - key: APP_PUBLIC_BASE_URL
-        value: https://fabricioritzmann.github.io/El_Promillo/public/
+        value: https://el-promillo-j1n0.onrender.com
       - key: APP_API_BASE_URL
         value: https://el-promillo-j1n0.onrender.com
       - key: CORS_ORIGIN
-        value: https://fabricioritzmann.github.io
+        value: https://el-promillo-j1n0.onrender.com
       - key: SUPABASE_URL
         value: https://mfyltmjzofahbavrwpac.supabase.co
       - key: SUPABASE_ANON_KEY

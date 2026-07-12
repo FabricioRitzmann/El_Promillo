@@ -214,6 +214,20 @@ function safeHttpsUrl(value: unknown) {
   }
 }
 
+function likelyPngAssetUrl(value: unknown) {
+  const uri = safeHttpsUrl(value);
+
+  if (!uri) {
+    return false;
+  }
+
+  try {
+    return new URL(uri).pathname.toLowerCase().endsWith('.png');
+  } catch (_error) {
+    return false;
+  }
+}
+
 function localized(value: unknown, fallback = '') {
   return {
     defaultValue: {
@@ -857,6 +871,17 @@ function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbac
     });
   }
 
+  if (design.logoUrl && !likelyPngAssetUrl(design.logoUrl)) {
+    warnings.push({
+      id: 'apple-logo-png-format',
+      level: 'info',
+      platforms: ['apple'],
+      element: 'Logo / Bildformat',
+      problem: 'Apple Pass-Bildslots werden als PNG-Dateien paketiert; JPEG/WebP-Uploads koennen dort nicht verlaesslich unter PNG-Dateinamen verwendet werden.',
+      fallback: 'Apple verwendet ein serverseitig generiertes PNG-Titelbild, falls das hochgeladene Logo nicht als echtes PNG geladen werden kann.'
+    });
+  }
+
   if (design.barcodeFormat !== 'qr') {
     warnings.push({
       id: 'barcode-format-template-limits',
@@ -884,6 +909,7 @@ function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbac
 
 function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbacks'>): EditorCardDesign['assetFallbacks'] {
   const fallbacks: EditorCardDesign['assetFallbacks'] = [];
+  const appleNeedsPngLogoFallback = Boolean(design.logoUrl && !likelyPngAssetUrl(design.logoUrl));
   const activeClubModules = [
     design.activeFeatures.vip,
     design.activeFeatures.balance,
@@ -929,6 +955,12 @@ function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'as
       assetType: 'decorative_title',
       reason: 'Dekorative Editor-Titel koennen nicht als Wallet-Font erzwungen werden und brauchen ein serverseitiges Titel-PNG.',
       platforms: ['apple', 'google', 'samsung']
+    });
+  } else if (appleNeedsPngLogoFallback && design.title) {
+    fallbacks.push({
+      assetType: 'decorative_title',
+      reason: 'Apple Pass-Bildslots brauchen echte PNG-Bytes; unsichere Logoformate erhalten ein serverseitig erzeugtes Titel-PNG als Fallback.',
+      platforms: ['apple']
     });
   }
 
