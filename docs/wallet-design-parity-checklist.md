@@ -27,7 +27,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Google Guthabenkarte nutzt Gift Card Mapping | `balance_card` wird als `giftCardObject` mit `giftCardClasses`/`giftCardObjects`, `cardNumber` und Google-`Money`-`balance` erzeugt |
 | Manuelle Apple/Google Wallet Updates nutzen dieselbe Asset-Fallback-Pipeline | `update-apple-pass`, `send-apple-wallet-update`, `update-google-wallet-pass` und `send-google-wallet-message` erzeugen benoetigte PNG-Fallbacks vor neu signierten Pass-Versionen bzw. Google Object-Patches |
 | Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |
-| Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql`; `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks vor Apple-/Google-Updates |
+| Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql`; `barcode_changed` wird fuer reine Barcodewert-/Barcodeformat-Aenderungen gesetzt; `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks vor Apple-/Google-Updates |
 | Clubkarten-Priorisierung | `walletDesign.ts`, Matrix in `docs/wallet-design-parity.md` |
 | Keine Wallet-Secrets im Frontend | `scripts/verify-browser-secret-boundary.js`, `scripts/verify-wallet-design-parity.js` |
 | Business-Isolation fuer Assets | `generate-wallet-asset` prueft `owner_id` und `business_id` |

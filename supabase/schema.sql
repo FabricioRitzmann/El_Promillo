@@ -3944,7 +3944,62 @@ as $$
 declare
   changed_fields text[] := array[]::text[];
   update_reason text := 'design_changed';
+  old_barcode_signature jsonb;
+  new_barcode_signature jsonb;
+  old_settings_without_barcode jsonb;
+  new_settings_without_barcode jsonb;
 begin
+  old_barcode_signature := jsonb_build_object(
+    'format', lower(coalesce(
+      old.settings->>'barcodeFormat',
+      old.settings->>'barcode_format',
+      old.settings->>'barcodeType',
+      old.settings->>'barcode_type',
+      ''
+    )),
+    'value', coalesce(
+      old.settings->>'barcodeValue',
+      old.settings->>'barcode_value',
+      old.settings->>'barcodeMessage',
+      old.settings->>'barcode_message',
+      ''
+    )
+  );
+  new_barcode_signature := jsonb_build_object(
+    'format', lower(coalesce(
+      new.settings->>'barcodeFormat',
+      new.settings->>'barcode_format',
+      new.settings->>'barcodeType',
+      new.settings->>'barcode_type',
+      ''
+    )),
+    'value', coalesce(
+      new.settings->>'barcodeValue',
+      new.settings->>'barcode_value',
+      new.settings->>'barcodeMessage',
+      new.settings->>'barcode_message',
+      ''
+    )
+  );
+  old_settings_without_barcode := coalesce(old.settings, '{}'::jsonb)
+    - 'barcodeFormat'
+    - 'barcode_format'
+    - 'barcodeType'
+    - 'barcode_type'
+    - 'barcodeValue'
+    - 'barcode_value'
+    - 'barcodeMessage'
+    - 'barcode_message';
+  new_settings_without_barcode := coalesce(new.settings, '{}'::jsonb)
+    - 'barcodeFormat'
+    - 'barcode_format'
+    - 'barcodeType'
+    - 'barcode_type'
+    - 'barcodeValue'
+    - 'barcode_value'
+    - 'barcodeMessage'
+    - 'barcode_message';
+
   if new.card_name is distinct from old.card_name then
     changed_fields := array_append(changed_fields, 'card_name');
   end if;
@@ -3973,7 +4028,14 @@ begin
     end if;
   end if;
 
-  if new.settings is distinct from old.settings then
+  if new_barcode_signature is distinct from old_barcode_signature then
+    changed_fields := array_append(changed_fields, 'barcode');
+    if update_reason <> 'asset_changed' then
+      update_reason := 'barcode_changed';
+    end if;
+  end if;
+
+  if new_settings_without_barcode is distinct from old_settings_without_barcode then
     changed_fields := array_append(changed_fields, 'settings');
     update_reason := 'asset_changed';
   end if;

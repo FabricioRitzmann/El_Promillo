@@ -220,6 +220,42 @@ function walletBarcodeFormat(template, card, context = {}) {
   return { key: 'qr', label: 'QR' };
 }
 
+function walletBarcodeValue(template, card, context = {}) {
+  const settings = context.settings || templateSettings(template);
+  const metadata = card?.metadata && typeof card.metadata === 'object' ? card.metadata : {};
+  const fallback = context.cardInstanceNumber || card?.card_instance_number || metadata.card_instance_number || card?.customer_code || 'Karten-ID';
+  const candidates = [
+    context.barcodeValue,
+    context.barcode_value,
+    card?.barcodeValue,
+    card?.barcode_value,
+    card?.barcodeMessage,
+    card?.barcode_message,
+    metadata.barcodeValue,
+    metadata.barcode_value,
+    metadata.barcodeMessage,
+    metadata.barcode_message,
+    template?.barcodeValue,
+    template?.barcode_value,
+    template?.barcodeMessage,
+    template?.barcode_message,
+    settings.barcodeValue,
+    settings.barcode_value,
+    settings.barcodeMessage,
+    settings.barcode_message
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate || '').trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
 function walletPlatformWarnings(template, card, context = {}) {
   const warnings = [];
   const settings = context.settings || templateSettings(template);
@@ -356,6 +392,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
   const cardInstanceNumber = context.cardInstanceNumber || card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
   const settings = context.settings || templateSettings(template);
   const barcodeFormat = walletBarcodeFormat(template, card, { ...context, settings });
+  const barcodeValue = walletBarcodeValue(template, card, { ...context, settings, cardInstanceNumber });
   const labels = walletPlatformStyleLabels(template);
   const title = template.card_name || 'Karte';
   const description = template.description || cardTypeLabel(template);
@@ -378,7 +415,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(appleRows, 4)}
-          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(barcodeValue)}</div>
         </div>
         <div class="wallet-platform-preview-card wallet-platform-google">
           <div class="wallet-platform-preview-head">
@@ -387,7 +424,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(googleRows, 5)}
-          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(barcodeValue)}</div>
         </div>
         <div class="wallet-platform-preview-card wallet-platform-samsung">
           <div class="wallet-platform-preview-head">
@@ -396,7 +433,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(samsungRows, 4)}
-          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(barcodeValue)}</div>
         </div>
       </div>
     </div>

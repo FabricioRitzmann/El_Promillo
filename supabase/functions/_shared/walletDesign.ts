@@ -310,6 +310,48 @@ function barcodeFormatFor(template: Row, cardInstance: Row, options: Row): Edito
   return 'qr';
 }
 
+function barcodeValueFor(template: Row, cardInstance: Row, options: Row, fallback: string) {
+  const settings = templateSettings(template);
+  const customer = cardInstance.customer_cards || {};
+  const metadata = metadataFor(cardInstance);
+  const candidates = [
+    options.barcodeValue,
+    options.barcode_value,
+    options.barcodeMessage,
+    options.barcode_message,
+    cardInstance.barcodeValue,
+    cardInstance.barcode_value,
+    cardInstance.barcodeMessage,
+    cardInstance.barcode_message,
+    customer.barcodeValue,
+    customer.barcode_value,
+    customer.barcodeMessage,
+    customer.barcode_message,
+    metadata.barcodeValue,
+    metadata.barcode_value,
+    metadata.barcodeMessage,
+    metadata.barcode_message,
+    template.barcodeValue,
+    template.barcode_value,
+    template.barcodeMessage,
+    template.barcode_message,
+    settings.barcodeValue,
+    settings.barcode_value,
+    settings.barcodeMessage,
+    settings.barcode_message
+  ];
+
+  for (const candidate of candidates) {
+    const value = stringValue(candidate);
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
 function templateTypeLabel(template: Row) {
   return {
     generic_card: 'Basiskarte',
@@ -632,7 +674,7 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
     : '';
   const textureUrl = safeHttpsUrl(settings.textureUrl || settings.texture_url);
   const cardInstanceNumber = cardCodeFor(cardInstance);
-  const barcodeValue = stringValue(options.barcodeValue || cardInstanceNumber);
+  const barcodeValue = barcodeValueFor(template, cardInstance, options, cardInstanceNumber);
   const barcodeFormat = barcodeFormatFor(template, cardInstance, options);
   const rewardText = rewardTextForTemplate(template);
   const baseFields = [
