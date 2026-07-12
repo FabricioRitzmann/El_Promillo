@@ -34,7 +34,7 @@ Der produktive Function-Deploy ist als wiederholbares Script vorbereitet: `bash 
 
 Nach echten externen Aktionen kann `node scripts/wallet-acceptance-audit.js --strict` laufen. `Wallet External Acceptance Audit` nutzt serverseitig `SUPABASE_SERVICE_ROLE_KEY`, gibt aber nur redigierte Zählwerte/Statusnachweise für Apple, Google, Kampagnen, Queue, Payment und Business-Isolation aus. `supabase/acceptance-queries.sql` bleibt die SQL-Editor-Ergänzung für Cron-Jobs und Detailnachweise.
 
-Vor echten Wallet-Aktionen kann `node scripts/wallet-remote-schema-check.js --strict` laufen. `Wallet Remote Supabase Schema Check` prüft nur Tabellen- und Spalten-Erreichbarkeit im Supabase REST-Schema und gibt keine Secrets oder Tokens aus. Wenn der Check `schema cache` meldet, `supabase/schema.sql` im Supabase SQL Editor komplett ausführen, optional `notify pgrst, 'reload schema';` ausführen und den Check wiederholen.
+Vor echten Wallet-Aktionen kann `node scripts/wallet-remote-schema-check.js --strict` laufen. `Wallet Remote Supabase Schema Check` prüft Tabellen-/Spalten-Erreichbarkeit im Supabase REST-Schema sowie die öffentlichen Storage Buckets `wallet-assets`, `business-logos` und `wallet-emblems` und gibt keine Secrets oder Tokens aus. Wenn der Check `schema cache` meldet, `supabase/schema.sql` im Supabase SQL Editor komplett ausführen, optional `notify pgrst, 'reload schema';` ausführen und den Check wiederholen.
 
 Die vollständige redigierte Supabase-Secrets-Vorlage liegt in `supabase/secrets.example.env`. Für echte Werte lokal kopieren:
 

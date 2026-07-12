@@ -738,7 +738,7 @@ node scripts/wallet-acceptance-audit.js --strict
 node scripts/wallet-acceptance-audit.js --business-id <BUSINESS_UUID> --json
 ```
 
-`Wallet Remote Supabase Schema Check` ist der schnelle Preflight vor echten Wallet-Tests. Er nutzt `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY`, prüft aber nur, ob alle erforderlichen Tabellen und Spalten im Supabase REST-Schema erreichbar sind. Secrets und Tokens werden nicht ausgegeben.
+`Wallet Remote Supabase Schema Check` ist der schnelle Preflight vor echten Wallet-Tests. Er nutzt `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY`, prüft aber nur, ob alle erforderlichen Tabellen und Spalten im Supabase REST-Schema erreichbar sind und ob die öffentlichen Storage Buckets `wallet-assets`, `business-logos` und `wallet-emblems` existieren. Secrets und Tokens werden nicht ausgegeben.
 
 `Wallet External Acceptance Audit` nutzt `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` aus `config.json` oder der Umgebung, fragt nur Zählwerte und Statusnachweise ab und gibt keine Secrets, Wallet-Tokens, Save-JWTs, Zertifikate oder Push-Token aus. `--strict` ist für die finale Abnahme gedacht und schlägt fehl, solange Apple-/Google-/Kampagnen-/Queue-Nachweise fehlen. `supabase/acceptance-queries.sql` bleibt trotzdem wichtig, weil dort auch `cron.job` direkt im SQL Editor geprüft werden kann.
 

@@ -219,6 +219,12 @@ const requiredSchema = [
   }
 ];
 
+const requiredStorageBuckets = [
+  { id: 'wallet-assets', public: true },
+  { id: 'business-logos', public: true },
+  { id: 'wallet-emblems', public: true }
+];
+
 function printUsageAndExit() {
   console.log(`Usage:
   node scripts/wallet-remote-schema-check.js
@@ -230,8 +236,9 @@ Options:
   --json    Print machine-readable JSON.
 
 The check uses SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from config.json or
-the environment. It only verifies table/column reachability and never prints
-Supabase keys, wallet tokens, certificates, APNS tokens or Save JWTs.
+the environment. It verifies table/column reachability plus required public
+Storage buckets and never prints Supabase keys, wallet tokens, certificates,
+APNS tokens or Save JWTs.
 `);
   process.exit(0);
 }
@@ -240,8 +247,8 @@ if (argSet.has('--help') || argSet.has('-h')) {
   printUsageAndExit();
 }
 
-function add(results, status, label, detail) {
-  results.push({ group: 'remote-schema', status, label, detail });
+function add(results, status, label, detail, group = 'remote-schema') {
+  results.push({ group, status, label, detail });
 }
 
 function summarize(results) {
@@ -321,6 +328,29 @@ async function checkTable(supabase, table, columns) {
   };
 }
 
+async function checkStorageBucket(supabase, bucket) {
+  const { data, error } = await supabase.storage.getBucket(bucket.id);
+
+  if (error) {
+    return {
+      status: 'fail',
+      detail: `Storage Bucket fehlt oder ist nicht erreichbar: ${error.message || error.name || 'Unbekannter Supabase-Storage-Fehler'}`
+    };
+  }
+
+  if (Boolean(data?.public) !== Boolean(bucket.public)) {
+    return {
+      status: 'fail',
+      detail: `Storage Bucket public=${Boolean(data?.public)}; erwartet public=${Boolean(bucket.public)}`
+    };
+  }
+
+  return {
+    status: 'ok',
+    detail: `Storage Bucket erreichbar und public=${Boolean(data?.public)}`
+  };
+}
+
 async function buildReport() {
   const config = loadConfig();
   const results = [];
@@ -345,6 +375,11 @@ async function buildReport() {
   for (const item of requiredSchema) {
     const result = await checkTable(admin, item.table, item.columns);
     add(results, result.status, item.table, result.detail);
+  }
+
+  for (const bucket of requiredStorageBuckets) {
+    const result = await checkStorageBucket(admin, bucket);
+    add(results, result.status, bucket.id, result.detail, 'remote-storage');
   }
 
   const missing = results.filter((result) => result.status === 'fail').map((result) => result.label);
