@@ -77,6 +77,8 @@ assertIncludes(appleProvider, [
   'cloakroom_active',
   'rewardVisible(template, cardInstance)',
   'latestMessage',
+  'const visibleFieldKeys = new Set(primaryFields.concat(secondaryFields).map((field) => stringValue(field.key)))',
+  '? featureRows.filter((row) => !visibleFieldKeys.has(row.key))',
   'changeMessage'
 ], 'Apple Pass sichtbare Statusfelder');
 
