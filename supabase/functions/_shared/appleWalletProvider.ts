@@ -689,6 +689,7 @@ function generatedAppleWalletAssetUrlsForTemplate(template: Row, cardInstance: R
         'stamp_grid',
         'streak_badge',
         'wallet_background',
+        'combined_emblem',
         'decorative_title',
         'club_module_badges'
       ].includes(assetType))
@@ -736,6 +737,13 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
     templateAssets.backgroundPng = generatedAssets.wallet_background;
     templateAssets.strip = templateAssets.strip || generatedAssets.wallet_background;
     templateAssets.stripPng = templateAssets.stripPng || generatedAssets.wallet_background;
+  }
+
+  if (generatedAssets.combined_emblem) {
+    templateAssets.thumbnail = generatedAssets.combined_emblem;
+    templateAssets.thumbnailPng = generatedAssets.combined_emblem;
+    templateAssets.strip = generatedAssets.combined_emblem;
+    templateAssets.stripPng = generatedAssets.combined_emblem;
   }
 
   if (generatedAssets.stamp_grid) {
@@ -799,6 +807,10 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null, ca
   }
 
   if (generatedAssets.club_module_badges && !stringValue(assets.strip || assets.stripPng)) {
+    return false;
+  }
+
+  if (generatedAssets.combined_emblem && !stringValue(assets.strip || assets.stripPng || assets.thumbnail || assets.thumbnailPng)) {
     return false;
   }
 

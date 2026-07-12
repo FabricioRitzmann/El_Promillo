@@ -98,6 +98,7 @@ assertIncludes(appleProvider, [
   'generatedAssets.wallet_background',
   'generatedAssets.stamp_grid',
   'generatedAssets.streak_badge',
+  'generatedAssets.combined_emblem',
   'generatedAssets.decorative_title',
   'generatedAssets.club_module_badges',
   'template.logo_url',

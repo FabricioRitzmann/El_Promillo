@@ -900,6 +900,7 @@ function generatedAssetImageModule(assetType: WalletAssetType, url: string) {
     stamp_grid: 'Stempelraster',
     streak_badge: 'Streak',
     wallet_background: 'Kartenbild',
+    combined_emblem: 'Logo und Emblem',
     decorative_title: 'Kartentitel',
     club_module_badges: 'Clubkarten-Module'
   };
@@ -914,7 +915,7 @@ function generatedAssetImageModule(assetType: WalletAssetType, url: string) {
 }
 
 function applyGeneratedAssetImages(payload: Row, assetUrls: WalletAssetUrls = {}) {
-  const backgroundImage = imageValue(assetUrls.wallet_background, 'Kartenbild');
+  const backgroundImage = imageValue(assetUrls.wallet_background || assetUrls.combined_emblem, 'Kartenbild');
 
   if (backgroundImage) {
     payload.heroImage = backgroundImage;
@@ -922,6 +923,7 @@ function applyGeneratedAssetImages(payload: Row, assetUrls: WalletAssetUrls = {}
 
   const generatedModules = ([
     'wallet_background',
+    'combined_emblem',
     'stamp_grid',
     'streak_badge',
     'club_module_badges',

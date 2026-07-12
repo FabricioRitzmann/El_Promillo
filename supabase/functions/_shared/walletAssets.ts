@@ -1,5 +1,5 @@
 export type WalletPlatform = 'apple' | 'google' | 'samsung';
-export type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'decorative_title' | 'club_module_badges';
+export type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'combined_emblem' | 'decorative_title' | 'club_module_badges';
 export type WalletAssetUrls = Partial<Record<WalletAssetType, string>>;
 
 export const walletAssetBucket = 'wallet-assets';
@@ -7,6 +7,7 @@ export const supportedWalletAssetTypes: WalletAssetType[] = [
   'stamp_grid',
   'streak_badge',
   'wallet_background',
+  'combined_emblem',
   'decorative_title',
   'club_module_badges'
 ];

@@ -154,6 +154,7 @@ assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
   "assetType: 'stamp_grid'",
   "assetType: 'streak_badge'",
   "assetType: 'wallet_background'",
+  "assetType: 'combined_emblem'",
   "assetType: 'decorative_title'",
   "assetType: 'club_module_badges'",
   "'asset'",
@@ -164,7 +165,7 @@ assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
 
 assertIncludes('Wallet Asset Pfadvertrag', walletAssets, [
   "export type WalletPlatform = 'apple' | 'google' | 'samsung'",
-  "export type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'decorative_title' | 'club_module_badges'",
+  "export type WalletAssetType = 'stamp_grid' | 'streak_badge' | 'wallet_background' | 'combined_emblem' | 'decorative_title' | 'club_module_badges'",
   "export const walletAssetBucket = 'wallet-assets'",
   'supportedWalletAssetTypes',
   'isWalletAssetType',
@@ -183,6 +184,7 @@ assertIncludes('Wallet Asset Renderer', walletAssetRenderer, [
   'renderStampGrid',
   'renderStreakBadge',
   'renderClubBadges',
+  'renderCombinedEmblem',
   'renderDecorativeTitle',
   'titleGlyphs',
   'drawTextLine',
@@ -226,6 +228,7 @@ assertIncludes('Apple Provider Design Mapping', appleProvider, [
   'generatedAssets.stamp_grid',
   'generatedAssets.streak_badge',
   'generatedAssets.wallet_background',
+  'generatedAssets.combined_emblem',
   'generatedAssets.decorative_title',
   'generatedAssets.club_module_badges',
   "files.set('background.png'"
@@ -248,6 +251,8 @@ assertIncludes('Google Provider Design Mapping', googleProvider, [
   'applyGeneratedAssetImages',
   'existingWalletAssetPublicUrls(options.supabaseAdmin',
   "walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'google')",
+  "combined_emblem: 'Logo und Emblem'",
+  'assetUrls.wallet_background || assetUrls.combined_emblem',
   'statusPatch(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows',
   'options.generatedAssetUrls',
   'mergeImageModules(payload.imageModulesData'
@@ -346,6 +351,7 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   'generatedSamsungWalletAssetUrls',
   "walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'samsung')",
   'samsungGeneratedMainImage',
+  'assetUrls.combined_emblem',
   'cardDataForInstanceWithAssets'
 ]);
 
@@ -532,6 +538,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Stempelraster',
   'Clubkarte',
   'club_module_badges',
+  'combined_emblem',
   'decorative_title',
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
@@ -559,6 +566,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Clubkarte',
   '## Asset-Fallbacks',
   'club_module_badges',
+  'combined_emblem',
   'decorative_title',
   'generate-wallet-asset` ist implementiert',
   '## Update Queue',
@@ -588,6 +596,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'Initial-Scan-Emblemwechsel',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
+  'combined_emblem',
   'decorative_title',
   'Provider Registry bleibt auf derselben Pipeline',
   'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',

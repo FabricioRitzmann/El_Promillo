@@ -300,6 +300,65 @@ function renderDecorativeTitle(width: number, height: number, design: ReturnType
   return rgba;
 }
 
+function brandInitials(design: ReturnType<typeof editorCardDesignFromTemplate>) {
+  const source = normalizeTitleText(design.subtitle || design.title || design.cardName, 'EP');
+  const initials = source
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2);
+
+  return initials || 'EP';
+}
+
+function emblemLabel(cardInstance: Row) {
+  const key = stringValue(cardInstance.resolved_emblem_key);
+
+  if (key === 'male_gentleman') {
+    return 'M';
+  }
+
+  if (key === 'female_lady') {
+    return 'F';
+  }
+
+  return 'EP';
+}
+
+function renderCombinedEmblem(width: number, height: number, design: ReturnType<typeof editorCardDesignFromTemplate>, cardInstance: Row, background: [number, number, number], foreground: [number, number, number]) {
+  const rgba = createCanvas(width, height, background);
+  const panel = blend(background, foreground, 0.10);
+  const ring = blend(background, foreground, 0.32);
+  const soft = blend(background, foreground, 0.18);
+  const title = normalizeTitleText(design.title || design.cardName, 'KARTE').slice(0, 24);
+  const subtitle = normalizeTitleText(design.subtitle, '').slice(0, 30);
+  const leftX = 84;
+  const rightX = width - 88;
+  const centerY = Math.round(height / 2);
+  const titleCenter = Math.round(width / 2 - 10);
+  const titleScale = fittedTextScale(title, width - 260, 6);
+  const subtitleScale = subtitle ? fittedTextScale(subtitle, width - 300, 3) : 0;
+  const titleY = Math.round(centerY - (7 * titleScale) / 2 - (subtitle ? 12 : 0));
+
+  drawBrandBands(rgba, width, height, background, foreground);
+  fillRect(rgba, width, 28, 36, width - 56, height - 72, panel, 255);
+  drawCircle(rgba, width, leftX, centerY, 48, soft, 255);
+  drawCircle(rgba, width, leftX, centerY, 36, background, 255);
+  drawCircle(rgba, width, rightX, centerY, 58, ring, 255);
+  drawCircle(rgba, width, rightX, centerY, 43, background, 255);
+  drawTextLine(rgba, width, brandInitials(design), leftX, centerY - 12, 4, foreground);
+  drawTextLine(rgba, width, title, titleCenter, titleY, titleScale, foreground);
+
+  if (subtitle && subtitleScale) {
+    drawTextLine(rgba, width, subtitle, titleCenter, titleY + 7 * titleScale + 18, subtitleScale, ring);
+  }
+
+  drawTextLine(rgba, width, emblemLabel(cardInstance), rightX, centerY - 15, 5, foreground);
+
+  return rgba;
+}
+
 export function renderWalletAsset(assetType: WalletAssetType, template: Row, cardInstance: Row, walletPlatform: WalletPlatform) {
   const design = editorCardDesignFromTemplate(template, cardInstance);
   const background = hexToRgb(design.backgroundColor, [255, 253, 249]);
@@ -326,6 +385,13 @@ export function renderWalletAsset(assetType: WalletAssetType, template: Row, car
     return {
       ...size,
       rgba: renderClubBadges(size.width, size.height, design, background, foreground)
+    };
+  }
+
+  if (assetType === 'combined_emblem') {
+    return {
+      ...size,
+      rgba: renderCombinedEmblem(size.width, size.height, design, cardInstance, background, foreground)
     };
   }
 

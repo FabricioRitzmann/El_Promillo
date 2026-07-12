@@ -336,6 +336,7 @@ function normalizeRefId(value: unknown) {
 function samsungGeneratedMainImage(assetUrls: WalletAssetUrls = {}) {
   return stringValue(
     assetUrls.wallet_background
+      || assetUrls.combined_emblem
       || assetUrls.club_module_badges
       || assetUrls.stamp_grid
       || assetUrls.streak_badge

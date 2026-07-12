@@ -916,6 +916,14 @@ function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'as
     });
   }
 
+  if (design.emblemUrl) {
+    fallbacks.push({
+      assetType: 'combined_emblem',
+      reason: 'Logo, Titel und demografisches Emblem koennen in Wallets nicht frei ueberlagert werden und brauchen bei begrenzten Bildslots eine kombinierte Branding-Flaeche.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
   if (design.decorativeTitle && design.title) {
     fallbacks.push({
       assetType: 'decorative_title',
