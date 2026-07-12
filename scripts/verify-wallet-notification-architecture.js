@@ -157,6 +157,7 @@ assertAll('supabase/schema.sql', 'Supabase Wallet-Notification-Schema', [
   'create table if not exists public.google_wallet_objects',
   'google_wallet_objects_object_type_check',
   "'eventTicketObject'",
+  "'giftCardObject'",
   'customer_cards_wallet_object_unique_idx',
   'customer_cards_wallet_object_id_format_check',
   'card_instances_wallet_object_id_format_check',
@@ -992,6 +993,9 @@ assertAll('supabase/functions/_shared/googleWalletProvider.ts', 'Google Wallet P
   'eventTicketObject',
   'eventTicketClasses',
   'eventTicketObjects',
+  'giftCardObject',
+  'giftCardClasses',
+  'giftCardObjects',
   'TEXT_AND_NOTIFY',
   'walletobjects.googleapis.com/walletobjects/v1'
 ]);
@@ -1771,6 +1775,7 @@ assertAll('supabase/test-data.sql', 'Wallet Testdaten', [
   'club_features',
   'offerObject',
   'eventTicketObject',
+  'giftCardObject',
   'on conflict (card_instance_id)',
   'apple_wallet_devices',
   'apple_wallet_registrations',
@@ -1796,6 +1801,12 @@ const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts'
   assert(content.includes("return 'eventTicketObject'"), `${label} muss event_card auf eventTicketObject mappen.`);
   assert(content.includes("eventTicketClasses"), `${label} muss eventTicketClasses für Save-JWTs nutzen.`);
   assert(content.includes("eventTicketObjects"), `${label} muss eventTicketObjects für Save-JWTs nutzen.`);
+  assert(content.includes("balance_card"), `${label} muss balance_card erkennen.`);
+  assert(content.includes("return 'giftCardObject'"), `${label} muss balance_card auf giftCardObject mappen.`);
+  assert(content.includes("giftCardClasses"), `${label} muss giftCardClasses für Save-JWTs nutzen.`);
+  assert(content.includes("giftCardObjects"), `${label} muss giftCardObjects für Save-JWTs nutzen.`);
+  assert(content.includes("if (objectType === 'giftCardObject')"), `${label} muss giftCardObject-spezifische Payloads erzeugen.`);
+  assert(content.includes('googleMoneyFromCents'), `${label} muss Guthaben als Google Money fuer giftCardObject vorbereiten.`);
   assert(content.includes("coupon_card"), `${label} muss coupon_card erkennen.`);
   assert(content.includes("return 'offerObject'"), `${label} muss coupon_card auf offerObject mappen.`);
   assert(content.includes("offerClasses"), `${label} muss offerClasses für Save-JWTs nutzen.`);
@@ -1835,6 +1846,7 @@ assertAll('docs/WALLET_INTEGRATION_CONTEXT.md', 'Wallet Integrationskontext', [
   'Stempel, Streak, VIP, Guthaben',
   'Event Ticket',
   '`eventTicketObject`',
+  '`giftCardObject`',
   'WALLET_CRON_SECRET',
   'location_based'
 ]);

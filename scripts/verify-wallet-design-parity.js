@@ -472,6 +472,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Provider Registry bleibt auf derselben Pipeline',
   'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',
+  'Google Guthabenkarte nutzt Gift Card Mapping',
   'Manuelle Apple/Google Wallet Updates nutzen dieselbe Asset-Fallback-Pipeline',
   'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',

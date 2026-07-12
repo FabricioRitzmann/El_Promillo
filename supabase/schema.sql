@@ -723,7 +723,7 @@ drop constraint if exists google_wallet_objects_object_type_check;
 
 alter table public.google_wallet_objects
 add constraint google_wallet_objects_object_type_check
-check (object_type in ('genericObject', 'loyaltyObject', 'offerObject', 'eventTicketObject'));
+check (object_type in ('genericObject', 'loyaltyObject', 'offerObject', 'eventTicketObject', 'giftCardObject'));
 
 create table if not exists public.samsung_wallet_instances (
   id uuid primary key default gen_random_uuid(),

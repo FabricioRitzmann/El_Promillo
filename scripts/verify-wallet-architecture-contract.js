@@ -144,6 +144,7 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
   'loyaltyObject',
   'offerObject',
   'eventTicketObject',
+  'giftCardObject',
   'walletobjects.googleapis.com/walletobjects/v1'
 ].forEach((needle) => {
   assert(googleProvider.includes(needle), `Google Wallet Provider Vertrag fehlt: ${needle}`);

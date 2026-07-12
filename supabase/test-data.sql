@@ -15,6 +15,7 @@ declare
   vip_template_id uuid := '22222222-2222-4222-8222-222222222222';
   balance_template_id uuid := '33333333-3333-4333-8333-333333333333';
   cloakroom_template_id uuid := '44444444-4444-4444-8444-444444444444';
+  generic_template_id uuid := '45454545-4545-4545-8545-454545454545';
   event_template_id uuid := '55555555-5555-4555-8555-555555555555';
   coupon_template_id uuid := '66666666-6666-4666-8666-666666666666';
   club_base_template_id uuid := '77777777-7777-4777-8777-777777777771';
@@ -28,6 +29,7 @@ declare
   google_card_id uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
   balance_card_id uuid := 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
   cloakroom_card_id uuid := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  generic_card_id uuid := '45454545-4545-4545-8545-aaaaaaaaaaaa';
   event_card_id uuid := 'eeeeeeee-1111-4eee-8eee-111111111111';
   coupon_card_id uuid := '12121212-1212-4121-8121-121212121212';
   club_base_card_id uuid := '77777771-7777-4777-8777-777777777771';
@@ -142,6 +144,21 @@ begin
       null,
       10,
       '{"notificationsEnabled": true, "cloakroomNoonMessage": "Bitte Garderobe abholen.", "cloakroomLocationMessage": "Du bist wieder in der Nähe deiner Garderobe.", "cloakroomLocationLatitude": 47.376887, "cloakroomLocationLongitude": 8.541694, "cloakroomLocationRadiusMeters": 150}'::jsonb
+    ),
+    (
+      generic_template_id,
+      demo_owner_id,
+      demo_business_id,
+      'Demo Cafe',
+      'Demo Generische Karte',
+      'generic',
+      'generic_card',
+      'Generische Google Wallet Karte testen',
+      '#374151',
+      '#ffffff',
+      null,
+      10,
+      '{"notificationsEnabled": true}'::jsonb
     ),
     (
       event_template_id,
@@ -445,6 +462,26 @@ begin
       '{"demo": true}'::jsonb
     ),
     (
+      generic_card_id,
+      demo_owner_id,
+      demo_business_id,
+      generic_template_id,
+      'CI-DEMO-GENERIC',
+      'WC-DEMO-GENERIC',
+      0,
+      0,
+      null,
+      null,
+      null,
+      'google',
+      'issuer.demo_generic_object',
+      'issuer.demo_generic_object',
+      0,
+      'CHF',
+      false,
+      '{"demo": true}'::jsonb
+    ),
+    (
       event_card_id,
       demo_owner_id,
       demo_business_id,
@@ -717,6 +754,7 @@ begin
     google_card_id,
     balance_card_id,
     cloakroom_card_id,
+    generic_card_id,
     event_card_id,
     coupon_card_id,
     club_base_card_id,
@@ -1064,8 +1102,19 @@ begin
       'issuer',
       'issuer.demo_balance_class',
       'issuer.demo_balance_object',
-      'genericObject',
+      'giftCardObject',
       'https://pay.google.com/gp/v/save/demo-balance'
+    ),
+    (
+      demo_owner_id,
+      generic_card_id,
+      demo_business_id,
+      generic_template_id,
+      'issuer',
+      'issuer.demo_generic_class',
+      'issuer.demo_generic_object',
+      'genericObject',
+      'https://pay.google.com/gp/v/save/demo-generic'
     ),
     (
       demo_owner_id,

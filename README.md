@@ -73,7 +73,7 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - Direkte Wallet-Benachrichtigungsarchitektur ohne PassKit im neuen Edge-Pfad: `walletNotificationService`, `appleWalletProvider` und `googleWalletProvider`
 - Neue Supabase-Tabellen für Kampagnen, Empfänger, Push-Logs, Update-Queue, Apple-Registrierungen, Apple-Pass-Versionen und Google-Wallet-Objects
 - Google Wallet Messages werden serverseitig über Wallet REST API vorbereitet, inklusive `TEXT_AND_NOTIFY`-Limitprüfung
-- Google Wallet nutzt direkte Object-Typen: `genericObject`, `loyaltyObject`, `offerObject` und für `event_card` `eventTicketObject`
+- Google Wallet nutzt direkte Object-Typen: `genericObject`, `loyaltyObject`, `offerObject`, für `event_card` `eventTicketObject` und für `balance_card` `giftCardObject`
 - Apple- und Google-Wallet-Karten zeigen aktuelle Supabase-Werte wie Stempel, Streak, VIP, Guthaben, Garderobe, Coupon/Mitgliedschaft und Belohnungstext direkt als sichtbare Kartenfelder
 - Apple Wallet Updates werden serverseitig als Pass-Version plus APNS Pass Update verarbeitet; echte APNS-Zustellung braucht die Apple APNS Secrets und eine öffentliche HTTPS-Webservice-URL
 - Optionales Testdaten-SQL unter `supabase/test-data.sql`
@@ -314,7 +314,7 @@ Optionale Testdaten:
 supabase/test-data.sql
 ```
 
-Die Datei schaltet diesen Demo-Betreiber frei und erzeugt Demo-Business, Apple-/Google-Testkarten, Stempel-, VIP-, Guthaben-, Garderoben-, Event-, Coupon- und Clubkarten-Templates sowie drei Beispielkampagnen. Für `club_card` sind sieben Testfälle A-G enthalten: ohne Zusatzfeatures, nur VIP, nur Guthaben, nur Garderobe, nur Coupon, nur Mitgliedschaft und alle Module aktiv. Google Wallet wird dabei mit `genericObject`, `loyaltyObject`, `offerObject` und `eventTicketObject` abgedeckt. Sie legt ausserdem Demo-Apple-Pass-Versionen mit `authenticationToken`, HTTPS-`webServiceURL`, QR-Barcode und sichtbaren Statusfeldern, ein Demo-Apple-Gerät, Apple-Wallet-Registrierungen und vorbereitete Kampagnen-Empfänger an, damit Preflight, Apple-Registrierungsstatus und Versandhistorie direkt sichtbar getestet werden können.
+Die Datei schaltet diesen Demo-Betreiber frei und erzeugt Demo-Business, Apple-/Google-Testkarten, Stempel-, VIP-, Guthaben-, Garderoben-, generische, Event-, Coupon- und Clubkarten-Templates sowie drei Beispielkampagnen. Für `club_card` sind sieben Testfälle A-G enthalten: ohne Zusatzfeatures, nur VIP, nur Guthaben, nur Garderobe, nur Coupon, nur Mitgliedschaft und alle Module aktiv. Google Wallet wird dabei mit `genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject` und `giftCardObject` abgedeckt. Sie legt ausserdem Demo-Apple-Pass-Versionen mit `authenticationToken`, HTTPS-`webServiceURL`, QR-Barcode und sichtbaren Statusfeldern, ein Demo-Apple-Gerät, Apple-Wallet-Registrierungen und vorbereitete Kampagnen-Empfänger an, damit Preflight, Apple-Registrierungsstatus und Versandhistorie direkt sichtbar getestet werden können.
 
 ## Betreiber freischalten
 
@@ -470,6 +470,8 @@ Google Class-IDs sind templategebunden: `GOOGLE_WALLET_CLASS_SUFFIX`, Template-T
 `google_wallet_objects.card_instance_id` ist eindeutig indiziert. Google-Issue und der öffentliche Google-Save-Link aktualisieren deshalb denselben Datensatz pro Kundenkarte, statt versehentlich mehrere Wallet-Object-Zuordnungen für eine `card_instance` anzulegen.
 
 `coupon_card` wird für Google Wallet als `offerObject` vorbereitet. Provider und öffentlicher Save-Link erzeugen dafür offer-spezifische Class/Object-Payloads mit Coupon-Titel, Anbieter, Details, Einlösebedingungen, optionaler Gültigkeit (`couponValidUntil`) und Scan-Barcode.
+
+`balance_card` wird für Google Wallet als `giftCardObject` vorbereitet. Provider und öffentlicher Save-Link erzeugen dafür Gift-Card-Class-/Object-Payloads mit Merchant, Kartennummer, Barcode und Guthaben als Google-`Money`-Wert; Clubkarten mit aktivem Guthaben bleiben dagegen Loyalty/Generic-nahe und zeigen Guthaben als Status-/Detailfeld, weil ein Google Wallet Object nicht gleichzeitig Gift Card und Loyalty Object ist.
 
 `send-google-wallet-message` validiert Titel/Nachricht, prüft Limits, verwendet die gespeicherte `google_wallet_objects.object_id`/`object_type`-Zuordnung vor Legacy-Feldern auf `card_instances`, schreibt alle Versuche in `wallet_push_logs` und speichert bei fehlgeschlagenem `TEXT_AND_NOTIFY` einen `google_object_message_fallback` als Kartenupdate, sofern die Google Wallet API das Object-Update akzeptiert. Karteninstanz, Template, Kundenkarte und Google-Object-Zuordnung werden intern mit expliziten Select-Listen geladen. Erfolgreiche Google-Messages und Fallbacks aktualisieren die lokale `google_wallet_objects.updated_at`-Zuordnung nur mit passendem Betreiber, Business, Template, Karteninstanz, Object ID und Object-Type und synchronisieren danach `card_instances.google_object_id`, `wallet_object_id` und `wallet_serial_number` auf dieselbe echte Google Object ID.
 

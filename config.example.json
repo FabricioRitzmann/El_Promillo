@@ -42,7 +42,8 @@
       "generic",
       "loyalty",
       "offer",
-      "eventTicket"
+      "eventTicket",
+      "giftCard"
     ]
   },
   "appleWalletDirect": {

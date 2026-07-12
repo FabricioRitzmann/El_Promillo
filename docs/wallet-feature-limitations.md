@@ -40,7 +40,8 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 
 - `mapEditorDesignToGoogleWalletObject` erzeugt Google-konforme Object-Daten.
 - Logo/Emblem gehen in `logo`, `heroImage` oder `imageModulesData`.
-- Status, Karten-ID, VIP, Guthaben, Coupon, Mitgliedschaft und Garderobe gehen in `textModulesData`.
+- Reine Guthabenkarten (`balance_card`) gehen als `giftCardObject` mit `cardNumber` und Google-`Money`-`balance`; kombinierte Clubkarten behalten Guthaben als `textModulesData`, weil ein Google Object nicht gleichzeitig Gift Card und Loyalty sein kann.
+- Status, Karten-ID, VIP, Coupon, Mitgliedschaft und Garderobe gehen in `textModulesData`.
 - QR wird als `QR_CODE` gesetzt.
 - Stempel/Streak werden als Textmodule gesetzt und koennen spaeter als `imageModulesData` aus serverseitigen Assets ergaenzt werden.
 - Im Issue- und öffentlichen Claim-Save-Link-Pfad erzeugen die Edge Functions benoetigte PNG-Fallbacks serverseitig und nutzen danach `googleWalletProvider.ts`, der nur existierende HTTPS-PNGs als `heroImage`/`imageModulesData` setzt.

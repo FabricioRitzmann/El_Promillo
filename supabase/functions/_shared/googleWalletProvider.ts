@@ -30,6 +30,10 @@ const walletPayloadKeys: Record<string, { classes: string; objects: string }> = 
   eventTicketObject: {
     classes: 'eventTicketClasses',
     objects: 'eventTicketObjects'
+  },
+  giftCardObject: {
+    classes: 'giftCardClasses',
+    objects: 'giftCardObjects'
   }
 };
 const supportedObjectTypes = new Set(Object.keys(walletPayloadKeys));
@@ -418,6 +422,10 @@ function objectTypeForTemplate(template: Row) {
     return 'offerObject';
   }
 
+  if (templateType === 'balance_card') {
+    return 'giftCardObject';
+  }
+
   if (['stamp_card', 'streak_card', 'vip_card', 'membership_card'].includes(templateType)) {
     return 'loyaltyObject';
   }
@@ -454,7 +462,7 @@ function invalidObjectTypeResult(objectType: unknown) {
     status: 'failed',
     error_code: 'GOOGLE_WALLET_OBJECT_TYPE_INVALID',
     error_message: 'Google Wallet Object Type ist ungültig.',
-    error_reason: `${stringValue(objectType) || 'leer'} wird nicht unterstützt. Erlaubt sind genericObject, loyaltyObject, offerObject und eventTicketObject.`
+    error_reason: `${stringValue(objectType) || 'leer'} wird nicht unterstützt. Erlaubt sind genericObject, loyaltyObject, offerObject, eventTicketObject und giftCardObject.`
   };
 }
 
@@ -543,6 +551,13 @@ function statusLabel(value: unknown) {
 
 function formatMoney(cents: unknown, currency: unknown) {
   return `${stringValue(currency) || 'CHF'} ${(numberValue(cents) / 100).toFixed(2)}`;
+}
+
+function googleMoneyFromCents(cents: unknown, currency: unknown) {
+  return {
+    micros: String(Math.round(numberValue(cents, 0) * 10000)),
+    currencyCode: stringValue(currency) || 'CHF'
+  };
 }
 
 function cardCodeFor(cardInstance: Row) {
@@ -790,6 +805,14 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
     patch.accountId = googleDesign.accountId;
     patch.accountName = googleDesign.accountName;
     patch.loyaltyPoints = googleDesign.loyaltyPoints;
+  } else if (objectType === 'giftCardObject') {
+    const customer = cardInstance.customer_cards || {};
+    const metadata = metadataFor(cardInstance);
+    const balanceCents = numberValue(cardInstance.balance_cents, customer.balance_cents, metadata.balance_cents, 0);
+    const currency = stringValue(cardInstance.currency || customer.currency || templateSettings(template).currency || 'CHF');
+
+    patch.cardNumber = cardCodeFor(cardInstance);
+    patch.balance = googleMoneyFromCents(balanceCents, currency);
   }
 
   return applyGeneratedAssetImages(patch, options.generatedAssetUrls);
@@ -1032,6 +1055,28 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
     return offerClass;
   }
 
+  if (objectType === 'giftCardObject') {
+    const giftCardClass: Row = {
+      id: classId,
+      issuerName,
+      merchantName: businessNameForTemplate(template, issuerName),
+      reviewStatus: 'UNDER_REVIEW',
+      cardNumberLabel: stringValue(settings.cardNumberLabel || settings.card_number_label) || 'Kartennummer',
+      allowBarcodeRedemption: true,
+      hexBackgroundColor: googleDesign.hexBackgroundColor
+    };
+
+    if (logo) {
+      giftCardClass.programLogo = logo;
+    }
+
+    if (googleDesign.heroImage) {
+      giftCardClass.heroImage = googleDesign.heroImage;
+    }
+
+    return giftCardClass;
+  }
+
   const classPayload: Row = {
     id: classId,
     issuerName,
@@ -1122,6 +1167,31 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     }
 
     return applyObjectEmblemImages(applyGeneratedAssetImages(offerObject, options.generatedAssetUrls), cardInstance);
+  }
+
+  if (objectType === 'giftCardObject') {
+    const customer = cardInstance.customer_cards || {};
+    const balanceCents = numberValue(cardInstance.balance_cents, customer.balance_cents, metadata.balance_cents, 0);
+    const currency = stringValue(cardInstance.currency || customer.currency || settings.currency || 'CHF');
+    const giftCardObject: Row = {
+      id: objectId,
+      classId,
+      state: 'ACTIVE',
+      cardNumber: cardCode,
+      balance: googleMoneyFromCents(balanceCents, currency),
+      barcode: googleDesign.barcode,
+      textModulesData: statusPatch.textModulesData
+    };
+
+    if (googleDesign.heroImage) {
+      giftCardObject.heroImage = googleDesign.heroImage;
+    }
+
+    if (googleDesign.imageModulesData.length) {
+      giftCardObject.imageModulesData = googleDesign.imageModulesData;
+    }
+
+    return applyObjectEmblemImages(applyGeneratedAssetImages(giftCardObject, options.generatedAssetUrls), cardInstance);
   }
 
   const businessLogo = imageValue(businessLogoUrlForTemplate(template), 'Logo');

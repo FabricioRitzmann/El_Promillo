@@ -57,7 +57,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Stempel | Visuelles Raster mit Icon | Kein natives Raster | Kein natives Raster | Kein natives Raster | Nein | Freies Grid gibt es nicht | Textfeld `x/y`; optional `stamp_grid` Asset | Text und PNG-Asset-Generator implementiert |
 | Streak | Icon + Zaehler/Ziel | Feld oder Bild | Textmodul/Image-Modul | Attribut/Text | Nein | Kombiniertes Editor-Layout nicht nativ | Streak als Text, optional `streak_badge` Asset | Text und PNG-Asset-Generator implementiert |
 | VIP-Level | Feature-Reihe | Vorderseitenfeld nach Prioritaet | Loyalty/Textmodul | `level`/Details | Teilweise | Feldnamen/Positionen unterscheiden sich | VIP vorne, Rest in Details | Implementiert |
-| Guthaben | Feature-Reihe mit Waehrung | Vorderseitenfeld oder Back Field | Loyalty Points/Textmodul; Gift Card nicht genutzt | `amount`/`balance` | Teilweise | Gift-Card-Contract ist nicht in der bestehenden Integration angelegt | Loyalty/Generic Feld mit Betrag | Implementiert |
+| Guthaben | Feature-Reihe mit Waehrung | Vorderseitenfeld oder Back Field | `giftCardObject` fuer `balance_card`, sonst Loyalty/Generic Textmodul bei Club-/Modulkarten | `amount`/`balance` | Teilweise | Gift-Card-Layout bleibt Google-Template-gebunden; Clubkarten koennen nicht gleichzeitig Gift Card und Loyalty sein | Echte Google-Gift-Card-Payload fuer Guthabenkarten, Text-/Detailfeld fuer kombinierte Karten | Implementiert |
 | Garderobe | Aktiv/Bereit | Vorderseite oder Rueckseite | Textmodul | Notice/Details | Teilweise | Kein natives Cloakroom-Feld | Status als priorisiertes Textfeld | Implementiert |
 | Couponstatus | Titel + Bereit/Eingeloest | `coupon` Pass-Style oder Feld | `offerObject` plus Textmodul | `coupon`/loyalty Attribute je nach Samsung Card | Teilweise | Validierungs- und Fine-Print-Felder variieren | Couponstatus vorne, Bedingungen in Details | Implementiert |
 | Mitgliedschaft | Status/Nummer/Ablauf | Vorderseite + Rueckseite | Loyalty/Textmodule | Loyalty/Membership-Attribute, abhaengig vom Template | Teilweise | Samsung Membership ist partner-/templateabhaengig | Nummer/Status vorne, Ablauf in Details | Implementiert |
@@ -74,7 +74,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | `stamp_card` | `storeCard` mit Stempelfeld | Loyalty Object/Textmodule | Loyalty-Attribute | ID, Titel, Stempel, Belohnung |
 | `streak_card` | `storeCard` mit Streakfeld | Loyalty Object/Textmodule | Loyalty-Attribute | ID, Titel, Streak, Belohnung |
 | `vip_card` | `storeCard` | Loyalty Object | Loyalty-Attribute | ID, VIP, Titel, Details |
-| `balance_card` | `storeCard` | Loyalty/Generic Feldmapping | Loyalty-Attribute | ID, Guthaben, Titel |
+| `balance_card` | `storeCard` | `giftCardObject` mit `cardNumber` und `balance` | Loyalty-Attribute | ID, Guthaben, Titel |
 | `cloakroom_card` | `generic` | Generic/Textmodule | Generic/Loyalty Attribute | ID, Garderobe, Titel |
 | `coupon_card` | `coupon` | `offerObject` | Coupon/Loyalty Attribute | ID, Couponstatus, Titel |
 | `membership_card` | `storeCard` | `loyaltyObject` | Loyalty/Membership-nahe Attribute | ID, Mitgliedschaft, VIP |

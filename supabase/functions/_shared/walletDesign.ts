@@ -97,7 +97,7 @@ export type ApplePassDesign = {
 };
 
 export type GoogleWalletDesign = {
-  objectType: 'genericObject' | 'loyaltyObject' | 'offerObject' | 'eventTicketObject';
+  objectType: 'genericObject' | 'loyaltyObject' | 'offerObject' | 'eventTicketObject' | 'giftCardObject';
   hexBackgroundColor: string;
   barcode: {
     type: 'QR_CODE';
@@ -677,7 +677,11 @@ function googleObjectTypeForDesign(design: EditorCardDesign): GoogleWalletDesign
     return 'offerObject';
   }
 
-  if (['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(design.templateType)) {
+  if (design.templateType === 'balance_card') {
+    return 'giftCardObject';
+  }
+
+  if (['stamp_card', 'streak_card', 'vip_card', 'membership_card', 'club_card'].includes(design.templateType)) {
     return 'loyaltyObject';
   }
 

@@ -88,6 +88,7 @@ Gewünschte Pass-Typen:
 - Loyalty
 - Offer
 - Event Ticket
+- Gift Card
 
 Technisches Mapping:
 
@@ -95,6 +96,7 @@ Technisches Mapping:
 - Loyalty -> `loyaltyObject`
 - Offer -> `offerObject`
 - Event Ticket -> `eventTicketObject`
+- Gift Card -> `giftCardObject` fuer `balance_card`
 
 ## 5. Public URLs
 

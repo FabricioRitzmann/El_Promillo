@@ -275,6 +275,7 @@ Gewünschte Pass-Typen und aktueller Mapping-Stand:
 | Loyalty | `loyaltyObject` | vorbereitet für Stempel, Streak, VIP, Membership |
 | Offer | `offerObject` | vorbereitet für Coupon inklusive Titel, Anbieter, Details, Bedingungen, Gültigkeit und Barcode |
 | Event Ticket | `eventTicketObject` | vorbereitet für `event_card` |
+| Gift Card | `giftCardObject` | vorbereitet für `balance_card` inklusive Kartennummer, Barcode und Google-`Money`-Guthaben |
 
 Relevante Dateien:
 
@@ -287,7 +288,7 @@ Relevante Dateien:
 Security-Hinweis:
 
 - `update-google-wallet-pass` akzeptiert `objectId` nur, wenn sie in `google_wallet_objects` dem eingeloggten `owner_id` zugeordnet ist oder zur übergebenen `cardInstanceId` gehört.
-- Der Google `object_type` wird für Updates aus der gespeicherten Zuordnung gelesen, nicht frei aus dem Frontend vertraut. Manuelle Google-Messages, manuelle Google-Object-Updates, Kampagnenversand und Queue-Jobs bevorzugen `google_wallet_objects.object_id`/`object_type` vor Legacy-Feldern auf `card_instances` und validieren den Object Type gegen die vier unterstützten Typen.
+- Der Google `object_type` wird für Updates aus der gespeicherten Zuordnung gelesen, nicht frei aus dem Frontend vertraut. Manuelle Google-Messages, manuelle Google-Object-Updates, Kampagnenversand und Queue-Jobs bevorzugen `google_wallet_objects.object_id`/`object_type` vor Legacy-Feldern auf `card_instances` und validieren den Object Type gegen die fünf unterstützten Typen.
 - Claim-Schlüssel in `customer_cards.wallet_object_id`, Apple-Serials in `card_instances.apple_serial_number` und Google-Object-IDs in `card_instances.google_object_id` sind per Unique-Index eindeutig. Die Claim-Function blockiert denselben Wallet-Schlüssel für ein anderes Template mit `CLAIM_WALLET_OBJECT_ID_CONFLICT`. Parallele Claims mit demselben Wallet-Schlüssel werden nach SQL-Unique-Konflikt noch einmal geladen und als `reused` behandelt, sofern die vorhandene Karte zum selben Template gehört.
 - `issue-google-wallet-pass` arbeitet nur für Google-Wallet-Karten, erstellt/synchronisiert Class und Object, speichert `google_wallet_objects` und loggt `issue_google_wallet_pass` in `wallet_push_logs`. Karteninstanz, Template, Kundenkarte und gespeicherte Google-Object-Zuordnung werden mit expliziten internen Select-Listen geladen. Der signierte Save-Link wird dem Betreiber in der API-Antwort geliefert und in `google_wallet_objects.save_url` für Idempotenz/Updates abgelegt; der dauerhafte `wallet_push_logs.response_payload` speichert nur Metadaten wie `save_url_present` und `save_url_length`, nicht den Save-JWT selbst. Browserantworten für Google-Issue, Google-Object-Updates und Google-Messages liefern nur minimierte Status-, Object-, Class-, Fehler- und Warnfelder; rohe Google-Provider-Responses bleiben serverseitig. Fehlende oder ungültige Google-Wallet-Secrets geben HTTP `501`, Teilfehler `207` und Provider/API-Fehler `502` zurück. Optionaler `idempotency-key` als Header oder Body-Feld gibt bei Wiederholung den bestehenden Issue-Log zurück, statt Google Class/Object/Save-Link erneut aufzurufen; der Replay-Payload wird dabei aus `google_wallet_objects` um Object-ID, Class-ID, Object-Type und gespeicherten Save-Link ergänzt, falls der Audit-Log nur redigierte Metadaten enthält.
 - Bei Teilfehlern speichert `issue-google-wallet-pass` die Google-Zuordnung auch dann, wenn nur der signierte Save-Link eine Object-ID liefert. `google_wallet_objects`, `card_instances.google_object_id`, `wallet_object_id` und `wallet_serial_number` werden aus `objectResult` oder `saveLink` befüllt, damit spätere Updates dieselbe Karteninstanz finden können. Persistiert wird aber nur, wenn Object-ID, Class-ID und Object-Type vollständig vorhanden sind; sonst liefert die Function `GOOGLE_WALLET_OBJECT_IDENTITY_INCOMPLETE`, statt eine halb gültige Zuordnung zu speichern. Wenn die Karteninstanz mit einer `customer_cards`-Zeile verknüpft ist, synchronisiert der Betreiber-Issue-Pfad auch dort `wallet_object_id` und `wallet_serial_number` und bewahrt einen vorhandenen `metadata.google_wallet_claim_key`. Der `customer_cards`- und `card_instances`-Write ist an Betreiber, Business, Template und `wallet_platform = google` gebunden und muss jeweils eine Zeile aktualisieren.
@@ -563,7 +564,7 @@ Backend-Filtervalidierung:
 - Stempel-, VIP-, Guthaben-, Garderoben-, Event-, Coupon- und Clubkarten-Templates
 - Apple- und Google-Testkarten mit eindeutigen `card_instances`
 - Demo-Apple-Pass-Versionen mit `authenticationToken`, HTTPS-`webServiceURL`, QR-Barcode und sichtbaren Statusfeldern sowie Demo-Apple-Device plus `apple_wallet_registrations` für Apple-Preflight und Push-Fallbacktests
-- Google-Wallet-Object-Datensätze pro `card_instance_id`, inklusive `genericObject`, `loyaltyObject`, `offerObject` und `eventTicketObject`
+- Google-Wallet-Object-Datensätze pro `card_instance_id`, inklusive `genericObject`, `loyaltyObject`, `offerObject`, `eventTicketObject` und `giftCardObject`
 - drei Beispielkampagnen mit vorbereiteten `wallet_notification_recipients`: sofort, geplant und Garderoben-Erinnerung
 
 Offene externe Entscheidungen:
