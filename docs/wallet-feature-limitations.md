@@ -166,7 +166,7 @@ Aktueller Status:
 - Queue-Tabelle und generische Update-Verarbeitung existieren.
 - Emblem-/Wallet-Updates sind bereits angebunden.
 - Template-Designaenderungen reihen Apple-/Google-`card_instances` ueber den SQL-Trigger `enqueue_wallet_update_after_template_design_change()` ein.
-- Samsung Wallet Instanzen nutzen weiterhin den separaten Samsung Data-Fetch-/Update-Pfad und sind nicht Teil des bestehenden `card_instances`-Queue-Processors.
+- Samsung Wallet Instanzen werden im selben Trigger ueber `samsung_wallet_events.event_type=template_design_update_prepared` vorbereitet; die Ausfuehrung laeuft weiterhin ueber den separaten Samsung Data-Fetch-/Update-Pfad.
 
 ## Editor-Warnungen
 

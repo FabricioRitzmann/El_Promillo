@@ -195,6 +195,9 @@ assertIncludes('Wallet Design Update Queue', schema, [
   "'source', 'card_templates_update_trigger'",
   "ci.wallet_platform in ('apple', 'google')",
   "existing.payload->>'source' = 'card_templates_update_trigger'",
+  'insert into public.samsung_wallet_events',
+  "'template_design_update_prepared'",
+  "'next_action', 'update-samsung-wallet-pass'",
   'drop trigger if exists enqueue_wallet_update_jobs_after_template_update on public.card_templates',
   'create trigger enqueue_wallet_update_jobs_after_template_update'
 ]);
@@ -212,7 +215,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
-  'Implementiert fuer Apple/Google Template-Designaenderungen',
+  'Implementiert fuer Apple/Google Queue-Jobs und Samsung Update-Vorbereitung',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
 
@@ -233,7 +236,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   'generate-wallet-asset` ist implementiert',
   '## Update Queue',
   'enqueue_wallet_update_after_template_design_change()',
-  'Samsung Wallet Instanzen nutzen weiterhin den separaten Samsung Data-Fetch-/Update-Pfad',
+  'template_design_update_prepared',
   '## Editor-Warnungen',
   'Editor-UI zeigt plattformbezogene Hinweise',
   '## Security'

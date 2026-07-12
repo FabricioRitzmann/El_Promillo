@@ -4036,6 +4036,51 @@ begin
         and existing.payload->>'source' = 'card_templates_update_trigger'
     );
 
+  insert into public.samsung_wallet_events (
+    samsung_wallet_instance_id,
+    owner_id,
+    business_id,
+    template_id,
+    ref_id,
+    event_type,
+    request_payload,
+    response_payload
+  )
+  select
+    swi.id,
+    swi.owner_id,
+    swi.business_id,
+    swi.template_id,
+    swi.ref_id,
+    'template_design_update_prepared',
+    jsonb_build_object(
+      'source', 'card_templates_update_trigger',
+      'update_type', update_reason,
+      'template_id', new.id,
+      'changed_fields', changed_fields,
+      'old_updated_at', old.updated_at,
+      'new_updated_at', new.updated_at
+    ),
+    jsonb_build_object(
+      'status', 'prepared',
+      'provider', 'samsung',
+      'next_action', 'update-samsung-wallet-pass'
+    )
+  from public.samsung_wallet_instances swi
+  where swi.template_id = new.id
+    and swi.owner_id = new.owner_id
+    and swi.business_id is not distinct from new.business_id
+    and swi.business_id is not null
+    and swi.card_status not in ('deleted', 'cancelled')
+    and not exists (
+      select 1
+      from public.samsung_wallet_events existing
+      where existing.samsung_wallet_instance_id = swi.id
+        and existing.event_type = 'template_design_update_prepared'
+        and existing.request_payload->>'source' = 'card_templates_update_trigger'
+        and existing.created_at > now() - interval '5 minutes'
+    );
+
   return new;
 end;
 $$;
