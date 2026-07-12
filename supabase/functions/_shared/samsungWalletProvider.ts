@@ -399,9 +399,9 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}, o
     bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
     fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
     'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
-    'barcode.serialType': 'QRCODE',
-    'barcode.ptFormat': 'QRCODESERIAL',
-    'barcode.ptSubFormat': 'QR_CODE',
+    'barcode.serialType': stringValue(mappedAttributes['barcode.serialType'] || 'QRCODE'),
+    'barcode.ptFormat': stringValue(mappedAttributes['barcode.ptFormat'] || 'QRCODESERIAL'),
+    'barcode.ptSubFormat': stringValue(mappedAttributes['barcode.ptSubFormat'] || 'QR_CODE'),
     amount: stringValue(mappedAttributes.amount || templateProgressText(template, instance)),
     balance: stringValue(mappedAttributes.balance || rewardOrDescription(template, instance)),
     level: textLimit(mappedAttributes.level || instance.vip_level || instance.vip_status || template.vip_tier || '', 16),
@@ -437,9 +437,9 @@ function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}, o
     bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
     fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
     'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
-    'barcode.serialType': 'QRCODE',
-    'barcode.ptFormat': 'QRCODESERIAL',
-    'barcode.ptSubFormat': 'QR_CODE',
+    'barcode.serialType': stringValue(mappedAttributes['barcode.serialType'] || 'QRCODE'),
+    'barcode.ptFormat': stringValue(mappedAttributes['barcode.ptFormat'] || 'QRCODESERIAL'),
+    'barcode.ptSubFormat': stringValue(mappedAttributes['barcode.ptSubFormat'] || 'QR_CODE'),
     noticeDesc: textLimit(mappedAttributes.noticeDesc || template.description || rewardOrDescription(template, instance), 5000)
   };
 }

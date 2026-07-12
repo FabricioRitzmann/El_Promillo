@@ -22,6 +22,7 @@ function assertIncludes(content, needles, label) {
 }
 
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
+const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const claimApplePass = read('supabase/functions/claim-apple-pass/index.ts');
 const packageJson = read('package.json');
 
@@ -40,6 +41,16 @@ assertIncludes(appleProvider, [
   'webServiceURL',
   'configuredHttpsUrl(config.webServiceBaseUrl)'
 ], 'Apple Pass JSON Identität/Webservice');
+
+assertIncludes(walletDesign, [
+  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
+  'function appleBarcodeFormat(format: EditorBarcodeFormat)',
+  'appleBarcodeFormat(editorDesign.barcodeFormat)',
+  'PKBarcodeFormatQR',
+  'PKBarcodeFormatAztec',
+  'PKBarcodeFormatPDF417',
+  'PKBarcodeFormatCode128'
+], 'Apple Pass Barcodeformat Mapping');
 
 assertIncludes(appleProvider, [
   'walletFeatureRows(template, cardInstance)',

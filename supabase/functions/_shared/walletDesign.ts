@@ -6,6 +6,7 @@ type Row = Record<string, any>;
 export type WalletPlatform = 'apple' | 'google' | 'samsung';
 export type WalletWarningLevel = 'info' | 'warning' | 'critical';
 export type WalletSupportLevel = 'native' | 'details' | 'asset' | 'partial' | 'unsupported';
+export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128';
 
 export type EditorCardField = {
   key: string;
@@ -43,6 +44,7 @@ export type EditorCardDesign = {
   backgroundImageUrl?: string;
   textureUrl?: string;
   barcodeValue?: string;
+  barcodeFormat: EditorBarcodeFormat;
   cardInstanceNumber?: string;
   rewardText?: string;
   fields: EditorCardField[];
@@ -73,7 +75,7 @@ export type ApplePassDesign = {
     labelColor: string;
   };
   barcodes: Array<{
-    format: 'PKBarcodeFormatQR';
+    format: 'PKBarcodeFormatQR' | 'PKBarcodeFormatAztec' | 'PKBarcodeFormatPDF417' | 'PKBarcodeFormatCode128';
     message: string;
     messageEncoding: 'iso-8859-1';
     altText: string;
@@ -100,7 +102,7 @@ export type GoogleWalletDesign = {
   objectType: 'genericObject' | 'loyaltyObject' | 'offerObject' | 'eventTicketObject' | 'giftCardObject';
   hexBackgroundColor: string;
   barcode: {
-    type: 'QR_CODE';
+    type: 'QR_CODE' | 'AZTEC' | 'PDF_417' | 'CODE_128';
     value: string;
     alternateText: string;
   };
@@ -238,6 +240,74 @@ function cardCodeFor(cardInstance: Row) {
       || cardInstance.customer_code
       || cardInstance.id
   );
+}
+
+function normalizeBarcodeFormat(value: unknown): EditorBarcodeFormat | '' {
+  const text = stringValue(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (!text) {
+    return '';
+  }
+
+  if (text.includes('aztec')) {
+    return 'aztec';
+  }
+
+  if (text.includes('pdf417')) {
+    return 'pdf417';
+  }
+
+  if (text.includes('code128') || text === 'barcode' || text === 'barcodeserial') {
+    return 'code128';
+  }
+
+  if (text.includes('qr')) {
+    return 'qr';
+  }
+
+  return '';
+}
+
+function barcodeFormatFor(template: Row, cardInstance: Row, options: Row): EditorBarcodeFormat {
+  const settings = templateSettings(template);
+  const customer = cardInstance.customer_cards || {};
+  const metadata = metadataFor(cardInstance);
+  const candidates = [
+    options.barcodeFormat,
+    options.barcode_format,
+    options.barcodeType,
+    options.barcode_type,
+    cardInstance.barcodeFormat,
+    cardInstance.barcode_format,
+    cardInstance.barcodeType,
+    cardInstance.barcode_type,
+    customer.barcodeFormat,
+    customer.barcode_format,
+    customer.barcodeType,
+    customer.barcode_type,
+    metadata.barcodeFormat,
+    metadata.barcode_format,
+    metadata.barcodeType,
+    metadata.barcode_type,
+    template.barcodeFormat,
+    template.barcode_format,
+    template.barcodeType,
+    template.barcode_type,
+    settings.barcodeFormat,
+    settings.barcode_format,
+    settings.barcodeType,
+    settings.barcode_type
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeBarcodeFormat(candidate);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return 'qr';
 }
 
 function templateTypeLabel(template: Row) {
@@ -481,6 +551,17 @@ function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbac
     });
   }
 
+  if (design.barcodeFormat !== 'qr') {
+    warnings.push({
+      id: 'barcode-format-template-limits',
+      level: 'info',
+      platforms: ['samsung'],
+      element: 'Barcode-Format',
+      problem: 'Apple und Google unterstuetzen mehrere Barcodeformate nativ; Samsung haengt staerker vom Partner-Template ab.',
+      fallback: 'Das gewaehlte Format wird als Samsung-Attribut gemappt; falls das Partner-Template es ablehnt, muss das Template angepasst oder auf QR zurueckgestellt werden.'
+    });
+  }
+
   return warnings;
 }
 
@@ -552,6 +633,7 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
   const textureUrl = safeHttpsUrl(settings.textureUrl || settings.texture_url);
   const cardInstanceNumber = cardCodeFor(cardInstance);
   const barcodeValue = stringValue(options.barcodeValue || cardInstanceNumber);
+  const barcodeFormat = barcodeFormatFor(template, cardInstance, options);
   const rewardText = rewardTextForTemplate(template);
   const baseFields = [
     field('cardId', 'Karten-ID', cardInstanceNumber, 10),
@@ -582,6 +664,7 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
     backgroundImageUrl,
     textureUrl,
     barcodeValue,
+    barcodeFormat,
     cardInstanceNumber,
     rewardText,
     fields: baseFields.filter((item) => item.value),
@@ -624,6 +707,15 @@ function appleField(item: EditorCardField) {
   };
 }
 
+function appleBarcodeFormat(format: EditorBarcodeFormat): ApplePassDesign['barcodes'][number]['format'] {
+  return {
+    qr: 'PKBarcodeFormatQR',
+    aztec: 'PKBarcodeFormatAztec',
+    pdf417: 'PKBarcodeFormatPDF417',
+    code128: 'PKBarcodeFormatCode128'
+  }[format];
+}
+
 export function mapEditorDesignToApplePass(editorDesign: EditorCardDesign, _cardInstance: Row = {}): ApplePassDesign {
   const sortedFrontFields = editorDesign.fields
     .filter((item) => item.front && item.value)
@@ -643,7 +735,7 @@ export function mapEditorDesignToApplePass(editorDesign: EditorCardDesign, _card
     },
     barcodes: [
       {
-        format: 'PKBarcodeFormatQR',
+        format: appleBarcodeFormat(editorDesign.barcodeFormat),
         message: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
         messageEncoding: 'iso-8859-1',
         altText: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId
@@ -688,6 +780,15 @@ function googleObjectTypeForDesign(design: EditorCardDesign): GoogleWalletDesign
   return 'genericObject';
 }
 
+function googleBarcodeType(format: EditorBarcodeFormat): GoogleWalletDesign['barcode']['type'] {
+  return {
+    qr: 'QR_CODE',
+    aztec: 'AZTEC',
+    pdf417: 'PDF_417',
+    code128: 'CODE_128'
+  }[format];
+}
+
 export function mapEditorDesignToGoogleWalletObject(editorDesign: EditorCardDesign, _cardInstance: Row = {}): GoogleWalletDesign {
   const frontFields = editorDesign.fields
     .filter((item) => item.front && item.value)
@@ -711,7 +812,7 @@ export function mapEditorDesignToGoogleWalletObject(editorDesign: EditorCardDesi
     objectType: googleObjectTypeForDesign(editorDesign),
     hexBackgroundColor: editorDesign.backgroundColor,
     barcode: {
-      type: 'QR_CODE',
+      type: googleBarcodeType(editorDesign.barcodeFormat),
       value: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
       alternateText: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId
     },
@@ -763,12 +864,38 @@ function samsungFontColor(value: string) {
   return luminance > 0.55 ? 'dark' : 'light';
 }
 
+function samsungBarcodeAttributes(format: EditorBarcodeFormat): Row {
+  return {
+    qr: {
+      'barcode.serialType': 'QRCODE',
+      'barcode.ptFormat': 'QRCODESERIAL',
+      'barcode.ptSubFormat': 'QR_CODE'
+    },
+    aztec: {
+      'barcode.serialType': 'AZTEC',
+      'barcode.ptFormat': 'AZTECSERIAL',
+      'barcode.ptSubFormat': 'AZTEC'
+    },
+    pdf417: {
+      'barcode.serialType': 'PDF417',
+      'barcode.ptFormat': 'PDF417SERIAL',
+      'barcode.ptSubFormat': 'PDF_417'
+    },
+    code128: {
+      'barcode.serialType': 'BARCODE',
+      'barcode.ptFormat': 'BARCODESERIAL',
+      'barcode.ptSubFormat': 'CODE_128'
+    }
+  }[format];
+}
+
 export function mapEditorDesignToSamsungWalletCard(editorDesign: EditorCardDesign, _cardInstance: Row = {}): SamsungWalletDesign {
   const frontFields = editorDesign.fields
     .filter((item) => item.front && item.value)
     .sort((left, right) => left.priority - right.priority);
   const primaryField = frontFields[0];
   const imageUrl = editorDesign.logoUrl || editorDesign.emblemUrl || '';
+  const barcodeAttributes = samsungBarcodeAttributes(editorDesign.barcodeFormat);
   const attributes: Row = {
     title: textLimit(editorDesign.title, 32, 'Kundenkarte'),
     subtitle1: textLimit(editorDesign.description || primaryField?.value, 32),
@@ -783,9 +910,7 @@ export function mapEditorDesignToSamsungWalletCard(editorDesign: EditorCardDesig
     bgColor: editorDesign.backgroundColor,
     fontColor: samsungFontColor(editorDesign.foregroundColor),
     'barcode.value': editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
-    'barcode.serialType': 'QRCODE',
-    'barcode.ptFormat': 'QRCODESERIAL',
-    'barcode.ptSubFormat': 'QR_CODE',
+    ...barcodeAttributes,
     amount: primaryField?.value || editorDesign.cardInstanceNumber || '',
     balance: editorDesign.rewardText || editorDesign.description || primaryField?.value || '',
     level: textLimit(frontFields.find((item) => item.feature === 'vip')?.value || '', 16),

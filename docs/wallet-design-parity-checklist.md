@@ -14,6 +14,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Feature-Limitations pro Wallet | `docs/wallet-feature-limitations.md` |
 | Zentrale Design-Abstraktion | `EditorCardDesign` in `supabase/functions/_shared/walletDesign.ts` |
 | Mapping-Funktionen | `mapEditorDesignToApplePass`, `mapEditorDesignToGoogleWalletObject`, `mapEditorDesignToSamsungWalletCard` |
+| Barcodeformat-Parity | `walletDesign.ts` normalisiert `qr`, `aztec`, `pdf417`, `code128` und mappt sie auf Apple-, Google- und Samsung-Formatnamen |
 | Fallback-Logik | `walletDesign.ts`, `generate-wallet-asset`, Editor-Warnungen |
 | Plattform-Previews im Editor | `public/js/ui.js`, `public/styles.css`; nur per `showWalletInsights: true` im Editor |
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
@@ -59,8 +60,11 @@ Hinweis: Die lokale Codex-Runtime nutzt Node 24, waehrend `package.json` Node 20
 ## Externe Abnahme Noch Noetig
 
 - Echte Apple-Wallet-Karte auf iPhone installieren und Layout/Felder/QR/Update pruefen.
+- Echte Apple-Wallet-Karte mit QR, Aztec, PDF417 und Code128 testen, falls diese Formate im Business-Setup genutzt werden.
 - Echte Google-Wallet-Karte auf Android installieren und Layout/Felder/QR/Update pruefen.
+- Echte Google-Wallet-Karte mit QR, Aztec, PDF417 und Code128 testen, falls diese Formate im Business-Setup genutzt werden.
 - Samsung Add-to-Wallet-Test mit echtem Samsung Partner Callback/Bearer durchlaufen.
+- Samsung Partner-Template fuer alle genutzten Barcodeformate bestaetigen; QR bleibt der sichere Default.
 - Ein echtes Template mit Stempel-/Streak-Asset ueber `generate-wallet-asset` generieren und in der Ziel-Wallet anzeigen.
 - Eine echte Template-Designaenderung aus dem Editor speichern und beobachten, dass Apple/Google Queue-Jobs verarbeitet und Samsung Events vorbereitet werden.
 

@@ -19,7 +19,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - `mapEditorDesignToApplePass` priorisiert Karten-ID, Titel, VIP, Guthaben, Mitgliedschaft, Coupon, Garderobe und Stempel/Streak.
 - Ueberlauf geht in `backFields`.
 - Farben werden auf `backgroundColor`, `foregroundColor` und `labelColor` gemappt.
-- QR wird als `PKBarcodeFormatQR` gesetzt.
+- Barcode wird aus Editor-/Template-Konfiguration normalisiert; QR ist Default, Aztec/PDF417/Code128 werden als `PKBarcodeFormatAztec`, `PKBarcodeFormatPDF417` oder `PKBarcodeFormatCode128` gesetzt.
 - Stempel/Streak koennen zusaetzlich ueber `generate-wallet-asset` als Bild vorbereitet werden.
 - Bereits erzeugte Apple-Fallbacks werden ueber `_shared/walletAssets.ts` deterministisch gefunden und als `strip.png`, `thumbnail.png` oder `background.png` in das `.pkpass` aufgenommen.
 - Business-Logo/Emblem werden als Apple-kompatible Assets genutzt, wenn die URL sicher und oeffentlich ist.
@@ -42,7 +42,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Logo/Emblem gehen in `logo`, `heroImage` oder `imageModulesData`.
 - Reine Guthabenkarten (`balance_card`) gehen als `giftCardObject` mit `cardNumber` und Google-`Money`-`balance`; kombinierte Clubkarten behalten Guthaben als `textModulesData`, weil ein Google Object nicht gleichzeitig Gift Card und Loyalty sein kann.
 - Status, Karten-ID, VIP, Coupon, Mitgliedschaft und Garderobe gehen in `textModulesData`.
-- QR wird als `QR_CODE` gesetzt.
+- Barcode wird aus Editor-/Template-Konfiguration normalisiert; QR ist Default, Aztec/PDF417/Code128 werden als `AZTEC`, `PDF_417` oder `CODE_128` gesetzt.
 - Stempel/Streak werden als Textmodule gesetzt und koennen spaeter als `imageModulesData` aus serverseitigen Assets ergaenzt werden.
 - Im Issue- und öffentlichen Claim-Save-Link-Pfad erzeugen die Edge Functions benoetigte PNG-Fallbacks serverseitig und nutzen danach `googleWalletProvider.ts`, der nur existierende HTTPS-PNGs als `heroImage`/`imageModulesData` setzt.
 - Der passendste vorhandene Object-Type wird genutzt: Generic, Loyalty, Offer oder Event Ticket.
@@ -60,7 +60,8 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 
 ### Alternative Umsetzung
 
-- `mapEditorDesignToSamsungWalletCard` priorisiert Titel, Provider, QR, Farbe, Betrag/Status, Level und Details.
+- `mapEditorDesignToSamsungWalletCard` priorisiert Titel, Provider, Barcode, Farbe, Betrag/Status, Level und Details.
+- QR ist Samsung-Default; Aztec/PDF417/Code128 werden als Samsung Barcode-Attribute gemappt, bleiben aber vom Partner-Template abhaengig.
 - Wichtige Felder werden in Attribute wie `amount`, `balance`, `level`, `noticeDesc` und Barcode-Felder gemappt.
 - Nicht passende Features landen in `noticeDesc`.
 - Logo/App-Link-Assets bleiben ueber die bestehende Public-HTTPS-Pruefung abgesichert.
@@ -101,7 +102,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 ### Funktioniert Bei Apple + Samsung, Aber Nicht Google
 
 - Stark pass-/card-template-getriebene Darstellung mit festem Partner-/Pass-Typ.
-- Bestimmte Barcode-Serialisierungen sind plattformintern anders modelliert als Google `barcode.type`.
+- Bestimmte Barcode-Serialisierungen sind plattformintern anders modelliert als Google `barcode.type`; Samsung kann je nach Partner-Template auf QR begrenzt sein.
 
 ## Clubkarte
 

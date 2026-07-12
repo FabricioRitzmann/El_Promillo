@@ -82,6 +82,7 @@ assertIncludes('Wallet Design Abstraktion', walletDesign, [
   'export type EditorCardDesign',
   'export type EditorCardField',
   'export type WalletDesignWarning',
+  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
   "export type WalletPlatform = 'apple' | 'google' | 'samsung'",
   'activeFeaturesForTemplate',
   'featureEnabled(template, ' + "'stamps')",
@@ -97,6 +98,28 @@ assertIncludes('Wallet Design Abstraktion', walletDesign, [
   'mapEditorDesignToApplePass',
   'mapEditorDesignToGoogleWalletObject',
   'mapEditorDesignToSamsungWalletCard'
+]);
+
+assertIncludes('Wallet Barcode Format Mapping', walletDesign, [
+  'function normalizeBarcodeFormat(value: unknown)',
+  'function barcodeFormatFor(template: Row, cardInstance: Row, options: Row)',
+  'options.barcodeFormat',
+  'metadata.barcodeFormat',
+  'settings.barcodeFormat',
+  'barcodeFormat,',
+  'function appleBarcodeFormat(format: EditorBarcodeFormat)',
+  'appleBarcodeFormat(editorDesign.barcodeFormat)',
+  "'PKBarcodeFormatAztec'",
+  "'PKBarcodeFormatPDF417'",
+  "'PKBarcodeFormatCode128'",
+  'function googleBarcodeType(format: EditorBarcodeFormat)',
+  'googleBarcodeType(editorDesign.barcodeFormat)',
+  "'AZTEC'",
+  "'PDF_417'",
+  "'CODE_128'",
+  'function samsungBarcodeAttributes(format: EditorBarcodeFormat)',
+  'samsungBarcodeAttributes(editorDesign.barcodeFormat)',
+  'barcode-format-template-limits'
 ]);
 
 assertIncludes('Wallet Fallbacks und Warnungen', walletDesign, [
@@ -284,6 +307,9 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   'mappedAttributes.title',
   'mappedAttributes.noticeDesc',
   "mappedAttributes['barcode.value']",
+  "mappedAttributes['barcode.serialType']",
+  "mappedAttributes['barcode.ptFormat']",
+  "mappedAttributes['barcode.ptSubFormat']",
   'mappedAttributes.bgColor',
   'mappedAttributes.fontColor',
   'generatedSamsungWalletAssetUrls',
@@ -423,6 +449,11 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Editor Design Elements',
   '| Editor-Element | Editor-Darstellung | Apple Wallet | Google Wallet | Samsung Wallet | 1:1 moeglich | Problem | Alternative | Implementierungsstatus |',
   'Custom Font',
+  'Barcode / QR-Code',
+  'PKBarcodeFormatAztec',
+  'PDF_417',
+  'CODE_128',
+  'Samsung Barcode-Attribute',
   'Stempelraster',
   'Clubkarte',
   'club_module_badges',
@@ -456,6 +487,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Editor-Warnungen',
   'Editor-UI zeigt plattformbezogene Hinweise',
   'separate Apple-, Google- und Samsung-Vorschau-Skizzen',
+  'QR ist Samsung-Default',
   '## Security'
 ]);
 
@@ -468,6 +500,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToApplePass',
   'mapEditorDesignToGoogleWalletObject',
   'mapEditorDesignToSamsungWalletCard',
+  'Barcodeformat-Parity',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Provider Registry bleibt auf derselben Pipeline',

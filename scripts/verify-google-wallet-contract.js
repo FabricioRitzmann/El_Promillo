@@ -31,6 +31,7 @@ function bodyBetween(source, startNeedle, endNeedle, label) {
 }
 
 const provider = read('supabase/functions/_shared/googleWalletProvider.ts');
+const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const issue = read('supabase/functions/issue-google-wallet-pass/index.ts');
 const saveLink = read('supabase/functions/google-wallet-save-link/index.ts');
 const update = read('supabase/functions/update-google-wallet-pass/index.ts');
@@ -90,6 +91,16 @@ assertIncludes(provider, [
   'loyaltyObjects',
   'genericObjects'
 ], 'Google Object-Type Mapping');
+
+assertIncludes(walletDesign, [
+  "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
+  'function googleBarcodeType(format: EditorBarcodeFormat)',
+  'googleBarcodeType(editorDesign.barcodeFormat)',
+  'QR_CODE',
+  'AZTEC',
+  'PDF_417',
+  'CODE_128'
+], 'Google Barcodeformat Mapping');
 
 assertIncludes(provider, [
   'function googleObjectIdFor(config: Row, cardInstance: Row)',

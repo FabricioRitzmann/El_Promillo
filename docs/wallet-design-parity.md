@@ -33,9 +33,9 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Bereich | Datei | Status |
 |---|---|---|
 | Zentrale Editor-Design-Abstraktion | `supabase/functions/_shared/walletDesign.ts` | Implementiert |
-| Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, QR, Feldprioritaet, Assets/Fallback-Hinweise und generierte PNG-Fallbacks im `.pkpass` |
-| Google Mapping | `mapEditorDesignToGoogleWalletObject` und `googleWalletProvider.ts` | Implementiert fuer Farben, QR, Logo/Hero/Image-Module, Textmodule und vorhandene generierte PNG-Fallbacks im Issue/Save-Link |
-| Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, QR, priorisierte Felder und vorhandene generierte PNG-Fallbacks im Partner-Server-GET |
+| Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, Barcodeformat, Feldprioritaet, Assets/Fallback-Hinweise und generierte PNG-Fallbacks im `.pkpass` |
+| Google Mapping | `mapEditorDesignToGoogleWalletObject` und `googleWalletProvider.ts` | Implementiert fuer Farben, Barcodeformat, Logo/Hero/Image-Module, Textmodule und vorhandene generierte PNG-Fallbacks im Issue/Save-Link |
+| Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, Barcodeformat, priorisierte Felder und vorhandene generierte PNG-Fallbacks im Partner-Server-GET |
 | Komplexe Asset-Generierung | `generate-wallet-asset`, `_shared/walletAssets.ts`, `_shared/walletAssetRenderer.ts`, `_shared/walletAssetFallbacks.ts` | Implementiert fuer PNG-Fallbacks in `wallet-assets` mit gemeinsamem Storage-Pfadvertrag, Issue-Autogenerierung und Queue-Autogenerierung |
 | Plattformwarnungen im Editor | `public/js/ui.js`, `public/styles.css` | Implementiert fuer sichtbare Info/Warning/Critical Hinweise |
 | Plattformspezifische Editor-Previews | `public/js/ui.js`, `public/styles.css` | Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor |
@@ -53,7 +53,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Titel | Grosse Editor-Typo | Native Felder, Pass-Style Layout | `cardTitle`/`header` | `title` | Teilweise | Schriftart und Position nicht frei | Systemschrift oder dekorativer Titel als Bild | Implementiert |
 | Untertitel/Beschreibung | Beschreibung unter Titel | Secondary/back fields | `subheader`, Textmodule | `subtitle1`, `noticeDesc` | Teilweise | Laenge und Umbruch variieren | Kurze Vorderseite, volle Beschreibung in Details | Implementiert |
 | Karten-ID | Footer-Code | Sichtbares Feld und Barcode-AltText | `accountId`/Textmodul/Barcode | Barcode-Wert und Details | Ja | Layoutposition ist unterschiedlich | Hoechste Feldprioritaet, auch in Details | Implementiert |
-| QR-Code | Claim-/Karten-Code | `PKBarcodeFormatQR` | `QR_CODE` | `QRCODE`/`QRCODESERIAL` | Ja | Plattformformatnamen unterscheiden sich | QR als primaeres Format, AltText beibehalten | Implementiert |
+| Barcode / QR-Code | Claim-/Karten-Code, optionales Template-Format `qr`, `aztec`, `pdf417` oder `code128` | `PKBarcodeFormatQR`, `PKBarcodeFormatAztec`, `PKBarcodeFormatPDF417`, `PKBarcodeFormatCode128` | `QR_CODE`, `AZTEC`, `PDF_417`, `CODE_128` | Samsung Barcode-Attribute `serialType`/`ptFormat`/`ptSubFormat`, Template-abhaengig | Teilweise | Plattformformatnamen unterscheiden sich; Samsung-Templates koennen einzelne Formate begrenzen | QR bleibt Default; Editor-/Template-Format wird serverseitig normalisiert und pro Plattform gemappt | Implementiert |
 | Stempel | Visuelles Raster mit Icon | Kein natives Raster | Kein natives Raster | Kein natives Raster | Nein | Freies Grid gibt es nicht | Textfeld `x/y`; optional `stamp_grid` Asset | Text und PNG-Asset-Generator implementiert |
 | Streak | Icon + Zaehler/Ziel | Feld oder Bild | Textmodul/Image-Modul | Attribut/Text | Nein | Kombiniertes Editor-Layout nicht nativ | Streak als Text, optional `streak_badge` Asset | Text und PNG-Asset-Generator implementiert |
 | VIP-Level | Feature-Reihe | Vorderseitenfeld nach Prioritaet | Loyalty/Textmodul | `level`/Details | Teilweise | Feldnamen/Positionen unterscheiden sich | VIP vorne, Rest in Details | Implementiert |
@@ -91,6 +91,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Clubkarten-Modul-Badges | Mehrere aktive Clubmodule bleiben native Felder/Details; optionales `club_module_badges` PNG fuer Apple-Bundle, Google-ImageModule und Samsung-`mainImg` |
 | Zu viele Felder | Priorisierte Vorderseite, Rest in Apple `backFields`, Google `textModulesData`, Samsung `noticeDesc` |
 | Nicht unterstuetztes Feature | Als Text/Details darstellen und Warnung ausgeben |
+| Nicht unterstuetztes Barcodeformat | Auf QR zurueckfallen oder Samsung Partner-Template passend konfigurieren |
 | Ungueltige Farbe | Fallback `#fffdf9`/`#8b4f2f` oder Samsung hell/dunkel |
 | Fehlendes Emblem | Business-Logo oder neutrales El-Promillo-Asset |
 | Nicht oeffentliches Bild | Wallet-Bildfeld auslassen oder serverseitig in Supabase Storage erzeugen |
