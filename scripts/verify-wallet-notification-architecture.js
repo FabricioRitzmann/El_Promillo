@@ -928,6 +928,9 @@ assertAll('supabase/functions/_shared/walletNotificationService.ts', 'Wallet Rec
 ]);
 
 assertAll('supabase/functions/claim-apple-pass/index.ts', 'Apple Wallet Claim Download', [
+  "../_shared/walletAssetFallbacks.ts",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
   'claim_apple_pass',
   'application/vnd.apple.pkpass',
   'findReusableClaimPassVersion',
@@ -935,7 +938,9 @@ assertAll('supabase/functions/claim-apple-pass/index.ts', 'Apple Wallet Claim Do
   'passJsonHasAppleWebServiceFields',
   'APPLE_WEB_SERVICE_CONFIG_MISSING',
   'appleWalletProvider.ensurePassAuthenticationToken',
+  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)',
   'reused_pass_version',
+  'generated_wallet_assets',
   'appleWalletProvider.updatePassFields',
   'appleWalletProvider.signPass',
   'publicAppleSigningResult',

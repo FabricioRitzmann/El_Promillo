@@ -766,10 +766,11 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
   };
 }
 
-function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
+function passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {}) {
   const { logoUrl, iconUrl } = appleTemplateAssetUrls(template);
+  const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance);
 
-  if (!logoUrl && !iconUrl) {
+  if (!logoUrl && !iconUrl && Object.keys(generatedAssets).length === 0) {
     return true;
   }
 
@@ -782,6 +783,26 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
   }
 
   if (iconUrl && !stringValue(assets.icon || assets.iconPng || assets.iconPngBase64 || assets.logo || assets.logoPng)) {
+    return false;
+  }
+
+  if (generatedAssets.wallet_background && !stringValue(assets.background || assets.backgroundPng || assets.strip || assets.stripPng)) {
+    return false;
+  }
+
+  if (generatedAssets.stamp_grid && !stringValue(assets.strip || assets.stripPng || assets.thumbnail || assets.thumbnailPng)) {
+    return false;
+  }
+
+  if (generatedAssets.streak_badge && !stringValue(assets.thumbnail || assets.thumbnailPng)) {
+    return false;
+  }
+
+  if (generatedAssets.club_module_badges && !stringValue(assets.strip || assets.stripPng)) {
+    return false;
+  }
+
+  if (generatedAssets.decorative_title && !stringValue(assets.logo || assets.logoPng)) {
     return false;
   }
 
@@ -1094,8 +1115,8 @@ export const appleWalletProvider = {
     return ensurePassAuthenticationToken(supabaseAdmin, cardInstance);
   },
 
-  passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
-    return passVersionHasTemplateAssets(template, passVersion);
+  passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {}) {
+    return passVersionHasTemplateAssets(template, passVersion, cardInstance);
   },
 
   async issuePass(supabaseAdmin: any, template: Row, cardInstance: Row) {

@@ -67,6 +67,11 @@ assertIncludes(appleProvider, [
   'bytes.byteLength <= APPLE_ASSET_MAX_BYTES',
   'function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {})',
   'function passVersionHasTemplateAssets(template: Row',
+  'const generatedAssets = generatedAppleWalletAssetUrlsForTemplate(template, cardInstance)',
+  'generatedAssets.wallet_background',
+  'generatedAssets.stamp_grid',
+  'generatedAssets.streak_badge',
+  'generatedAssets.club_module_badges',
   'template.logo_url',
   'settings.iconUrl',
   'templateAssets.logo',
@@ -74,7 +79,7 @@ assertIncludes(appleProvider, [
   'templateAssets.thumbnail',
   'templateAssets.strip',
   'assets = appleAssetsForTemplate(template, options.assets || {}, ensuredCardInstance)',
-  'passVersionHasTemplateAssets(template: Row, passVersion: Row | null)'
+  'passVersionHasTemplateAssets(template: Row, passVersion: Row | null, cardInstance: Row = {})'
 ], 'Apple Pass Template-Assets');
 
 assert(
@@ -100,10 +105,14 @@ assertIncludes(appleProvider, [
 ], 'Apple pkpass Paket');
 
 assertIncludes(claimApplePass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
   'passJsonHasAppleWebServiceFields(data.pass_json)',
-  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data)',
+  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)',
   'appleWalletProvider.updatePassFields',
-  'appleWalletProvider.signPass'
+  'appleWalletProvider.signPass',
+  'generated_wallet_assets: options.generatedWalletAssets || []'
 ], 'Apple Claim Pass Wiederverwendung');
 
 assert(

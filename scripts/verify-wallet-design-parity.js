@@ -59,6 +59,7 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
 const walletNotificationService = read('supabase/functions/_shared/walletNotificationService.ts');
 const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
 const issueApplePass = read('supabase/functions/issue-apple-pass/index.ts');
+const claimApplePass = read('supabase/functions/claim-apple-pass/index.ts');
 const issueGoogleWalletPass = read('supabase/functions/issue-google-wallet-pass/index.ts');
 const googleWalletSaveLink = read('supabase/functions/google-wallet-save-link/index.ts');
 const samsungWalletServer = read('supabase/functions/samsung-wallet-server/index.ts');
@@ -198,6 +199,14 @@ assertIncludes('Apple Issue erzeugt Wallet Assets', issueApplePass, [
   "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'await ensureWalletAssetFallbacks({',
   "walletPlatform: 'apple'"
+]);
+
+assertIncludes('Apple Claim erzeugt Wallet Asset Fallbacks', claimApplePass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
+  'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data, cardInstance)',
+  'generated_wallet_assets: options.generatedWalletAssets || []'
 ]);
 
 assertIncludes('Google Issue Asset Optionen', issueGoogleWalletPass, [
