@@ -1606,12 +1606,12 @@ textarea {
 .wallet-preview::after {
   content: "";
   position: absolute;
-  right: 0.62rem;
-  bottom: 0.72rem;
-  width: 5.65rem;
-  height: 7.05rem;
+  right: -1.4rem;
+  bottom: 2.8rem;
+  width: 8.4rem;
+  height: 10.8rem;
   background: var(--card-emblem, var(--brand-emblem)) center / contain no-repeat;
-  opacity: 0.1;
+  opacity: 0.12;
   pointer-events: none;
 }
 
@@ -2006,88 +2006,12 @@ textarea {
 }
 
 .wallet-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.56rem;
-  align-items: center;
-  padding-top: 0.54rem;
+  padding-top: 0.55rem;
   border-top: 1px solid rgba(255, 255, 255, 0.24);
-}
-
-.wallet-qr-placeholder {
-  width: 3.2rem;
-  aspect-ratio: 1;
-  position: relative;
-  flex: 0 0 auto;
-  border-radius: 0.32rem;
-  background:
-    linear-gradient(90deg, rgba(32, 28, 25, 0.86) 50%, transparent 0) 0 0 / 0.58rem 0.58rem,
-    linear-gradient(rgba(32, 28, 25, 0.7) 50%, transparent 0) 0 0 / 0.42rem 0.42rem,
-    #fffaf2;
-  box-shadow: inset 0 0 0 0.22rem #fffaf2, 0 4px 12px rgba(39, 31, 25, 0.18);
-  overflow: hidden;
-}
-
-.wallet-qr-finder {
-  position: absolute;
-  width: 0.92rem;
-  aspect-ratio: 1;
-  border: 0.18rem solid rgba(32, 28, 25, 0.92);
-  border-radius: 0.12rem;
-  background: #fffaf2;
-  box-shadow: inset 0 0 0 0.16rem rgba(32, 28, 25, 0.92);
-}
-
-.wallet-qr-finder-top-left {
-  top: 0.34rem;
-  left: 0.34rem;
-}
-
-.wallet-qr-finder-top-right {
-  top: 0.34rem;
-  right: 0.34rem;
-}
-
-.wallet-qr-finder-bottom-left {
-  bottom: 0.34rem;
-  left: 0.34rem;
-}
-
-.wallet-qr-pixels {
-  position: absolute;
-  right: 0.34rem;
-  bottom: 0.34rem;
-  width: 1.18rem;
-  height: 1.18rem;
-  background:
-    linear-gradient(90deg, rgba(32, 28, 25, 0.88) 42%, transparent 0 58%, rgba(32, 28, 25, 0.88) 0) 0 0 / 0.44rem 0.44rem,
-    linear-gradient(rgba(32, 28, 25, 0.78) 42%, transparent 0 58%, rgba(32, 28, 25, 0.78) 0) 0 0 / 0.32rem 0.32rem;
-}
-
-.wallet-code-meta {
-  min-width: 0;
-  display: grid;
-  gap: 0.14rem;
   font-size: 0.74rem;
   line-height: 1.25;
-}
-
-.wallet-code-meta span {
-  min-width: 0;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  opacity: 0.78;
-  overflow-wrap: anywhere;
-}
-
-.wallet-code-meta strong {
-  min-width: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.76rem;
-  font-weight: 780;
   overflow-wrap: anywhere;
 }
 

@@ -546,8 +546,6 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     featureRows,
     eventBackgroundImageUrl
   });
-  const barcodeFormat = walletBarcodeFormat(template, card, { settings, cardInstanceNumber });
-  const barcodeValue = walletBarcodeValue(template, card, { settings, cardInstanceNumber });
   const walletInsights = options.showWalletInsights === true
     ? `
       ${walletPlatformPreviewsHtml(template, card, { settings, featureRows, cardInstanceNumber })}
@@ -576,18 +574,7 @@ export function walletPreviewHtml(template, card = null, options = {}) {
           ${stampSlots}
           ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
         </div>
-        <div class="wallet-code" aria-label="${escapeHtml(barcodeFormat.label)}-Code Feld">
-          <div class="wallet-qr-placeholder" aria-hidden="true">
-            <span class="wallet-qr-finder wallet-qr-finder-top-left"></span>
-            <span class="wallet-qr-finder wallet-qr-finder-top-right"></span>
-            <span class="wallet-qr-finder wallet-qr-finder-bottom-left"></span>
-            <span class="wallet-qr-pixels"></span>
-          </div>
-          <div class="wallet-code-meta">
-            <span>${escapeHtml(barcodeFormat.label)} Code</span>
-            <strong>${escapeHtml(barcodeValue)}</strong>
-          </div>
-        </div>
+        <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
       </div>
       ${walletInsights}
     </div>
