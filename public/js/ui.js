@@ -547,6 +547,7 @@ export function walletPreviewHtml(template, card = null, options = {}) {
     eventBackgroundImageUrl
   });
   const barcodeFormat = walletBarcodeFormat(template, card, { settings, cardInstanceNumber });
+  const barcodeValue = walletBarcodeValue(template, card, { settings, cardInstanceNumber });
   const walletInsights = options.showWalletInsights === true
     ? `
       ${walletPlatformPreviewsHtml(template, card, { settings, featureRows, cardInstanceNumber })}
@@ -581,6 +582,10 @@ export function walletPreviewHtml(template, card = null, options = {}) {
             <span class="wallet-qr-finder wallet-qr-finder-top-right"></span>
             <span class="wallet-qr-finder wallet-qr-finder-bottom-left"></span>
             <span class="wallet-qr-pixels"></span>
+          </div>
+          <div class="wallet-code-meta">
+            <span>${escapeHtml(barcodeFormat.label)} Code</span>
+            <strong>${escapeHtml(barcodeValue)}</strong>
           </div>
         </div>
       </div>

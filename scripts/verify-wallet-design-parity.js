@@ -445,6 +445,7 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'Viele Felder',
   'Bild-URL',
   'wallet-qr-placeholder',
+  'wallet-code-meta',
   'walletPreviewHtml(template, card = null, options = {})',
   'options.showWalletInsights === true',
   'const platformWarnings = walletPlatformWarningsHtml(template, card'
@@ -459,6 +460,7 @@ assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-feature-overflow',
   '.wallet-qr-placeholder',
   '.wallet-qr-finder',
+  '.wallet-code-meta',
   '.wallet-platform-previews',
   '.wallet-platform-preview-grid',
   '.wallet-platform-preview-card',
