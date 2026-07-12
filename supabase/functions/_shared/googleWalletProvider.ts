@@ -7,6 +7,7 @@
 
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
+import { editorCardDesignFromTemplate, mapEditorDesignToGoogleWalletObject } from './walletDesign.ts';
 
 type Row = Record<string, any>;
 
@@ -741,8 +742,34 @@ function statusModules(template: Row, cardInstance: Row, extraRows: Array<{ id: 
     }));
 }
 
+function mergeTextModules(...groups: Array<Array<{ id: string; header: string; body: string }> | undefined>) {
+  const seen = new Set<string>();
+  const modules: Array<{ id: string; header: string; body: string }> = [];
+
+  for (const group of groups) {
+    for (const row of group || []) {
+      const id = stringValue(row.id || row.header).replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 32);
+
+      if (!id || !row.body || seen.has(id)) {
+        continue;
+      }
+
+      seen.add(id);
+      modules.push({
+        id,
+        header: row.header,
+        body: row.body
+      });
+    }
+  }
+
+  return modules;
+}
+
 function statusPatchPayload(template: Row, cardInstance: Row, objectType = objectTypeForTemplate(template), extraRows: Array<{ id: string; header: string; body: string }> = []) {
-  const modules = statusModules(template, cardInstance, extraRows);
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
+  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance);
+  const modules = mergeTextModules(statusModules(template, cardInstance, extraRows), googleDesign.textModulesData);
   const patch: Row = {
     textModulesData: modules
   };
@@ -757,6 +784,10 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
         string: primaryStatusRow.body
       }
     };
+  } else if (objectType === 'loyaltyObject' && googleDesign.loyaltyPoints) {
+    patch.accountId = googleDesign.accountId;
+    patch.accountName = googleDesign.accountName;
+    patch.loyaltyPoints = googleDesign.loyaltyPoints;
   }
 
   return patch;
@@ -855,8 +886,10 @@ function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
 
 function buildClassPayload(template: Row, objectType: string, classId: string) {
   const settings = settingsForTemplate(template);
+  const editorDesign = editorCardDesignFromTemplate(template);
+  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign);
   const issuerName = businessNameForTemplate(template);
-  const logo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
+  const logo = googleDesign.logo || imageValue(businessLogoUrlForTemplate(template), 'Logo');
 
   if (objectType === 'eventTicketObject') {
     const eventDateTime = dateTimeValue(settings);
@@ -925,6 +958,8 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
   const cardCode = cardCodeFor(cardInstance);
   const settings = settingsForTemplate(template);
   const metadata = metadataFor(cardInstance);
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
+  const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance);
   const statusPatch = statusPatchPayload(template, cardInstance, objectType);
 
   if (objectType === 'eventTicketObject') {
@@ -939,19 +974,23 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       id: objectId,
       classId,
       state: 'ACTIVE',
-      hexBackgroundColor: stringValue(template.primary_color || '#fffdf9'),
+      hexBackgroundColor: googleDesign.hexBackgroundColor,
       ticketNumber,
       ticketType: localized(ticketType, 'Standard'),
       reservationInfo: {
         confirmationCode: ticketNumber
       },
-      barcode: {
-        type: 'QR_CODE',
-        value: cardCode,
-        alternateText: cardCode
-      },
+      barcode: googleDesign.barcode,
       textModulesData: statusPatch.textModulesData
     };
+
+    if (googleDesign.heroImage) {
+      eventObject.heroImage = googleDesign.heroImage;
+    }
+
+    if (googleDesign.imageModulesData.length) {
+      eventObject.imageModulesData = googleDesign.imageModulesData;
+    }
 
     if (holderName) {
       eventObject.ticketHolderName = holderName;
@@ -974,17 +1013,21 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       id: objectId,
       classId,
       state: 'ACTIVE',
-      barcode: {
-        type: 'QR_CODE',
-        value: cardCode,
-        alternateText: cardCode
-      },
+      barcode: googleDesign.barcode,
       textModulesData: statusPatch.textModulesData
     };
     const validTimeInterval = offerValidTimeInterval(settings, metadata);
 
     if (validTimeInterval) {
       offerObject.validTimeInterval = validTimeInterval;
+    }
+
+    if (googleDesign.heroImage) {
+      offerObject.heroImage = googleDesign.heroImage;
+    }
+
+    if (googleDesign.imageModulesData.length) {
+      offerObject.imageModulesData = googleDesign.imageModulesData;
     }
 
     return applyObjectEmblemImages(offerObject, cardInstance);
@@ -995,26 +1038,30 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     id: objectId,
     classId,
     state: 'ACTIVE',
-    hexBackgroundColor: stringValue(template.primary_color || '#fffdf9'),
-    cardTitle: localized(template.card_name, 'Kundenkarte'),
-    header: localized(businessNameForTemplate(template, template.card_name || 'Karte'), 'Karte'),
-    subheader: localized(template.description || template.template_type, 'Digitale Karte'),
-    barcode: {
-      type: 'QR_CODE',
-      value: cardCode,
-      alternateText: cardCode
-    },
+    hexBackgroundColor: googleDesign.hexBackgroundColor,
+    cardTitle: googleDesign.cardTitle,
+    header: googleDesign.header,
+    subheader: googleDesign.subheader,
+    barcode: googleDesign.barcode,
     textModulesData: statusPatch.textModulesData
   };
 
-  if (businessLogo) {
-    objectPayload.logo = businessLogo;
+  if (googleDesign.logo || businessLogo) {
+    objectPayload.logo = googleDesign.logo || businessLogo;
+  }
+
+  if (googleDesign.heroImage) {
+    objectPayload.heroImage = googleDesign.heroImage;
+  }
+
+  if (googleDesign.imageModulesData.length) {
+    objectPayload.imageModulesData = googleDesign.imageModulesData;
   }
 
   if (objectType === 'loyaltyObject') {
-    objectPayload.accountId = statusPatch.accountId;
-    objectPayload.accountName = statusPatch.accountName;
-    objectPayload.loyaltyPoints = statusPatch.loyaltyPoints;
+    objectPayload.accountId = statusPatch.accountId || googleDesign.accountId;
+    objectPayload.accountName = statusPatch.accountName || googleDesign.accountName;
+    objectPayload.loyaltyPoints = statusPatch.loyaltyPoints || googleDesign.loyaltyPoints;
   }
 
   return applyObjectEmblemImages(objectPayload, cardInstance);

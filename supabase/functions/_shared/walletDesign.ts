@@ -1,0 +1,791 @@
+import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
+import { supabaseCardEmblemUrl } from './cardEmblems.ts';
+
+type Row = Record<string, any>;
+
+export type WalletPlatform = 'apple' | 'google' | 'samsung';
+export type WalletWarningLevel = 'info' | 'warning' | 'critical';
+export type WalletSupportLevel = 'native' | 'details' | 'asset' | 'partial' | 'unsupported';
+
+export type EditorCardField = {
+  key: string;
+  label: string;
+  value: string;
+  feature?: string;
+  priority: number;
+  front: boolean;
+  platformSupport: Record<WalletPlatform, WalletSupportLevel>;
+};
+
+export type WalletDesignWarning = {
+  id: string;
+  level: WalletWarningLevel;
+  platforms: WalletPlatform[];
+  element: string;
+  problem: string;
+  fallback: string;
+};
+
+export type EditorCardDesign = {
+  businessId: string;
+  templateId: string;
+  templateType: string;
+  cardName: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  logoUrl?: string;
+  emblemUrl?: string;
+  backgroundColor: string;
+  foregroundColor: string;
+  labelColor: string;
+  accentColor?: string;
+  backgroundImageUrl?: string;
+  textureUrl?: string;
+  barcodeValue?: string;
+  cardInstanceNumber?: string;
+  rewardText?: string;
+  fields: EditorCardField[];
+  activeFeatures: {
+    stamps: boolean;
+    streak: boolean;
+    vip: boolean;
+    balance: boolean;
+    cloakroom: boolean;
+    coupon: boolean;
+    membership: boolean;
+    notifications: boolean;
+    eventBackgroundImage: boolean;
+  };
+  assetFallbacks: Array<{
+    assetType: string;
+    reason: string;
+    platforms: WalletPlatform[];
+  }>;
+  warnings: WalletDesignWarning[];
+};
+
+export type ApplePassDesign = {
+  passStyle: 'generic' | 'storeCard' | 'coupon' | 'eventTicket';
+  colors: {
+    backgroundColor: string;
+    foregroundColor: string;
+    labelColor: string;
+  };
+  barcodes: Array<{
+    format: 'PKBarcodeFormatQR';
+    message: string;
+    messageEncoding: 'iso-8859-1';
+    altText: string;
+  }>;
+  fieldSets: {
+    headerFields: Row[];
+    primaryFields: Row[];
+    secondaryFields: Row[];
+    auxiliaryFields: Row[];
+    backFields: Row[];
+  };
+  assets: {
+    logoUrl?: string;
+    emblemUrl?: string;
+    thumbnailUrl?: string;
+    stripUrl?: string;
+    backgroundUrl?: string;
+  };
+  warnings: WalletDesignWarning[];
+  assetFallbacks: EditorCardDesign['assetFallbacks'];
+};
+
+export type GoogleWalletDesign = {
+  objectType: 'genericObject' | 'loyaltyObject' | 'offerObject' | 'eventTicketObject';
+  hexBackgroundColor: string;
+  barcode: {
+    type: 'QR_CODE';
+    value: string;
+    alternateText: string;
+  };
+  cardTitle: Row;
+  header: Row;
+  subheader: Row;
+  textModulesData: Array<{ id: string; header: string; body: string }>;
+  imageModulesData: Array<{ id: string; mainImage: Row }>;
+  logo?: Row;
+  heroImage?: Row;
+  loyaltyPoints?: Row;
+  accountId?: string;
+  accountName?: string;
+  warnings: WalletDesignWarning[];
+  assetFallbacks: EditorCardDesign['assetFallbacks'];
+};
+
+export type SamsungWalletDesign = {
+  cardType: 'generic' | 'loyalty' | 'coupon' | 'ticket';
+  cardSubType: string;
+  attributes: Row;
+  fields: string[];
+  warnings: WalletDesignWarning[];
+  assetFallbacks: EditorCardDesign['assetFallbacks'];
+};
+
+const nativeSupport: Record<WalletPlatform, WalletSupportLevel> = {
+  apple: 'native',
+  google: 'native',
+  samsung: 'native'
+};
+
+function stringValue(value: unknown) {
+  return String(value || '').trim();
+}
+
+function numberValue(...values: unknown[]) {
+  for (const value of values) {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function hexColor(value: unknown, fallback: string) {
+  const text = stringValue(value);
+
+  return /^#[0-9a-f]{6}$/i.test(text) ? text : fallback;
+}
+
+function safeHttpsUrl(value: unknown) {
+  const text = stringValue(value);
+
+  if (!/^https:\/\//i.test(text)) {
+    return '';
+  }
+
+  try {
+    return new URL(text).toString();
+  } catch (_error) {
+    return '';
+  }
+}
+
+function localized(value: unknown, fallback = '') {
+  return {
+    defaultValue: {
+      language: 'de',
+      value: stringValue(value || fallback)
+    }
+  };
+}
+
+function imageValue(url: unknown, label = 'Bild') {
+  const uri = safeHttpsUrl(url);
+
+  if (!uri) {
+    return null;
+  }
+
+  return {
+    sourceUri: { uri },
+    contentDescription: localized(label)
+  };
+}
+
+function textLimit(value: unknown, maxLength: number, fallback = '') {
+  const text = stringValue(value || fallback);
+
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
+}
+
+function templateBusiness(template: Row) {
+  return Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
+}
+
+function metadataFor(cardInstance: Row) {
+  const customerMetadata = cardInstance.customer_cards?.metadata;
+
+  if (customerMetadata && typeof customerMetadata === 'object') {
+    return customerMetadata as Row;
+  }
+
+  return cardInstance.metadata && typeof cardInstance.metadata === 'object'
+    ? cardInstance.metadata as Row
+    : {};
+}
+
+function businessNameForTemplate(template: Row, fallback = 'Wallet Cards') {
+  const business = templateBusiness(template) || {};
+
+  return stringValue(business.name || template.business_name || fallback);
+}
+
+function businessLogoUrlForTemplate(template: Row) {
+  const business = templateBusiness(template) || {};
+
+  return safeHttpsUrl(
+    business.logo_url
+      || template.business_logo_url
+      || template.company_logo_url
+      || template.logo_url
+  );
+}
+
+function cardCodeFor(cardInstance: Row) {
+  return stringValue(
+    cardInstance.card_instance_number
+      || cardInstance.customer_cards?.card_instance_number
+      || cardInstance.customer_cards?.customer_code
+      || cardInstance.customer_code
+      || cardInstance.id
+  );
+}
+
+function templateTypeLabel(template: Row) {
+  return {
+    generic_card: 'Basiskarte',
+    stamp_card: 'Stempelkarte',
+    streak_card: 'Streakkarte',
+    vip_card: 'VIP-Karte',
+    balance_card: 'Guthabenkarte',
+    cloakroom_card: 'Garderobenkarte',
+    event_card: 'Eventkarte',
+    coupon_card: 'Couponkarte',
+    membership_card: 'Memberkarte',
+    club_card: 'Clubkarte'
+  }[normalizeTemplateType(template)] || 'Karte';
+}
+
+function statusLabel(value: unknown) {
+  const status = stringValue(value).toLowerCase();
+
+  return {
+    active: 'Aktiv',
+    issued: 'Aktiv',
+    redeemed: 'Eingeloest',
+    blocked: 'Gesperrt',
+    paused: 'Pausiert'
+  }[status] || stringValue(value || 'Aktiv');
+}
+
+function formatMoney(cents: unknown, currency: unknown) {
+  return `${stringValue(currency) || 'CHF'} ${(numberValue(cents) / 100).toFixed(2)}`;
+}
+
+function rewardTextForTemplate(template: Row) {
+  const settings = templateSettings(template);
+
+  return stringValue(template.reward_text || settings.rewardText || settings.reward_text);
+}
+
+function activeFeaturesForTemplate(template: Row) {
+  return {
+    stamps: featureEnabled(template, 'stamps'),
+    streak: featureEnabled(template, 'streak'),
+    vip: featureEnabled(template, 'vip'),
+    balance: featureEnabled(template, 'balance'),
+    cloakroom: featureEnabled(template, 'cloakroom'),
+    coupon: featureEnabled(template, 'redemption'),
+    membership: featureEnabled(template, 'membership'),
+    notifications: featureEnabled(template, 'notifications'),
+    eventBackgroundImage: featureEnabled(template, 'eventBackgroundImage')
+  };
+}
+
+function field(key: string, label: string, value: unknown, priority: number, options: Partial<EditorCardField> = {}): EditorCardField {
+  return {
+    key,
+    label,
+    value: stringValue(value),
+    priority,
+    front: options.front !== false,
+    feature: options.feature,
+    platformSupport: options.platformSupport || nativeSupport
+  };
+}
+
+function featureFields(template: Row, cardInstance: Row) {
+  const settings = templateSettings(template);
+  const templateType = normalizeTemplateType(template);
+  const customer = cardInstance.customer_cards || {};
+  const metadata = metadataFor(cardInstance);
+  const fields: EditorCardField[] = [];
+  const stampCount = numberValue(cardInstance.current_stamps, customer.stamp_count, metadata.stamp_count, 0);
+  const stampsRequired = Math.max(1, numberValue(template.stamps_required, settings.stampsRequired, settings.stamps_required, 10));
+  const streakCount = numberValue(cardInstance.current_streak, customer.streak_count, metadata.streak_count, 0);
+  const streakGoal = numberValue(template.streak_goal, settings.streakGoal, settings.streak_goal, 0);
+  const vipStatus = stringValue(cardInstance.vip_level || customer.vip_status || metadata.vip_level || template.vip_tier || settings.vipDefaultTier);
+  const balanceCents = numberValue(cardInstance.balance_cents, customer.balance_cents, metadata.balance_cents, 0);
+  const currency = stringValue(cardInstance.currency || customer.currency || settings.currency || 'CHF');
+  const cloakroomActive = Boolean(cardInstance.cloakroom_active ?? customer.cloakroom_active ?? metadata.cloakroom_active);
+
+  if (templateType === 'club_card') {
+    if (featureEnabled(template, 'vip')) {
+      fields.push(field('vip', 'VIP', vipStatus || 'Member', 30, { feature: 'vip' }));
+    }
+
+    if (featureEnabled(template, 'balance')) {
+      fields.push(field('balance', 'Guthaben', formatMoney(balanceCents, currency), 40, { feature: 'balance' }));
+    }
+
+    if (featureEnabled(template, 'membership')) {
+      const membershipNumber = stringValue(metadata.membership_number || cardInstance.membership_number);
+      const membershipExpiresAt = stringValue(metadata.membership_expires_at || cardInstance.membership_expires_at || settings.membershipExpiresAt);
+
+      fields.push(field(
+        membershipNumber ? 'membershipNumber' : 'membership',
+        membershipNumber ? 'Mitgliedsnummer' : 'Mitgliedschaft',
+        membershipNumber || metadata.membership_status || cardInstance.membership_status || settings.membershipStatus || 'Aktiv',
+        50,
+        { feature: 'membership' }
+      ));
+      fields.push(field(
+        'membershipStatus',
+        'Mitgliedsstatus',
+        [
+          stringValue(metadata.membership_status || cardInstance.membership_status || settings.membershipStatus) || 'Aktiv',
+          membershipExpiresAt ? `bis ${membershipExpiresAt}` : ''
+        ].filter(Boolean).join(' '),
+        55,
+        { feature: 'membership', front: false }
+      ));
+    }
+
+    if (featureEnabled(template, 'redemption')) {
+      fields.push(field(
+        'redemption',
+        stringValue(settings.couponTitle) || 'Coupon',
+        stringValue(cardInstance.coupon_status || metadata.coupon_status || customer.status || cardInstance.status) === 'redeemed' ? 'Eingeloest' : 'Bereit',
+        60,
+        { feature: 'coupon' }
+      ));
+    }
+
+    if (featureEnabled(template, 'cloakroom')) {
+      fields.push(field('cloakroom', 'Garderobe', cloakroomActive ? 'Aktiv' : 'Bereit', 70, { feature: 'cloakroom' }));
+    }
+
+    return fields.length ? fields : [field('status', 'Status', statusLabel(customer.status || cardInstance.status), 90)];
+  }
+
+  if (featureEnabled(template, 'stamps')) {
+    fields.push(field('stamps', 'Stempel', `${stampCount}/${stampsRequired}`, 80, {
+      feature: 'stamps',
+      platformSupport: { apple: 'asset', google: 'asset', samsung: 'partial' }
+    }));
+  }
+
+  if (featureEnabled(template, 'streak')) {
+    fields.push(field('streak', 'Streak', streakGoal > 0 ? `${streakCount}/${streakGoal}` : String(streakCount), 80, {
+      feature: 'streak',
+      platformSupport: { apple: 'partial', google: 'partial', samsung: 'partial' }
+    }));
+  }
+
+  if (featureEnabled(template, 'vip')) {
+    fields.push(field('vip', 'VIP', vipStatus || 'Member', 30, { feature: 'vip' }));
+  }
+
+  if (featureEnabled(template, 'balance')) {
+    fields.push(field('balance', 'Guthaben', formatMoney(balanceCents, currency), 40, { feature: 'balance' }));
+  }
+
+  if (featureEnabled(template, 'cloakroom')) {
+    fields.push(field('cloakroom', 'Garderobe', cloakroomActive ? 'Aktiv' : 'Bereit', 70, { feature: 'cloakroom' }));
+  }
+
+  if (featureEnabled(template, 'checkin')) {
+    fields.push(field('checkin', stringValue(settings.eventName) || 'Einlass', stringValue(metadata.event_status) || 'Bereit', 75, { feature: 'checkin' }));
+  }
+
+  if (featureEnabled(template, 'redemption')) {
+    fields.push(field(
+      'redemption',
+      stringValue(settings.couponTitle) || 'Coupon',
+      stringValue(customer.status || cardInstance.status) === 'redeemed' ? 'Eingeloest' : 'Bereit',
+      60,
+      { feature: 'coupon' }
+    ));
+  }
+
+  if (featureEnabled(template, 'membership')) {
+    fields.push(field('membership', 'Mitgliedschaft', stringValue(metadata.membership_status || settings.membershipStatus) || 'Aktiv', 50, { feature: 'membership' }));
+  }
+
+  return fields.length ? fields : [field('status', 'Status', statusLabel(customer.status || cardInstance.status), 90)];
+}
+
+function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbacks'>) {
+  const warnings: WalletDesignWarning[] = [
+    {
+      id: 'platform-fonts',
+      level: 'info',
+      platforms: ['apple', 'google', 'samsung'],
+      element: 'Schriftart',
+      problem: 'Wallet-Plattformen rendern Text mit eigenen System- oder Template-Schriften.',
+      fallback: 'Text bleibt nativ lesbar; dekorative Schrift muss als serverseitig generiertes Bild-Asset ausgeliefert werden.'
+    }
+  ];
+
+  if (design.backgroundImageUrl || design.textureUrl) {
+    warnings.push({
+      id: 'background-image-template-limits',
+      level: 'warning',
+      platforms: ['apple', 'google', 'samsung'],
+      element: 'Hintergrundbild / Textur',
+      problem: 'Wallets erlauben keine freie CSS-Hintergrundkomposition wie die Editor-Vorschau.',
+      fallback: 'Bild als Strip/Hero/Main-Image verwenden und die Hintergrundfarbe als robuste Basis setzen.'
+    });
+  }
+
+  if (design.activeFeatures.stamps) {
+    warnings.push({
+      id: 'stamp-grid-not-native',
+      level: 'warning',
+      platforms: ['apple', 'google', 'samsung'],
+      element: 'Stempelraster',
+      problem: 'Das Editor-Stempelraster ist kein natives Wallet-Layout.',
+      fallback: 'Stempelstand als priorisiertes Textfeld anzeigen; bei Bedarf serverseitig ein stamp_grid Asset generieren.'
+    });
+  }
+
+  if (design.activeFeatures.streak) {
+    warnings.push({
+      id: 'streak-layout-not-native',
+      level: 'warning',
+      platforms: ['apple', 'google', 'samsung'],
+      element: 'Streak-Anzeige',
+      problem: 'Die kombinierte Icon-/Zahlendarstellung aus dem Editor ist plattformabhaengig.',
+      fallback: 'Streak als Textfeld anzeigen und optional ein streak_badge Asset generieren.'
+    });
+  }
+
+  if (design.fields.filter((item) => item.front).length > 5) {
+    warnings.push({
+      id: 'front-field-overflow',
+      level: 'warning',
+      platforms: ['apple', 'samsung'],
+      element: 'Feldanzahl',
+      problem: 'Apple und Samsung zeigen nur begrenzte Vorderseitenfelder verlaesslich an.',
+      fallback: 'Felder nach Prioritaet vorne zeigen und den Rest auf Rueckseite, Details oder Textmodule verschieben.'
+    });
+  }
+
+  if (!design.logoUrl && !design.emblemUrl) {
+    warnings.push({
+      id: 'missing-brand-asset',
+      level: 'info',
+      platforms: ['apple', 'google', 'samsung'],
+      element: 'Logo / Emblem',
+      problem: 'Ohne oeffentliches Logo oder Emblem fehlt Wallet-Branding.',
+      fallback: 'Business-Logo oder neutrales El-Promillo-Asset verwenden.'
+    });
+  }
+
+  return warnings;
+}
+
+function assetFallbacksForDesign(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbacks'>): EditorCardDesign['assetFallbacks'] {
+  const fallbacks: EditorCardDesign['assetFallbacks'] = [];
+
+  if (design.activeFeatures.stamps) {
+    fallbacks.push({
+      assetType: 'stamp_grid',
+      reason: 'Komplexe Stempelraster sind nicht nativ plattformuebergreifend darstellbar.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
+  if (design.activeFeatures.streak) {
+    fallbacks.push({
+      assetType: 'streak_badge',
+      reason: 'Die Editor-Streak-Anzeige braucht je nach Wallet ein vereinfachtes Bild oder Textfeld.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
+  if (design.backgroundImageUrl || design.textureUrl) {
+    fallbacks.push({
+      assetType: 'wallet_background',
+      reason: 'CSS-Hintergruende und Texturen muessen pro Wallet in ein akzeptiertes Bildfeld uebersetzt werden.',
+      platforms: ['apple', 'google', 'samsung']
+    });
+  }
+
+  return fallbacks;
+}
+
+export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: Row = {}, options: Row = {}): EditorCardDesign {
+  const settings = templateSettings(template);
+  const templateType = normalizeTemplateType(template);
+  const business = templateBusiness(template) || {};
+  const businessId = stringValue(template.business_id || business.id);
+  const templateId = stringValue(template.id);
+  const cardName = stringValue(template.card_name || template.name || 'Karte');
+  const title = stringValue(options.title || cardName || templateTypeLabel(template));
+  const subtitle = stringValue(options.subtitle || business.name || template.business_name || templateTypeLabel(template));
+  const description = stringValue(template.description || settings.description || templateTypeLabel(template));
+  const logoUrl = businessLogoUrlForTemplate(template);
+  const emblemUrl = safeHttpsUrl(
+    options.emblemUrl
+      || cardInstance.resolved_emblem_url
+      || supabaseCardEmblemUrl(cardInstance, Deno.env.get('SUPABASE_URL') || '')
+  );
+  const activeFeatures = activeFeaturesForTemplate(template);
+  const backgroundImageUrl = activeFeatures.eventBackgroundImage
+    ? safeHttpsUrl(settings.eventBackgroundImageUrl || settings.event_background_image_url)
+    : '';
+  const textureUrl = safeHttpsUrl(settings.textureUrl || settings.texture_url);
+  const cardInstanceNumber = cardCodeFor(cardInstance);
+  const barcodeValue = stringValue(options.barcodeValue || cardInstanceNumber);
+  const rewardText = rewardTextForTemplate(template);
+  const baseFields = [
+    field('cardId', 'Karten-ID', cardInstanceNumber, 10),
+    field('cardName', 'Karte', title, 20),
+    ...featureFields(template, cardInstance),
+    field('type', 'Typ', templateTypeLabel(template), 95, { front: false }),
+    field('description', 'Beschreibung', description, 100, { front: false })
+  ];
+
+  if (rewardText) {
+    baseFields.push(field('reward', 'Belohnung', rewardText, 85, { front: false }));
+  }
+
+  const designBase = {
+    businessId,
+    templateId,
+    templateType,
+    cardName,
+    title,
+    subtitle,
+    description,
+    logoUrl,
+    emblemUrl,
+    backgroundColor: hexColor(template.primary_color, '#fffdf9'),
+    foregroundColor: hexColor(template.text_color, '#8b4f2f'),
+    labelColor: hexColor(template.text_color, '#8b4f2f'),
+    accentColor: hexColor(settings.accentColor || settings.accent_color, hexColor(template.text_color, '#8b4f2f')),
+    backgroundImageUrl,
+    textureUrl,
+    barcodeValue,
+    cardInstanceNumber,
+    rewardText,
+    fields: baseFields.filter((item) => item.value),
+    activeFeatures
+  };
+
+  return {
+    ...designBase,
+    assetFallbacks: assetFallbacksForDesign(designBase),
+    warnings: buildWarnings(designBase)
+  };
+}
+
+function warningsForPlatform(design: EditorCardDesign, platform: WalletPlatform) {
+  return design.warnings.filter((warning) => warning.platforms.includes(platform));
+}
+
+function applePassStyleForDesign(design: EditorCardDesign): ApplePassDesign['passStyle'] {
+  if (design.templateType === 'coupon_card') {
+    return 'coupon';
+  }
+
+  if (design.templateType === 'event_card') {
+    return 'eventTicket';
+  }
+
+  if (['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(design.templateType)) {
+    return 'storeCard';
+  }
+
+  return 'generic';
+}
+
+function appleField(item: EditorCardField) {
+  return {
+    key: item.key,
+    label: item.label,
+    value: item.value,
+    changeMessage: '%@'
+  };
+}
+
+export function mapEditorDesignToApplePass(editorDesign: EditorCardDesign, _cardInstance: Row = {}): ApplePassDesign {
+  const sortedFrontFields = editorDesign.fields
+    .filter((item) => item.front && item.value)
+    .sort((left, right) => left.priority - right.priority);
+  const usedFrontKeys = new Set(sortedFrontFields.slice(0, 7).map((item) => item.key));
+  const backFields = editorDesign.fields
+    .filter((item) => item.value && (!usedFrontKeys.has(item.key) || !item.front))
+    .sort((left, right) => left.priority - right.priority)
+    .map(appleField);
+
+  return {
+    passStyle: applePassStyleForDesign(editorDesign),
+    colors: {
+      backgroundColor: editorDesign.backgroundColor,
+      foregroundColor: editorDesign.foregroundColor,
+      labelColor: editorDesign.labelColor
+    },
+    barcodes: [
+      {
+        format: 'PKBarcodeFormatQR',
+        message: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
+        messageEncoding: 'iso-8859-1',
+        altText: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId
+      }
+    ],
+    fieldSets: {
+      headerFields: sortedFrontFields.slice(0, 1).map(appleField),
+      primaryFields: sortedFrontFields.slice(1, 2).map(appleField),
+      secondaryFields: sortedFrontFields.slice(2, 4).map(appleField),
+      auxiliaryFields: sortedFrontFields.slice(4, 7).map(appleField),
+      backFields
+    },
+    assets: {
+      logoUrl: editorDesign.logoUrl,
+      emblemUrl: editorDesign.emblemUrl,
+      thumbnailUrl: editorDesign.emblemUrl || editorDesign.logoUrl,
+      stripUrl: editorDesign.backgroundImageUrl || editorDesign.emblemUrl || editorDesign.logoUrl,
+      backgroundUrl: editorDesign.backgroundImageUrl || editorDesign.textureUrl
+    },
+    warnings: warningsForPlatform(editorDesign, 'apple'),
+    assetFallbacks: editorDesign.assetFallbacks.filter((fallback) => fallback.platforms.includes('apple'))
+  };
+}
+
+function googleObjectTypeForDesign(design: EditorCardDesign): GoogleWalletDesign['objectType'] {
+  if (design.templateType === 'event_card') {
+    return 'eventTicketObject';
+  }
+
+  if (design.templateType === 'coupon_card') {
+    return 'offerObject';
+  }
+
+  if (['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(design.templateType)) {
+    return 'loyaltyObject';
+  }
+
+  return 'genericObject';
+}
+
+export function mapEditorDesignToGoogleWalletObject(editorDesign: EditorCardDesign, _cardInstance: Row = {}): GoogleWalletDesign {
+  const frontFields = editorDesign.fields
+    .filter((item) => item.front && item.value)
+    .sort((left, right) => left.priority - right.priority);
+  const textModulesData = editorDesign.fields
+    .filter((item) => item.value)
+    .sort((left, right) => left.priority - right.priority)
+    .map((item) => ({
+      id: item.key.replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 32),
+      header: item.label,
+      body: item.value
+    }));
+  const logo = imageValue(editorDesign.logoUrl, 'Logo') || undefined;
+  const heroImage = imageValue(editorDesign.backgroundImageUrl || editorDesign.emblemUrl || editorDesign.logoUrl, 'Kartenbild') || undefined;
+  const imageModulesData = heroImage
+    ? [{ id: 'card_emblem', mainImage: heroImage }]
+    : [];
+  const primaryField = frontFields[0];
+
+  return {
+    objectType: googleObjectTypeForDesign(editorDesign),
+    hexBackgroundColor: editorDesign.backgroundColor,
+    barcode: {
+      type: 'QR_CODE',
+      value: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
+      alternateText: editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId
+    },
+    cardTitle: localized(editorDesign.title, 'Kundenkarte'),
+    header: localized(editorDesign.subtitle || editorDesign.title, 'Karte'),
+    subheader: localized(editorDesign.description || editorDesign.templateType, 'Digitale Karte'),
+    textModulesData,
+    imageModulesData,
+    logo,
+    heroImage,
+    accountId: editorDesign.cardInstanceNumber,
+    accountName: editorDesign.title,
+    loyaltyPoints: primaryField
+      ? {
+        label: localized(primaryField.label),
+        balance: {
+          string: primaryField.value
+        }
+      }
+      : undefined,
+    warnings: warningsForPlatform(editorDesign, 'google'),
+    assetFallbacks: editorDesign.assetFallbacks.filter((fallback) => fallback.platforms.includes('google'))
+  };
+}
+
+function samsungCardTypeForDesign(design: EditorCardDesign): SamsungWalletDesign['cardType'] {
+  if (design.templateType === 'event_card') {
+    return 'ticket';
+  }
+
+  if (design.templateType === 'coupon_card') {
+    return 'coupon';
+  }
+
+  if (['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(design.templateType)) {
+    return 'loyalty';
+  }
+
+  return 'generic';
+}
+
+function samsungFontColor(value: string) {
+  const color = hexColor(value, '#8b4f2f').slice(1);
+  const red = parseInt(color.slice(0, 2), 16);
+  const green = parseInt(color.slice(2, 4), 16);
+  const blue = parseInt(color.slice(4, 6), 16);
+  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+
+  return luminance > 0.55 ? 'dark' : 'light';
+}
+
+export function mapEditorDesignToSamsungWalletCard(editorDesign: EditorCardDesign, _cardInstance: Row = {}): SamsungWalletDesign {
+  const frontFields = editorDesign.fields
+    .filter((item) => item.front && item.value)
+    .sort((left, right) => left.priority - right.priority);
+  const primaryField = frontFields[0];
+  const imageUrl = editorDesign.logoUrl || editorDesign.emblemUrl || '';
+  const attributes: Row = {
+    title: textLimit(editorDesign.title, 32, 'Kundenkarte'),
+    subtitle1: textLimit(editorDesign.description || primaryField?.value, 32),
+    providerName: textLimit(editorDesign.subtitle || 'El Promillo', 32, 'El Promillo'),
+    noticeDesc: textLimit([
+      editorDesign.description,
+      ...editorDesign.fields
+        .filter((item) => item.value)
+        .sort((left, right) => left.priority - right.priority)
+        .map((item) => `${item.label}: ${item.value}`)
+    ].filter(Boolean).join('\n'), 5000),
+    bgColor: editorDesign.backgroundColor,
+    fontColor: samsungFontColor(editorDesign.foregroundColor),
+    'barcode.value': editorDesign.barcodeValue || editorDesign.cardInstanceNumber || editorDesign.templateId,
+    'barcode.serialType': 'QRCODE',
+    'barcode.ptFormat': 'QRCODESERIAL',
+    'barcode.ptSubFormat': 'QR_CODE',
+    amount: primaryField?.value || editorDesign.cardInstanceNumber || '',
+    balance: editorDesign.rewardText || editorDesign.description || primaryField?.value || '',
+    level: textLimit(frontFields.find((item) => item.feature === 'vip')?.value || '', 16),
+    merchantName: textLimit(editorDesign.subtitle || 'El Promillo', 32, 'El Promillo')
+  };
+
+  if (imageUrl) {
+    attributes.logoImage = imageUrl;
+    attributes['logoImage.darkUrl'] = imageUrl;
+    attributes['logoImage.lightUrl'] = imageUrl;
+    attributes.mainImg = editorDesign.backgroundImageUrl || editorDesign.emblemUrl || imageUrl;
+  }
+
+  return {
+    cardType: samsungCardTypeForDesign(editorDesign),
+    cardSubType: editorDesign.templateType.replace(/_card$/, '') || 'others',
+    attributes,
+    fields: ['balance', 'barcode.value', 'amount', 'level', 'noticeDesc'],
+    warnings: warningsForPlatform(editorDesign, 'samsung'),
+    assetFallbacks: editorDesign.assetFallbacks.filter((fallback) => fallback.platforms.includes('samsung'))
+  };
+}

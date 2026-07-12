@@ -6,6 +6,7 @@
 
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { normalizeTemplateType } from './templateFeatures.ts';
+import { editorCardDesignFromTemplate, mapEditorDesignToSamsungWalletCard } from './walletDesign.ts';
 
 type Row = Record<string, any>;
 
@@ -336,6 +337,9 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
   const linkUrl = appLinkUrl(template);
+  const editorDesign = editorCardDesignFromTemplate(template, instance);
+  const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
+  const mappedAttributes = samsungDesign.attributes;
 
   if (!imageUrl || !linkUrl) {
     return providerStructuredError(
@@ -347,25 +351,25 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
   }
 
   return {
-    title,
-    subtitle1: textLimit(rewardOrDescription(template, instance), 32),
+    title: textLimit(mappedAttributes.title || title, 32, title),
+    subtitle1: textLimit(mappedAttributes.subtitle1 || rewardOrDescription(template, instance), 32),
     providerName,
-    noticeDesc: textLimit(template.description || template.reward_text || '', 5000),
+    noticeDesc: textLimit(mappedAttributes.noticeDesc || template.description || template.reward_text || '', 5000),
     logoImage: imageUrl,
     'logoImage.darkUrl': imageUrl,
     'logoImage.lightUrl': imageUrl,
     appLinkLogo: imageUrl,
     appLinkName: textLimit(providerName, 32, 'El Promillo'),
     appLinkData: linkUrl,
-    bgColor: hexColor(template.primary_color, '#fffdf9'),
-    fontColor: samsungFontColor(template.text_color),
-    'barcode.value': stringValue(instance.customer_code || instance.card_instance_number || instance.ref_id),
+    bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
+    fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
+    'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
     'barcode.serialType': 'QRCODE',
     'barcode.ptFormat': 'QRCODESERIAL',
     'barcode.ptSubFormat': 'QR_CODE',
-    amount: templateProgressText(template, instance),
-    balance: rewardOrDescription(template, instance),
-    level: textLimit(instance.vip_level || instance.vip_status || template.vip_tier || '', 16),
+    amount: stringValue(mappedAttributes.amount || templateProgressText(template, instance)),
+    balance: stringValue(mappedAttributes.balance || rewardOrDescription(template, instance)),
+    level: textLimit(mappedAttributes.level || instance.vip_level || instance.vip_status || template.vip_tier || '', 16),
     merchantName: providerName
   };
 }
@@ -376,6 +380,9 @@ function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}) {
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
   const startDate = Date.parse(stringValue(template.settings?.eventDate || template.created_at)) || Date.now();
+  const editorDesign = editorCardDesignFromTemplate(template, instance);
+  const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
+  const mappedAttributes = samsungDesign.attributes;
 
   if (!imageUrl) {
     return providerStructuredError(
@@ -387,17 +394,17 @@ function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}) {
   }
 
   return {
-    title,
+    title: textLimit(mappedAttributes.title || title, 32, title),
     providerName,
-    mainImg: imageUrl,
+    mainImg: stringValue(mappedAttributes.mainImg || imageUrl),
     startDate,
-    bgColor: hexColor(template.primary_color, '#fffdf9'),
-    fontColor: samsungFontColor(template.text_color),
-    'barcode.value': stringValue(instance.customer_code || instance.card_instance_number || instance.ref_id),
+    bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
+    fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
+    'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
     'barcode.serialType': 'QRCODE',
     'barcode.ptFormat': 'QRCODESERIAL',
     'barcode.ptSubFormat': 'QR_CODE',
-    noticeDesc: textLimit(template.description || rewardOrDescription(template, instance), 5000)
+    noticeDesc: textLimit(mappedAttributes.noticeDesc || template.description || rewardOrDescription(template, instance), 5000)
   };
 }
 

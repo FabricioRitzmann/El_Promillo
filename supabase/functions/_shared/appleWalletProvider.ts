@@ -8,6 +8,7 @@ import JSZip from 'https://esm.sh/jszip@3.10.1?target=deno';
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
+import { editorCardDesignFromTemplate, mapEditorDesignToApplePass } from './walletDesign.ts';
 
 type Row = Record<string, any>;
 
@@ -716,6 +717,18 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance, { latestMessage });
+  const appleDesign = mapEditorDesignToApplePass(editorDesign, cardInstance);
+  const appleBarcodes = appleDesign.barcodes.length
+    ? appleDesign.barcodes
+    : [
+      {
+        format: 'PKBarcodeFormatQR',
+        message: cardCode,
+        messageEncoding: 'iso-8859-1',
+        altText: cardCode
+      }
+    ];
   const featureRows = walletFeatureRows(template, cardInstance);
   const headerRow = latestMessage
     ? {
@@ -746,34 +759,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     });
   }
 
-  const generic = {
-    headerFields: [
-      {
-        ...headerRow,
-        changeMessage: '%@'
-      }
-    ],
-    primaryFields: [
-      {
-        key: 'cardName',
-        label: businessNameForTemplate(template),
-        value: stringValue(template.card_name || 'Kundenkarte')
-      }
-    ],
-    secondaryFields: [
-      {
-        key: 'cardId',
-        label: 'Karten-ID',
-        value: cardCode
-      },
-      {
-        key: 'type',
-        label: 'Typ',
-        value: templateTypeLabel(template)
-      }
-    ],
-    auxiliaryFields: auxiliaryFields.slice(0, 4),
-    backFields: [
+  const defaultBackFields = [
       {
         key: 'messageBack',
         label: 'Letzte Nachricht',
@@ -805,7 +791,45 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         label: 'Belohnung',
         value: rewardText
       }] : [])
-      .filter((field) => field.value)
+      .filter((field) => field.value);
+  const backFieldKeys = new Set(defaultBackFields.map((field) => field.key));
+  const mappedBackFields = appleDesign.fieldSets.backFields.filter((field) => field.value && !backFieldKeys.has(field.key));
+  const generic = {
+    headerFields: latestMessage
+      ? [
+        {
+          ...headerRow,
+          changeMessage: '%@'
+        }
+      ]
+      : appleDesign.fieldSets.headerFields,
+    primaryFields: appleDesign.fieldSets.primaryFields.length
+      ? appleDesign.fieldSets.primaryFields
+      : [
+        {
+          key: 'cardName',
+          label: businessNameForTemplate(template),
+          value: stringValue(template.card_name || 'Kundenkarte')
+        }
+      ],
+    secondaryFields: appleDesign.fieldSets.secondaryFields.length
+      ? appleDesign.fieldSets.secondaryFields
+      : [
+        {
+          key: 'cardId',
+          label: 'Karten-ID',
+          value: cardCode
+        },
+        {
+          key: 'type',
+          label: 'Typ',
+          value: templateTypeLabel(template)
+        }
+      ],
+    auxiliaryFields: latestMessage
+      ? auxiliaryFields.slice(0, 4)
+      : (appleDesign.fieldSets.auxiliaryFields.length ? appleDesign.fieldSets.auxiliaryFields : auxiliaryFields.slice(0, 4)),
+    backFields: defaultBackFields.concat(mappedBackFields)
   };
 
   const passJson: Row = {
@@ -815,18 +839,11 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     teamIdentifier: config.teamId,
     organizationName: businessNameForTemplate(template, 'Wallet Cards'),
     description: stringValue(template.description || template.card_name || 'Digitale Walletkarte'),
-    backgroundColor: stringValue(template.primary_color || '#fffdf9'),
-    foregroundColor: stringValue(template.text_color || '#8b4f2f'),
-    labelColor: stringValue(template.text_color || '#8b4f2f'),
-    barcodes: [
-      {
-        format: 'PKBarcodeFormatQR',
-        message: cardCode,
-        messageEncoding: 'iso-8859-1',
-        altText: cardCode
-      }
-    ],
-    generic
+    backgroundColor: appleDesign.colors.backgroundColor,
+    foregroundColor: appleDesign.colors.foregroundColor,
+    labelColor: appleDesign.colors.labelColor,
+    barcodes: appleBarcodes,
+    [appleDesign.passStyle]: generic
   };
 
   if (authenticationToken && configuredHttpsUrl(config.webServiceBaseUrl)) {
