@@ -1854,7 +1854,10 @@ textarea {
 }
 
 .preview-slot {
-  margin: 0.6rem 0 1rem;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  margin: 0.6rem auto 1rem;
 }
 
 .customer-code {
