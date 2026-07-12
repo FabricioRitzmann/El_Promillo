@@ -159,29 +159,47 @@ function escapeCssUrl(value) {
   return String(value || '').replace(/["'()\\\n\r]/g, '');
 }
 
-export function walletPreviewHtml(template, card = null) {
-  const business = {
-    name: template.business_name,
-    business_name: template.business_name,
-    logo_url: template.business_logo_url,
-    company_logo_url: template.company_logo_url
-  };
-  const stampValue = card ? Number(card.stamp_count || 0) : 0;
-  const streakValue = card ? Number(card.streak_count || 0) : 0;
+function compactWalletText(value) {
+  return String(value ?? '').trim();
+}
+
+function walletPreviewStatusLabel(value) {
+  const status = compactWalletText(value).toLowerCase();
+
+  return {
+    active: 'Aktiv',
+    issued: 'Aktiv',
+    redeemed: 'Eingeloest',
+    blocked: 'Gesperrt',
+    paused: 'Pausiert'
+  }[status] || compactWalletText(value || 'Aktiv');
+}
+
+function walletPreviewPassFields(template, card, business) {
   const settings = templateSettings(template);
-  const eventBackgroundImageUrl = featureEnabled(template, 'eventBackgroundImage')
-    ? settings.eventBackgroundImageUrl
-    : '';
-  const eventBackgroundStyle = eventBackgroundImageUrl
-    ? ` background-image: linear-gradient(rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.36)), url('${escapeCssUrl(eventBackgroundImageUrl)}'); background-size: cover; background-position: center;`
-    : '';
-  const cardEmblemUrl = cardEmblemImageUrl(card || {}, { fallbackUrl: appBrandMarkUrl });
-  const cardEmblem = cardEmblemMeta(card || {});
-  const cardInstanceNumber = card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
+  const featureRows = cardFeatureRows(template, card);
+  const cardInstanceNumber = card?.card_instance_number
+    || card?.metadata?.card_instance_number
+    || card?.customer_code
+    || 'Karten-ID';
+  const latestMessage = compactWalletText(card?.metadata?.latest_wallet_message || card?.latest_wallet_message);
+  const headerField = latestMessage
+    ? {
+      key: 'latestMessage',
+      label: 'Nachricht',
+      value: latestMessage
+    }
+    : {
+      key: 'currentProgress',
+      label: featureRows[0]?.label || 'Status',
+      value: featureRows[0]?.value || walletPreviewStatusLabel(card?.customer_cards?.status || card?.status)
+    };
+  const auxiliaryRows = latestMessage ? featureRows : featureRows.slice(1);
+  const templateType = normalizeTemplateType(template);
+  const stampValue = Number(card?.stamp_count || card?.current_stamps || 0);
+  const streakValue = Number(card?.streak_count || card?.current_streak || 0);
   const stampsRequired = Number(template.stamps_required || 10);
   const streakGoal = Number(template.streak_goal || settings.streakGoal || 0);
-  const templateType = normalizeTemplateType(template);
-  const featureRows = cardFeatureRows(template, card);
   const stampComplete = featureEnabled(template, 'stamps') && card && stampValue >= stampsRequired;
   const streakComplete = featureEnabled(template, 'streak') && card && streakGoal > 0 && streakValue >= streakGoal;
   const rewardVisible = Boolean(template.reward_text) && (
@@ -193,51 +211,115 @@ export function walletPreviewHtml(template, card = null) {
     || stampComplete
     || streakComplete
   );
-  const progress = featureRows[0]?.value || card?.status || 'Aktiv';
-  const featureRowsHtml = featureRows.map((row) => {
-    const isBrandedFeature = row.feature === 'stamps' || row.feature === 'streak';
-    const iconUrl = row.feature === 'stamps'
-      ? settings.stampIconUrl || cardEmblemUrl
-      : row.feature === 'streak'
-        ? settings.streakIconUrl || cardEmblemUrl
-        : '';
-    const valueHtml = row.feature === 'streak'
-      ? `
-        <strong class="wallet-streak-value">
-          <img class="wallet-streak-value-icon" src="${escapeHtml(cardEmblemUrl)}" alt="${escapeHtml(cardEmblem.label)}">
-          <span>${escapeHtml(row.value)}</span>
-        </strong>
-      `
-      : `<strong>${escapeHtml(row.value)}</strong>`;
+  const auxiliaryFields = auxiliaryRows.map((row) => ({
+    key: row.key || row.feature || row.label,
+    label: row.label,
+    value: row.value
+  }));
 
-    return `
-      <div class="wallet-feature-row">
-        ${featureIconHtml(iconUrl, row.iconText || row.label.slice(0, 2).toUpperCase(), { brand: isBrandedFeature })}
-        <span>${escapeHtml(row.label)}</span>
-        ${valueHtml}
-      </div>
-    `;
-  }).join('');
-  const stampSlots = featureEnabled(template, 'stamps')
-    ? stampSlotsHtml(stampValue, stampsRequired, settings.stampIconUrl || cardEmblemUrl)
+  if (rewardVisible) {
+    auxiliaryFields.push({
+      key: 'reward',
+      label: 'Belohnung',
+      value: template.reward_text
+    });
+  }
+
+  return {
+    headerFields: [headerField],
+    primaryFields: [
+      {
+        key: 'cardName',
+        label: businessDisplayName(business, 'Business'),
+        value: compactWalletText(template.card_name || 'Kundenkarte')
+      }
+    ],
+    secondaryFields: [
+      {
+        key: 'cardId',
+        label: 'Karten-ID',
+        value: cardInstanceNumber
+      },
+      {
+        key: 'type',
+        label: 'Typ',
+        value: cardTypeLabel(template)
+      }
+    ],
+    auxiliaryFields: auxiliaryFields.slice(0, 4),
+    cardInstanceNumber
+  };
+}
+
+function walletFieldHtml(field, className = '') {
+  if (!field?.value) {
+    return '';
+  }
+
+  return `
+    <div class="wallet-pass-field ${escapeHtml(className)}">
+      <span>${escapeHtml(field.label)}</span>
+      <strong>${escapeHtml(field.value)}</strong>
+    </div>
+  `;
+}
+
+function walletFieldSetHtml(fields, className = '') {
+  const visibleFields = fields.filter((field) => field?.value);
+
+  if (!visibleFields.length) {
+    return '';
+  }
+
+  return `
+    <div class="${escapeHtml(className)}">
+      ${visibleFields.map((field) => walletFieldHtml(field)).join('')}
+    </div>
+  `;
+}
+
+export function walletPreviewHtml(template, card = null) {
+  const business = {
+    name: template.business_name,
+    business_name: template.business_name,
+    logo_url: template.business_logo_url || template.logo_url,
+    business_logo_url: template.business_logo_url || template.logo_url,
+    company_logo_url: template.company_logo_url
+  };
+  const settings = templateSettings(template);
+  const eventBackgroundImageUrl = featureEnabled(template, 'eventBackgroundImage')
+    ? settings.eventBackgroundImageUrl
     : '';
+  const eventBackgroundStyle = eventBackgroundImageUrl
+    ? ` background-image: linear-gradient(rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.36)), url('${escapeCssUrl(eventBackgroundImageUrl)}'); background-size: cover; background-position: center;`
+    : '';
+  const cardEmblemUrl = cardEmblemImageUrl(card || {}, { fallbackUrl: appBrandMarkUrl });
+  const passFields = walletPreviewPassFields(template, card, business);
+  const headerFieldsHtml = passFields.headerFields.map((field) => walletFieldHtml(field, 'wallet-pass-header-field')).join('');
+  const primaryFieldsHtml = walletFieldSetHtml(passFields.primaryFields, 'wallet-pass-primary-fields');
+  const secondaryFieldsHtml = walletFieldSetHtml(passFields.secondaryFields, 'wallet-pass-secondary-fields');
+  const auxiliaryFieldsHtml = walletFieldSetHtml(passFields.auxiliaryFields, 'wallet-pass-auxiliary-fields');
 
   return `
     <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
       <div class="wallet-top">
-        ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
-        <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
+        <div class="wallet-brand-lockup">
+          ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
+          <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
+        </div>
+        <div class="wallet-header-fields">
+          ${headerFieldsHtml}
+        </div>
       </div>
-      <div class="wallet-title">${escapeHtml(template.card_name || 'Karte')}</div>
-      <div class="wallet-description">${escapeHtml(template.description || cardTypeLabel(template))}</div>
-      <div class="wallet-meta">
-        <span>${escapeHtml(cardTypeLabel(template))}</span>
-        <strong>${escapeHtml(progress)}</strong>
+      <div class="wallet-pass-main">
+        ${primaryFieldsHtml}
+        ${secondaryFieldsHtml}
+        ${auxiliaryFieldsHtml}
       </div>
-      ${featureRowsHtml}
-      ${stampSlots}
-      ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
-      <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
+      <div class="wallet-pass-barcode" aria-label="${escapeHtml(`QR ${passFields.cardInstanceNumber}`)}">
+        <div class="wallet-pass-qr" aria-hidden="true"></div>
+        <strong>${escapeHtml(passFields.cardInstanceNumber)}</strong>
+      </div>
     </div>
   `;
 }
