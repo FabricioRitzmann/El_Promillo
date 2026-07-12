@@ -378,6 +378,14 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'function walletPlatformWarnings(template, card',
   'function walletPlatformWarningsHtml(template, card',
   'function walletPlatformPreviewsHtml(template, card',
+  'function normalizeWalletBarcodeFormat(value)',
+  'function walletBarcodeFormat(template, card, context = {})',
+  'settings.barcodeFormat',
+  'metadata.barcodeFormat',
+  'barcodeFormat.key !== ' + "'qr'",
+  'Barcode-Format',
+  'Samsung muss das Format im Partner-Template erlauben',
+  '${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}',
   'function walletPlatformStyleLabels(template)',
   'Wallet-Hinweise',
   'Plattform-Vorschau',
@@ -460,7 +468,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
-  'Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor',
+  'Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor inklusive Barcodeformat-Beschriftung',
   'Implementiert fuer Apple/Google Queue-Jobs, automatische PNG-Fallbacks vor Updates und Samsung Update-Vorbereitung',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
@@ -487,6 +495,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Editor-Warnungen',
   'Editor-UI zeigt plattformbezogene Hinweise',
   'separate Apple-, Google- und Samsung-Vorschau-Skizzen',
+  'Plattformvorschau zeigt das normalisierte Barcodeformat',
   'QR ist Samsung-Default',
   '## Security'
 ]);

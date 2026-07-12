@@ -159,10 +159,72 @@ function escapeCssUrl(value) {
   return String(value || '').replace(/["'()\\\n\r]/g, '');
 }
 
+function normalizeWalletBarcodeFormat(value) {
+  const text = String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (!text) {
+    return null;
+  }
+
+  if (text.includes('aztec')) {
+    return { key: 'aztec', label: 'Aztec' };
+  }
+
+  if (text.includes('pdf417')) {
+    return { key: 'pdf417', label: 'PDF417' };
+  }
+
+  if (text.includes('code128') || text === 'barcode' || text === 'barcodeserial') {
+    return { key: 'code128', label: 'Code128' };
+  }
+
+  if (text.includes('qr')) {
+    return { key: 'qr', label: 'QR' };
+  }
+
+  return null;
+}
+
+function walletBarcodeFormat(template, card, context = {}) {
+  const settings = context.settings || templateSettings(template);
+  const metadata = card?.metadata && typeof card.metadata === 'object' ? card.metadata : {};
+  const candidates = [
+    context.barcodeFormat,
+    context.barcode_format,
+    card?.barcodeFormat,
+    card?.barcode_format,
+    card?.barcodeType,
+    card?.barcode_type,
+    metadata.barcodeFormat,
+    metadata.barcode_format,
+    metadata.barcodeType,
+    metadata.barcode_type,
+    template?.barcodeFormat,
+    template?.barcode_format,
+    template?.barcodeType,
+    template?.barcode_type,
+    settings.barcodeFormat,
+    settings.barcode_format,
+    settings.barcodeType,
+    settings.barcode_type
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeWalletBarcodeFormat(candidate);
+
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return { key: 'qr', label: 'QR' };
+}
+
 function walletPlatformWarnings(template, card, context = {}) {
   const warnings = [];
   const settings = context.settings || templateSettings(template);
   const featureRows = context.featureRows || cardFeatureRows(template, card);
+  const barcodeFormat = walletBarcodeFormat(template, card, { ...context, settings });
   const templateType = normalizeTemplateType(template);
   const eventBackgroundImageUrl = context.eventBackgroundImageUrl || (
     featureEnabled(template, 'eventBackgroundImage') ? settings.eventBackgroundImageUrl : ''
@@ -177,6 +239,15 @@ function walletPlatformWarnings(template, card, context = {}) {
     title: 'Titel-Schrift',
     body: 'Wallets nutzen native System- oder Template-Schriften; dekorative Web-Schrift wird nicht erzwungen.'
   });
+
+  if (barcodeFormat.key !== 'qr') {
+    warnings.push({
+      level: 'info',
+      platforms: ['Samsung'],
+      title: 'Barcode-Format',
+      body: `${barcodeFormat.label} wird fuer Apple und Google nativ gemappt; Samsung muss das Format im Partner-Template erlauben.`
+    });
+  }
 
   if (featureEnabled(template, 'stamps')) {
     warnings.push({
@@ -283,6 +354,8 @@ function walletPlatformStyleLabels(template) {
 function walletPlatformPreviewsHtml(template, card, context = {}) {
   const featureRows = context.featureRows || cardFeatureRows(template, card);
   const cardInstanceNumber = context.cardInstanceNumber || card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
+  const settings = context.settings || templateSettings(template);
+  const barcodeFormat = walletBarcodeFormat(template, card, { ...context, settings });
   const labels = walletPlatformStyleLabels(template);
   const title = template.card_name || 'Karte';
   const description = template.description || cardTypeLabel(template);
@@ -305,7 +378,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(appleRows, 4)}
-          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
         </div>
         <div class="wallet-platform-preview-card wallet-platform-google">
           <div class="wallet-platform-preview-head">
@@ -314,7 +387,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(googleRows, 5)}
-          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
         </div>
         <div class="wallet-platform-preview-card wallet-platform-samsung">
           <div class="wallet-platform-preview-head">
@@ -323,7 +396,7 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
           </div>
           <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
           ${walletPlatformPreviewRowsHtml(samsungRows, 4)}
-          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+          <div class="wallet-platform-preview-code">${escapeHtml(barcodeFormat.label)} · ${escapeHtml(cardInstanceNumber)}</div>
         </div>
       </div>
     </div>
@@ -399,7 +472,7 @@ export function walletPreviewHtml(template, card = null, options = {}) {
   });
   const walletInsights = options.showWalletInsights === true
     ? `
-      ${walletPlatformPreviewsHtml(template, card, { featureRows, cardInstanceNumber })}
+      ${walletPlatformPreviewsHtml(template, card, { settings, featureRows, cardInstanceNumber })}
       ${platformWarnings}
     `
     : '';

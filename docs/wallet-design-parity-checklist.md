@@ -14,7 +14,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Feature-Limitations pro Wallet | `docs/wallet-feature-limitations.md` |
 | Zentrale Design-Abstraktion | `EditorCardDesign` in `supabase/functions/_shared/walletDesign.ts` |
 | Mapping-Funktionen | `mapEditorDesignToApplePass`, `mapEditorDesignToGoogleWalletObject`, `mapEditorDesignToSamsungWalletCard` |
-| Barcodeformat-Parity | `walletDesign.ts` normalisiert `qr`, `aztec`, `pdf417`, `code128` und mappt sie auf Apple-, Google- und Samsung-Formatnamen |
+| Barcodeformat-Parity | `walletDesign.ts` und die Editor-Plattformvorschau normalisieren `qr`, `aztec`, `pdf417`, `code128`; die Provider mappen sie auf Apple-, Google- und Samsung-Formatnamen |
 | Fallback-Logik | `walletDesign.ts`, `generate-wallet-asset`, Editor-Warnungen |
 | Plattform-Previews im Editor | `public/js/ui.js`, `public/styles.css`; nur per `showWalletInsights: true` im Editor |
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
