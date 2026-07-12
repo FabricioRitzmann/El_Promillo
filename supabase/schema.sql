@@ -1052,6 +1052,18 @@ alter table public.wallet_update_queue
 add constraint wallet_update_queue_payload_shape_check
 check (jsonb_typeof(payload) = 'object' and octet_length(payload::text) <= 20000) not valid;
 
+-- Legacy scanner-emblem jobs used `emblem_update`; new jobs use the
+-- goal-level wallet update type documented for design parity.
+update public.wallet_update_queue
+set
+  update_type = 'emblem_changed',
+  payload = case
+    when payload ? 'legacy_update_type' then payload
+    else payload || jsonb_build_object('legacy_update_type', 'emblem_update')
+  end
+where update_type = 'emblem_update'
+  and status = 'pending';
+
 drop index if exists public.wallet_notification_campaigns_owner_idempotency_idx;
 create unique index if not exists wallet_notification_campaigns_owner_idempotency_idx
 on public.wallet_notification_campaigns(owner_id, business_id, idempotency_key)

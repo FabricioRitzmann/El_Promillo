@@ -173,7 +173,7 @@ Geplante Update-Typen:
 Aktueller Status:
 
 - Queue-Tabelle und generische Update-Verarbeitung existieren.
-- Emblem-/Wallet-Updates sind bereits angebunden.
+- Initial-Scan-Emblemwechsel reihen Apple-/Google-`card_instances` als `emblem_changed` ein; das Payload enthaelt vorheriges und neues Emblem fuer Audit und Provider-Rebuild.
 - Template-Designaenderungen reihen Apple-/Google-`card_instances` ueber den SQL-Trigger `enqueue_wallet_update_after_template_design_change()` ein.
 - Reine Barcodewert- oder Barcodeformat-Aenderungen in `settings` werden dabei als `barcode_changed` klassifiziert; andere `settings`-Aenderungen bleiben `asset_changed`.
 - `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks automatisch serverseitig, bevor Apple neu signiert oder Google ein Object patcht.

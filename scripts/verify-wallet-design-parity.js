@@ -67,6 +67,8 @@ const googleWalletSaveLink = read('supabase/functions/google-wallet-save-link/in
 const updateGoogleWalletPass = read('supabase/functions/update-google-wallet-pass/index.ts');
 const sendGoogleWalletMessage = read('supabase/functions/send-google-wallet-message/index.ts');
 const samsungWalletServer = read('supabase/functions/samsung-wallet-server/index.ts');
+const scannerEdge = read('supabase/functions/scanner-actions/index.ts');
+const serverFallback = read('server/index.js');
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
 const styles = read('public/styles.css');
@@ -477,6 +479,8 @@ assertIncludes('Wallet Design Update Queue', schema, [
   "update_reason := 'asset_changed'",
   "update_reason := 'field_changed'",
   "update_reason := 'feature_changed'",
+  "update_type = 'emblem_changed'",
+  "legacy_update_type', 'emblem_update'",
   "insert into public.wallet_update_queue",
   "'source', 'card_templates_update_trigger'",
   "ci.wallet_platform in ('apple', 'google')",
@@ -486,6 +490,22 @@ assertIncludes('Wallet Design Update Queue', schema, [
   "'next_action', 'update-samsung-wallet-pass'",
   'drop trigger if exists enqueue_wallet_update_jobs_after_template_update on public.card_templates',
   'create trigger enqueue_wallet_update_jobs_after_template_update'
+]);
+
+assertIncludes('Initial-Scan Emblem Update Queue', scannerEdge, [
+  "update_type: 'emblem_changed'",
+  "source: 'scanner_actions_edge_function'",
+  "update_type: 'emblem_changed'",
+  'previous_emblem_key',
+  'resolved_emblem_key'
+]);
+
+assertIncludes('Lokaler Initial-Scan Emblem Update Queue', serverFallback, [
+  "update_type: 'emblem_changed'",
+  "source: 'scanner_demographics'",
+  "update_type: 'emblem_changed'",
+  'previous_emblem_key',
+  'resolved_emblem_key'
 ]);
 
 assertIncludes('Wallet Design Parity Doku', parityDoc, [
@@ -508,9 +528,11 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'club_module_badges',
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
+  'emblem_changed',
+  'Initial-Scan-Queue-Update',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
   'Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor inklusive Barcodeformat-Beschriftung',
-  'Implementiert fuer Apple/Google Queue-Jobs, automatische PNG-Fallbacks vor Updates und Samsung Update-Vorbereitung',
+  'Implementiert fuer Apple/Google Queue-Jobs inklusive `emblem_changed`, automatische PNG-Fallbacks vor Updates und Samsung Update-Vorbereitung',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
 
@@ -555,6 +577,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToSamsungWalletCard',
   'Barcodeformat-Parity',
   'Apple Standort-/Beacon-Relevanz',
+  'Initial-Scan-Emblemwechsel',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Provider Registry bleibt auf derselben Pipeline',
@@ -564,6 +587,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'barcode_changed',
+  'emblem_changed',
   'pnpm run check',
   'node scripts/wallet-remote-schema-check.js --strict',
   'Echte Apple-Wallet-Karte',

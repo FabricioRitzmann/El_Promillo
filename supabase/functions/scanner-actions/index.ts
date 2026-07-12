@@ -942,9 +942,10 @@ async function recordWalletEmblemUpdate(supabaseAdmin: any, card: Row, cardInsta
         business_id: card.business_id,
         card_instance_id: cardInstance.id,
         wallet_platform: walletPlatform,
-        update_type: 'emblem_update',
+        update_type: 'emblem_changed',
         payload: {
           source: 'scanner_actions_edge_function',
+          update_type: 'emblem_changed',
           reason,
           customer_card_id: card.id,
           card_instance_number: cardInstance.card_instance_number || card.card_instance_number,

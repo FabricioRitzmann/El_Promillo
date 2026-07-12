@@ -16,6 +16,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Mapping-Funktionen | `mapEditorDesignToApplePass`, `mapEditorDesignToGoogleWalletObject`, `mapEditorDesignToSamsungWalletCard` |
 | Barcodeformat-Parity | `walletDesign.ts` und die Editor-Plattformvorschau normalisieren `qr`, `aztec`, `pdf417`, `code128`; die Provider mappen sie auf Apple-, Google- und Samsung-Formatnamen |
 | Apple Standort-/Beacon-Relevanz | `walletDesign.ts` normalisiert Business-/Template-Standorte und Beacons; `appleWalletProvider.ts` schreibt sie als `locations`/`beacons` in `pass.json` |
+| Initial-Scan-Emblemwechsel | `scanner-actions` und lokaler Fallback setzen demografiebasiert `resolved_emblem_*` und reihen Apple-/Google-Updates als `emblem_changed` ein |
 | Fallback-Logik | `walletDesign.ts`, `generate-wallet-asset`, Editor-Warnungen |
 | Plattform-Previews im Editor | `public/js/ui.js`, `public/styles.css`; nur per `showWalletInsights: true` im Editor |
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
@@ -28,7 +29,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Google Guthabenkarte nutzt Gift Card Mapping | `balance_card` wird als `giftCardObject` mit `giftCardClasses`/`giftCardObjects`, `cardNumber` und Google-`Money`-`balance` erzeugt |
 | Manuelle Apple/Google Wallet Updates nutzen dieselbe Asset-Fallback-Pipeline | `update-apple-pass`, `send-apple-wallet-update`, `update-google-wallet-pass` und `send-google-wallet-message` erzeugen benoetigte PNG-Fallbacks vor neu signierten Pass-Versionen bzw. Google Object-Patches |
 | Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |
-| Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql`; `barcode_changed` wird fuer reine Barcodewert-/Barcodeformat-Aenderungen gesetzt; `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks vor Apple-/Google-Updates |
+| Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql`; `barcode_changed` wird fuer reine Barcodewert-/Barcodeformat-Aenderungen gesetzt; Initial-Scan-Emblemwechsel nutzen `emblem_changed`; `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks vor Apple-/Google-Updates |
 | Clubkarten-Priorisierung | `walletDesign.ts`, Matrix in `docs/wallet-design-parity.md` |
 | Keine Wallet-Secrets im Frontend | `scripts/verify-browser-secret-boundary.js`, `scripts/verify-wallet-design-parity.js` |
 | Business-Isolation fuer Assets | `generate-wallet-asset` prueft `owner_id` und `business_id` |
