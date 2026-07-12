@@ -110,6 +110,8 @@ assertIncludes('Wallet Asset Pfadvertrag', walletAssets, [
   'walletAssetFolderPath',
   'walletAssetStoragePath',
   'walletAssetPublicUrl',
+  'walletAssetTypesForFallbacks',
+  'existingWalletAssetPublicUrls',
   '/storage/v1/object/public/'
 ]);
 
@@ -139,6 +141,7 @@ assertIncludes('Apple Provider Design Mapping', appleProvider, [
 
 assertIncludes('Google Provider Design Mapping', googleProvider, [
   "import { editorCardDesignFromTemplate, mapEditorDesignToGoogleWalletObject } from './walletDesign.ts'",
+  "import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts'",
   'const googleDesign = mapEditorDesignToGoogleWalletObject(editorDesign, cardInstance)',
   'mergeTextModules(statusModules(template, cardInstance, extraRows), googleDesign.textModulesData)',
   'googleDesign.hexBackgroundColor',
@@ -148,7 +151,18 @@ assertIncludes('Google Provider Design Mapping', googleProvider, [
   'googleDesign.subheader',
   'googleDesign.logo',
   'googleDesign.heroImage',
-  'googleDesign.imageModulesData'
+  'googleDesign.imageModulesData',
+  'generatedGoogleWalletAssetUrls',
+  'applyGeneratedAssetImages',
+  'existingWalletAssetPublicUrls(options.supabaseAdmin',
+  "walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'google')",
+  'mergeImageModules(payload.imageModulesData'
+]);
+
+assertIncludes('Google Issue Asset Optionen', read('supabase/functions/issue-google-wallet-pass/index.ts'), [
+  'const googleWalletAssetOptions = { supabaseAdmin: context.supabaseAdmin }',
+  'googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)',
+  'googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)'
 ]);
 
 assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
@@ -309,6 +323,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToSamsungWalletCard',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
+  'Google Issue/Save-Link nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'pnpm run check',
   'node scripts/wallet-remote-schema-check.js --strict',

@@ -43,6 +43,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Status, Karten-ID, VIP, Guthaben, Coupon, Mitgliedschaft und Garderobe gehen in `textModulesData`.
 - QR wird als `QR_CODE` gesetzt.
 - Stempel/Streak werden als Textmodule gesetzt und koennen spaeter als `imageModulesData` aus serverseitigen Assets ergaenzt werden.
+- Im Issue-/Save-Link-Pfad prueft `googleWalletProvider.ts` vorhandene Dateien im Bucket `wallet-assets` und setzt nur existierende PNGs als `heroImage`/`imageModulesData`.
 - Der passendste vorhandene Object-Type wird genutzt: Generic, Loyalty, Offer oder Event Ticket.
 
 ## Samsung Wallet

@@ -373,8 +373,9 @@ Deno.serve(async (request) => {
     }
 
     idempotencyReservation = reservedIdempotency.reservedLog;
-    const objectResult = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance);
-    const saveLink = await googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance);
+    const googleWalletAssetOptions = { supabaseAdmin: context.supabaseAdmin };
+    const objectResult = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, googleWalletAssetOptions);
+    const saveLink = await googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance, googleWalletAssetOptions);
     const issueStatus = normalizedIssueStatus(objectResult, saveLink);
 
     const issuedObjectId = stringValue(objectResult.objectId || saveLink.objectId);

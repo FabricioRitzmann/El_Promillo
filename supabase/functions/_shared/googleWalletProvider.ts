@@ -8,6 +8,8 @@
 import { featureEnabled, normalizeTemplateType, templateSettings } from './templateFeatures.ts';
 import { supabaseCardEmblemUrl } from './cardEmblems.ts';
 import { editorCardDesignFromTemplate, mapEditorDesignToGoogleWalletObject } from './walletDesign.ts';
+import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts';
+import type { WalletAssetType, WalletAssetUrls } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -845,6 +847,74 @@ function imageValue(url: unknown, label = 'Logo') {
   };
 }
 
+function mergeImageModules(...moduleSets: unknown[]) {
+  const modules: Row[] = [];
+  const seen = new Set<string>();
+
+  for (const moduleSet of moduleSets) {
+    if (!Array.isArray(moduleSet)) {
+      continue;
+    }
+
+    for (const module of moduleSet) {
+      const row = module && typeof module === 'object' ? module as Row : {};
+      const id = stringValue(row.id);
+
+      if (!id || seen.has(id)) {
+        continue;
+      }
+
+      seen.add(id);
+      modules.push(row);
+    }
+  }
+
+  return modules;
+}
+
+function generatedAssetImageModule(assetType: WalletAssetType, url: string) {
+  const labels: Record<WalletAssetType, string> = {
+    stamp_grid: 'Stempelraster',
+    streak_badge: 'Streak',
+    wallet_background: 'Kartenbild',
+    decorative_title: 'Kartentitel',
+    club_module_badges: 'Clubkarten-Module'
+  };
+  const image = imageValue(url, labels[assetType]);
+
+  return image
+    ? {
+      id: assetType,
+      mainImage: image
+    }
+    : null;
+}
+
+function applyGeneratedAssetImages(payload: Row, assetUrls: WalletAssetUrls = {}) {
+  const backgroundImage = imageValue(assetUrls.wallet_background, 'Kartenbild');
+
+  if (backgroundImage) {
+    payload.heroImage = backgroundImage;
+  }
+
+  const generatedModules = ([
+    'wallet_background',
+    'stamp_grid',
+    'streak_badge',
+    'club_module_badges',
+    'decorative_title'
+  ] as WalletAssetType[])
+    .map((assetType) => assetUrls[assetType] ? generatedAssetImageModule(assetType, assetUrls[assetType] || '') : null)
+    .filter(Boolean);
+  const imageModulesData = mergeImageModules(payload.imageModulesData, generatedModules);
+
+  if (imageModulesData.length) {
+    payload.imageModulesData = imageModulesData;
+  }
+
+  return payload;
+}
+
 function templateBusiness(template: Row) {
   return Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
 }
@@ -873,15 +943,36 @@ function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
     return payload;
   }
 
-  payload.heroImage = emblemImage;
-  payload.imageModulesData = [
+  payload.heroImage = payload.heroImage || emblemImage;
+  payload.imageModulesData = mergeImageModules(payload.imageModulesData, [
     {
       id: 'card_emblem',
       mainImage: emblemImage
     }
-  ];
+  ]);
 
   return payload;
+}
+
+async function generatedGoogleWalletAssetUrls(template: Row, cardInstance: Row, options: Row = {}) {
+  if (options.generatedAssetUrls && typeof options.generatedAssetUrls === 'object') {
+    return options.generatedAssetUrls as WalletAssetUrls;
+  }
+
+  if (!options.supabaseAdmin) {
+    return {};
+  }
+
+  const editorDesign = editorCardDesignFromTemplate(template, cardInstance);
+  const assetTypes = walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'google');
+
+  return existingWalletAssetPublicUrls(options.supabaseAdmin, Deno.env.get('SUPABASE_URL') || '', {
+    ownerId: cardInstance.owner_id,
+    businessId: cardInstance.business_id,
+    templateId: cardInstance.template_id,
+    cardInstanceId: cardInstance.id,
+    walletPlatform: 'google'
+  }, assetTypes);
 }
 
 function buildClassPayload(template: Row, objectType: string, classId: string) {
@@ -954,7 +1045,7 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
   return classPayload;
 }
 
-function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objectId: string, classId: string, objectType = 'genericObject') {
+function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objectId: string, classId: string, objectType = 'genericObject', options: Row = {}) {
   const cardCode = cardCodeFor(cardInstance);
   const settings = settingsForTemplate(template);
   const metadata = metadataFor(cardInstance);
@@ -1005,7 +1096,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       };
     }
 
-    return applyObjectEmblemImages(eventObject, cardInstance);
+    return applyObjectEmblemImages(applyGeneratedAssetImages(eventObject, options.generatedAssetUrls), cardInstance);
   }
 
   if (objectType === 'offerObject') {
@@ -1030,7 +1121,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       offerObject.imageModulesData = googleDesign.imageModulesData;
     }
 
-    return applyObjectEmblemImages(offerObject, cardInstance);
+    return applyObjectEmblemImages(applyGeneratedAssetImages(offerObject, options.generatedAssetUrls), cardInstance);
   }
 
   const businessLogo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
@@ -1064,7 +1155,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     objectPayload.loyaltyPoints = statusPatch.loyaltyPoints || googleDesign.loyaltyPoints;
   }
 
-  return applyObjectEmblemImages(objectPayload, cardInstance);
+  return applyObjectEmblemImages(applyGeneratedAssetImages(objectPayload, options.generatedAssetUrls), cardInstance);
 }
 
 export const googleWalletProvider = {
@@ -1111,7 +1202,7 @@ export const googleWalletProvider = {
     };
   },
 
-  async createObject(template: Row, cardInstance: Row) {
+  async createObject(template: Row, cardInstance: Row, options: Row = {}) {
     const config = googleConfig();
     const objectType = objectTypeForTemplate(template);
     const classResult = await this.createClass(template, objectType);
@@ -1121,7 +1212,11 @@ export const googleWalletProvider = {
     }
 
     const objectId = googleObjectIdFor(config, cardInstance);
-    const payload = buildObjectPayload(config, template, cardInstance, objectId, classResult.classId, objectType);
+    const generatedAssetUrls = await generatedGoogleWalletAssetUrls(template, cardInstance, options);
+    const payload = buildObjectPayload(config, template, cardInstance, objectId, classResult.classId, objectType, {
+      ...options,
+      generatedAssetUrls
+    });
     const result = await googleApi('POST', `/${objectType}`, payload);
 
     if (!result.ok && result.status === 409) {
@@ -1143,7 +1238,7 @@ export const googleWalletProvider = {
     };
   },
 
-  async generateSaveLink(template: Row, cardInstance: Row) {
+  async generateSaveLink(template: Row, cardInstance: Row, options: Row = {}) {
     const config = googleConfig();
 
     if (!config.configured) {
@@ -1154,7 +1249,11 @@ export const googleWalletProvider = {
     const classId = classIdForTemplate(config, template);
     const objectId = googleObjectIdFor(config, cardInstance);
     const classPayload = buildClassPayload(template, objectType, classId);
-    const objectPayload = buildObjectPayload(config, template, cardInstance, objectId, classId, objectType);
+    const generatedAssetUrls = await generatedGoogleWalletAssetUrls(template, cardInstance, options);
+    const objectPayload = buildObjectPayload(config, template, cardInstance, objectId, classId, objectType, {
+      ...options,
+      generatedAssetUrls
+    });
     const payloadKeys = payloadKeysForObjectType(objectType);
     let jwt;
 
