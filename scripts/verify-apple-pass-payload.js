@@ -52,6 +52,22 @@ assertIncludes(walletDesign, [
   'PKBarcodeFormatCode128'
 ], 'Apple Pass Barcodeformat Mapping');
 
+assertIncludes(walletDesign, [
+  'export type WalletLocation',
+  'export type WalletBeacon',
+  'function walletLocationsFor(template: Row, cardInstance: Row, options: Row)',
+  'function walletBeaconsFor(template: Row, cardInstance: Row, options: Row)',
+  'locations: editorDesign.locations',
+  'beacons: editorDesign.beacons'
+], 'Apple Pass Standort-/Beacon-Mapping');
+
+assertIncludes(appleProvider, [
+  'const passLocations = Array.isArray(fields.locations) && fields.locations.length',
+  'const passBeacons = Array.isArray(fields.beacons) && fields.beacons.length',
+  'passJson.locations = passLocations',
+  'passJson.beacons = passBeacons'
+], 'Apple Pass Standort-/Beacon-Payload');
+
 assertIncludes(appleProvider, [
   'walletFeatureRows(template, cardInstance)',
   'current_stamps',

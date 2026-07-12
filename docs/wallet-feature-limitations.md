@@ -75,6 +75,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Pass Web Service mit Apple-spezifischem `authenticationToken`/`webServiceURL`.
 - Apple Pass Bundle mit `pass.json`, Manifest und Signatur.
 - Apple-spezifische `backFields` als Rueckseitenmodell.
+- Native Pass-Relevanz ueber `locations` und `beacons`.
 
 ### Funktioniert Nur Bei Google
 
@@ -193,6 +194,7 @@ Warnquellen:
 - Die Editor-UI zeigt plattformbezogene Hinweise direkt unter der Live-Vorschau an.
 - Die Editor-UI zeigt zusaetzlich separate Apple-, Google- und Samsung-Vorschau-Skizzen; die oeffentliche Claim-Seite zeigt diese internen Hinweise nicht.
 - Die Plattformvorschau zeigt das normalisierte Barcodeformat statt pauschal `QR`; bei Nicht-QR weist die Editor-UI auf die Samsung-Template-Abhaengigkeit hin.
+- Standort-/Beacon-Konfiguration wird als Apple-native Relevanz markiert; Google/Samsung bekommen keinen identischen Standortbereich im aktuellen Mapping.
 - Keine Editor-Funktion darf so dargestellt werden, als waere sie in Apple, Google und Samsung identisch moeglich.
 
 ## Security

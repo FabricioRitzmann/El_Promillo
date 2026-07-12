@@ -953,8 +953,19 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     passJson.relevantDate = fields.relevantDate;
   }
 
-  if (Array.isArray(fields.locations) && fields.locations.length) {
-    passJson.locations = fields.locations;
+  const passLocations = Array.isArray(fields.locations) && fields.locations.length
+    ? fields.locations
+    : appleDesign.locations;
+  const passBeacons = Array.isArray(fields.beacons) && fields.beacons.length
+    ? fields.beacons
+    : appleDesign.beacons;
+
+  if (passLocations.length) {
+    passJson.locations = passLocations;
+  }
+
+  if (passBeacons.length) {
+    passJson.beacons = passBeacons;
   }
 
   return passJson;

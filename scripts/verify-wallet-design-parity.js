@@ -83,6 +83,8 @@ assertIncludes('Wallet Design Abstraktion', walletDesign, [
   'export type EditorCardField',
   'export type WalletDesignWarning',
   "export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128'",
+  'export type WalletLocation',
+  'export type WalletBeacon',
   "export type WalletPlatform = 'apple' | 'google' | 'samsung'",
   'activeFeaturesForTemplate',
   'featureEnabled(template, ' + "'stamps')",
@@ -98,6 +100,18 @@ assertIncludes('Wallet Design Abstraktion', walletDesign, [
   'mapEditorDesignToApplePass',
   'mapEditorDesignToGoogleWalletObject',
   'mapEditorDesignToSamsungWalletCard'
+]);
+
+assertIncludes('Wallet Location Mapping', walletDesign, [
+  'function walletLocationsFor(template: Row, cardInstance: Row, options: Row)',
+  'function walletBeaconsFor(template: Row, cardInstance: Row, options: Row)',
+  'normalizeWalletLocation',
+  'normalizeWalletBeacon',
+  'locations,',
+  'beacons,',
+  'locations: editorDesign.locations',
+  'beacons: editorDesign.beacons',
+  'location-relevance-platform-limits'
 ]);
 
 assertIncludes('Wallet Barcode Format Mapping', walletDesign, [
@@ -197,6 +211,10 @@ assertIncludes('Apple Provider Design Mapping', appleProvider, [
   'appleDesign.fieldSets.secondaryFields',
   'appleDesign.fieldSets.auxiliaryFields',
   'appleDesign.fieldSets.backFields',
+  'appleDesign.locations',
+  'appleDesign.beacons',
+  'passJson.locations = passLocations',
+  'passJson.beacons = passBeacons',
   'generatedAppleWalletAssetUrlsForTemplate',
   'generatedAssets.stamp_grid',
   'generatedAssets.streak_badge',
@@ -386,6 +404,7 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'function normalizeWalletBarcodeFormat(value)',
   'function walletBarcodeFormat(template, card, context = {})',
   'function walletBarcodeValue(template, card, context = {})',
+  'function walletHasLocationRelevance(template, context = {})',
   'settings.barcodeFormat',
   'settings.barcodeValue',
   'metadata.barcodeFormat',
@@ -393,6 +412,8 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'barcodeFormat.key !== ' + "'qr'",
   'Barcode-Format',
   'Samsung muss das Format im Partner-Template erlauben',
+  'Standort-Hinweis',
+  'Apple Wallet nutzt Standorte oder Beacons',
   '${escapeHtml(barcodeFormat.label)} · ${escapeHtml(barcodeValue)}',
   'function walletPlatformStyleLabels(template)',
   'Wallet-Hinweise',
@@ -475,6 +496,8 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'Editor Design Elements',
   '| Editor-Element | Editor-Darstellung | Apple Wallet | Google Wallet | Samsung Wallet | 1:1 moeglich | Problem | Alternative | Implementierungsstatus |',
   'Custom Font',
+  'Standort / Beacon',
+  '`locations` und `beacons` im `pass.json`',
   'Barcode / QR-Code',
   'PKBarcodeFormatAztec',
   'PDF_417',
@@ -498,6 +521,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Samsung Wallet',
   '## Unterschiede Zwischen Plattformen',
   '### Funktioniert Nur Bei Apple',
+  'Native Pass-Relevanz ueber `locations` und `beacons`',
   '### Funktioniert Nur Bei Google',
   '### Funktioniert Nur Bei Samsung',
   '### Funktioniert Bei Apple + Google, Aber Nicht Samsung',
@@ -515,6 +539,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   'Editor-UI zeigt plattformbezogene Hinweise',
   'separate Apple-, Google- und Samsung-Vorschau-Skizzen',
   'Plattformvorschau zeigt das normalisierte Barcodeformat',
+  'Standort-/Beacon-Konfiguration wird als Apple-native Relevanz markiert',
   'QR ist Samsung-Default',
   '## Security'
 ]);
@@ -529,6 +554,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'mapEditorDesignToGoogleWalletObject',
   'mapEditorDesignToSamsungWalletCard',
   'Barcodeformat-Parity',
+  'Apple Standort-/Beacon-Relevanz',
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Provider Registry bleibt auf derselben Pipeline',

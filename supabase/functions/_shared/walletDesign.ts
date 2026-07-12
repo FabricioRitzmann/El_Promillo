@@ -7,6 +7,18 @@ export type WalletPlatform = 'apple' | 'google' | 'samsung';
 export type WalletWarningLevel = 'info' | 'warning' | 'critical';
 export type WalletSupportLevel = 'native' | 'details' | 'asset' | 'partial' | 'unsupported';
 export type EditorBarcodeFormat = 'qr' | 'aztec' | 'pdf417' | 'code128';
+export type WalletLocation = {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  relevantText?: string;
+};
+export type WalletBeacon = {
+  proximityUUID: string;
+  major?: number;
+  minor?: number;
+  relevantText?: string;
+};
 
 export type EditorCardField = {
   key: string;
@@ -45,6 +57,8 @@ export type EditorCardDesign = {
   textureUrl?: string;
   barcodeValue?: string;
   barcodeFormat: EditorBarcodeFormat;
+  locations: WalletLocation[];
+  beacons: WalletBeacon[];
   cardInstanceNumber?: string;
   rewardText?: string;
   fields: EditorCardField[];
@@ -94,6 +108,8 @@ export type ApplePassDesign = {
     stripUrl?: string;
     backgroundUrl?: string;
   };
+  locations: WalletLocation[];
+  beacons: WalletBeacon[];
   warnings: WalletDesignWarning[];
   assetFallbacks: EditorCardDesign['assetFallbacks'];
 };
@@ -149,6 +165,12 @@ function numberValue(...values: unknown[]) {
   }
 
   return 0;
+}
+
+function optionalNumber(value: unknown) {
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function hexColor(value: unknown, fallback: string) {
@@ -350,6 +372,227 @@ function barcodeValueFor(template: Row, cardInstance: Row, options: Row, fallbac
   }
 
   return fallback;
+}
+
+function coordinate(value: unknown, min: number, max: number) {
+  const parsed = optionalNumber(value);
+
+  return parsed !== null && parsed >= min && parsed <= max ? parsed : null;
+}
+
+function firstPresent(source: Row, keys: string[]) {
+  for (const key of keys) {
+    if (source?.[key] !== undefined && source?.[key] !== null && source?.[key] !== '') {
+      return source[key];
+    }
+  }
+
+  return '';
+}
+
+function normalizeWalletLocation(source: Row): WalletLocation | null {
+  const latitude = coordinate(firstPresent(source, ['latitude', 'lat', 'location_lat', 'locationLatitude', 'cloakroomLocationLatitude', 'eventLocationLatitude']), -90, 90);
+  const longitude = coordinate(firstPresent(source, ['longitude', 'lng', 'location_lng', 'locationLongitude', 'cloakroomLocationLongitude', 'eventLocationLongitude']), -180, 180);
+
+  if (latitude === null || longitude === null) {
+    return null;
+  }
+
+  const altitude = optionalNumber(firstPresent(source, ['altitude', 'locationAltitude']));
+  const relevantText = textLimit(firstPresent(source, [
+    'relevantText',
+    'relevant_text',
+    'locationText',
+    'locationName',
+    'name',
+    'address',
+    'cloakroomLocationMessage',
+    'cloakroomLocationName',
+    'eventLocation'
+  ]), 90);
+  const location: WalletLocation = { latitude, longitude };
+
+  if (altitude !== null) {
+    location.altitude = altitude;
+  }
+
+  if (relevantText) {
+    location.relevantText = relevantText;
+  }
+
+  return location;
+}
+
+function collectArrayValues(...values: unknown[]) {
+  return values.flatMap((value) => Array.isArray(value) ? value : []);
+}
+
+function walletLocationsFor(template: Row, cardInstance: Row, options: Row): WalletLocation[] {
+  const settings = templateSettings(template);
+  const business = templateBusiness(template) || {};
+  const metadata = metadataFor(cardInstance);
+  const candidates: Row[] = [
+    ...collectArrayValues(
+      options.locations,
+      options.appleLocations,
+      template.locations,
+      template.appleLocations,
+      settings.locations,
+      settings.appleLocations,
+      metadata.locations,
+      metadata.appleLocations
+    ),
+    {
+      latitude: firstPresent(options, ['locationLatitude', 'location_lat', 'latitude']),
+      longitude: firstPresent(options, ['locationLongitude', 'location_lng', 'longitude']),
+      relevantText: firstPresent(options, ['locationText', 'locationName', 'relevantText'])
+    },
+    {
+      latitude: firstPresent(settings, ['locationLatitude', 'location_lat', 'latitude']),
+      longitude: firstPresent(settings, ['locationLongitude', 'location_lng', 'longitude']),
+      relevantText: firstPresent(settings, ['locationText', 'locationName', 'locationAddress'])
+    },
+    {
+      latitude: firstPresent(settings, ['cloakroomLocationLatitude', 'cloakroom_location_latitude']),
+      longitude: firstPresent(settings, ['cloakroomLocationLongitude', 'cloakroom_location_longitude']),
+      relevantText: firstPresent(settings, ['cloakroomLocationMessage', 'cloakroomLocationName'])
+    },
+    {
+      latitude: firstPresent(settings, ['eventLocationLatitude', 'event_location_latitude']),
+      longitude: firstPresent(settings, ['eventLocationLongitude', 'event_location_longitude']),
+      relevantText: firstPresent(settings, ['eventLocation', 'eventName'])
+    },
+    {
+      latitude: firstPresent(business, ['location_lat', 'latitude', 'lat']),
+      longitude: firstPresent(business, ['location_lng', 'longitude', 'lng']),
+      relevantText: firstPresent(business, ['address', 'name'])
+    }
+  ];
+  const seen = new Set<string>();
+  const locations: WalletLocation[] = [];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') {
+      continue;
+    }
+
+    const location = normalizeWalletLocation(candidate);
+
+    if (!location) {
+      continue;
+    }
+
+    const key = `${location.latitude.toFixed(6)}:${location.longitude.toFixed(6)}:${location.relevantText || ''}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    locations.push(location);
+
+    if (locations.length >= 10) {
+      break;
+    }
+  }
+
+  return locations;
+}
+
+function normalizeBeaconNumber(value: unknown) {
+  const parsed = optionalNumber(value);
+
+  if (parsed === null || parsed < 0 || parsed > 65535) {
+    return null;
+  }
+
+  return Math.round(parsed);
+}
+
+function normalizeWalletBeacon(source: Row): WalletBeacon | null {
+  const proximityUUID = stringValue(firstPresent(source, [
+    'proximityUUID',
+    'proximityUuid',
+    'proximity_uuid',
+    'uuid',
+    'beaconUuid',
+    'beacon_uuid'
+  ]));
+
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(proximityUUID)) {
+    return null;
+  }
+
+  const major = normalizeBeaconNumber(source.major);
+  const minor = normalizeBeaconNumber(source.minor);
+  const relevantText = textLimit(firstPresent(source, ['relevantText', 'relevant_text', 'name', 'message']), 90);
+  const beacon: WalletBeacon = { proximityUUID };
+
+  if (major !== null) {
+    beacon.major = major;
+  }
+
+  if (minor !== null) {
+    beacon.minor = minor;
+  }
+
+  if (relevantText) {
+    beacon.relevantText = relevantText;
+  }
+
+  return beacon;
+}
+
+function walletBeaconsFor(template: Row, cardInstance: Row, options: Row): WalletBeacon[] {
+  const settings = templateSettings(template);
+  const metadata = metadataFor(cardInstance);
+  const candidates: Row[] = [
+    ...collectArrayValues(
+      options.beacons,
+      options.appleBeacons,
+      template.beacons,
+      template.appleBeacons,
+      settings.beacons,
+      settings.appleBeacons,
+      metadata.beacons,
+      metadata.appleBeacons
+    ),
+    {
+      proximityUUID: firstPresent(settings, ['proximityUUID', 'beaconUuid', 'beacon_uuid']),
+      major: firstPresent(settings, ['beaconMajor', 'beacon_major']),
+      minor: firstPresent(settings, ['beaconMinor', 'beacon_minor']),
+      relevantText: firstPresent(settings, ['beaconRelevantText', 'beaconMessage'])
+    }
+  ];
+  const seen = new Set<string>();
+  const beacons: WalletBeacon[] = [];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') {
+      continue;
+    }
+
+    const beacon = normalizeWalletBeacon(candidate);
+
+    if (!beacon) {
+      continue;
+    }
+
+    const key = `${beacon.proximityUUID}:${beacon.major ?? ''}:${beacon.minor ?? ''}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    beacons.push(beacon);
+
+    if (beacons.length >= 10) {
+      break;
+    }
+  }
+
+  return beacons;
 }
 
 function templateTypeLabel(template: Row) {
@@ -604,6 +847,17 @@ function buildWarnings(design: Omit<EditorCardDesign, 'warnings' | 'assetFallbac
     });
   }
 
+  if (design.locations.length || design.beacons.length) {
+    warnings.push({
+      id: 'location-relevance-platform-limits',
+      level: 'info',
+      platforms: ['google', 'samsung'],
+      element: 'Standort / Beacon',
+      problem: 'Apple Wallet kann Locations und iBeacons als native Pass-Relevanz nutzen; Google und Samsung haben kein identisches Feld im aktuellen Mapping.',
+      fallback: 'Standortrelevanz in Apple Pass `locations`/`beacons` setzen; fuer Google/Samsung Standortinformationen als Details, Push-Logik oder Partner-Template-Konfiguration fuehren.'
+    });
+  }
+
   return warnings;
 }
 
@@ -676,6 +930,8 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
   const cardInstanceNumber = cardCodeFor(cardInstance);
   const barcodeValue = barcodeValueFor(template, cardInstance, options, cardInstanceNumber);
   const barcodeFormat = barcodeFormatFor(template, cardInstance, options);
+  const locations = walletLocationsFor(template, cardInstance, options);
+  const beacons = walletBeaconsFor(template, cardInstance, options);
   const rewardText = rewardTextForTemplate(template);
   const baseFields = [
     field('cardId', 'Karten-ID', cardInstanceNumber, 10),
@@ -707,6 +963,8 @@ export function editorCardDesignFromTemplate(template: Row = {}, cardInstance: R
     textureUrl,
     barcodeValue,
     barcodeFormat,
+    locations,
+    beacons,
     cardInstanceNumber,
     rewardText,
     fields: baseFields.filter((item) => item.value),
@@ -797,6 +1055,8 @@ export function mapEditorDesignToApplePass(editorDesign: EditorCardDesign, _card
       stripUrl: editorDesign.backgroundImageUrl || editorDesign.emblemUrl || editorDesign.logoUrl,
       backgroundUrl: editorDesign.backgroundImageUrl || editorDesign.textureUrl
     },
+    locations: editorDesign.locations,
+    beacons: editorDesign.beacons,
     warnings: warningsForPlatform(editorDesign, 'apple'),
     assetFallbacks: editorDesign.assetFallbacks.filter((fallback) => fallback.platforms.includes('apple'))
   };

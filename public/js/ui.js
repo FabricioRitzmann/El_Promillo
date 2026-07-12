@@ -256,6 +256,28 @@ function walletBarcodeValue(template, card, context = {}) {
   return fallback;
 }
 
+function walletHasLocationRelevance(template, context = {}) {
+  const settings = context.settings || templateSettings(template);
+  const locationValues = [
+    settings.locationLatitude,
+    settings.location_lat,
+    settings.latitude,
+    settings.cloakroomLocationLatitude,
+    settings.cloakroom_location_latitude,
+    settings.eventLocationLatitude,
+    settings.event_location_latitude,
+    template?.location_lat,
+    template?.latitude
+  ];
+
+  return locationValues.some((value) => String(value || '').trim())
+    || (Array.isArray(settings.locations) && settings.locations.length > 0)
+    || (Array.isArray(settings.appleLocations) && settings.appleLocations.length > 0)
+    || (Array.isArray(settings.beacons) && settings.beacons.length > 0)
+    || (Array.isArray(settings.appleBeacons) && settings.appleBeacons.length > 0)
+    || Boolean(settings.proximityUUID || settings.beaconUuid || settings.beacon_uuid);
+}
+
 function walletPlatformWarnings(template, card, context = {}) {
   const warnings = [];
   const settings = context.settings || templateSettings(template);
@@ -282,6 +304,15 @@ function walletPlatformWarnings(template, card, context = {}) {
       platforms: ['Samsung'],
       title: 'Barcode-Format',
       body: `${barcodeFormat.label} wird fuer Apple und Google nativ gemappt; Samsung muss das Format im Partner-Template erlauben.`
+    });
+  }
+
+  if (walletHasLocationRelevance(template, { ...context, settings })) {
+    warnings.push({
+      level: 'info',
+      platforms: ['Apple', 'Google', 'Samsung'],
+      title: 'Standort-Hinweis',
+      body: 'Apple Wallet nutzt Standorte oder Beacons als native Pass-Relevanz; Google und Samsung erhalten keinen identischen Standortbereich.'
     });
   }
 

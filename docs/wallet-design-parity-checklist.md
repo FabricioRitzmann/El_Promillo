@@ -15,6 +15,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Zentrale Design-Abstraktion | `EditorCardDesign` in `supabase/functions/_shared/walletDesign.ts` |
 | Mapping-Funktionen | `mapEditorDesignToApplePass`, `mapEditorDesignToGoogleWalletObject`, `mapEditorDesignToSamsungWalletCard` |
 | Barcodeformat-Parity | `walletDesign.ts` und die Editor-Plattformvorschau normalisieren `qr`, `aztec`, `pdf417`, `code128`; die Provider mappen sie auf Apple-, Google- und Samsung-Formatnamen |
+| Apple Standort-/Beacon-Relevanz | `walletDesign.ts` normalisiert Business-/Template-Standorte und Beacons; `appleWalletProvider.ts` schreibt sie als `locations`/`beacons` in `pass.json` |
 | Fallback-Logik | `walletDesign.ts`, `generate-wallet-asset`, Editor-Warnungen |
 | Plattform-Previews im Editor | `public/js/ui.js`, `public/styles.css`; nur per `showWalletInsights: true` im Editor |
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
