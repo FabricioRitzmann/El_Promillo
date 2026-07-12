@@ -74,10 +74,9 @@ export function businessInitials(name = 'Mein Unternehmen') {
 export function businessLogoMarkup(business = {}, className = 'business-logo-fallback') {
   const name = businessDisplayName(business);
   const logoUrl = businessLogoUrl(business);
-  const classAttribute = className ? ` class="${escapeHtml(className)}"` : '';
 
   if (logoUrl) {
-    return `<img${classAttribute} src="${escapeHtml(logoUrl)}" alt="${escapeHtml(name)}" loading="lazy" decoding="async">`;
+    return `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(name)}">`;
   }
 
   return `<span class="${escapeHtml(className)}">${escapeHtml(businessInitials(name))}</span>`;
@@ -473,12 +472,10 @@ function walletPlatformPreviewsHtml(template, card, context = {}) {
 }
 
 export function walletPreviewHtml(template, card = null, options = {}) {
-  const resolvedBusinessLogoUrl = template.business_logo_url || template.logo_url || template.company_logo_url || '';
   const business = {
     name: template.business_name,
     business_name: template.business_name,
-    logo_url: resolvedBusinessLogoUrl,
-    business_logo_url: template.business_logo_url,
+    logo_url: template.business_logo_url,
     company_logo_url: template.company_logo_url
   };
   const stampValue = card ? Number(card.stamp_count || 0) : 0;
