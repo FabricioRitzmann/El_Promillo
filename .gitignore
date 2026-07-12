@@ -33,6 +33,8 @@ supabase token*
 github_token*
 GitHub_Token*
 GITHUB_TOKEN*
+*[Aa]uthorization*[Hh]eader*
+*[Aa]uthorization*[Kk]ey*
 RENDER_API_KEY*
 Supabase_CLI*
 *bearer*.txt*

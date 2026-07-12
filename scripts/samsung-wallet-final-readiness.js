@@ -136,7 +136,10 @@ function compactDetail(result) {
     return '';
   }
 
-  return text.split(/\r?\n/).slice(-3).join(' | ');
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const important = lines.filter((line) => /^(FAIL|BLOCKED_EXTERNAL|WARN)\b|SAMSUNG_AUTHORIZATION|Command failed/i.test(line));
+
+  return (important.length > 0 ? important : lines).slice(-3).join(' | ');
 }
 
 function samsungSmokeDetail(result) {
@@ -243,7 +246,8 @@ async function main() {
   const callbackArgs = [
     '--functions-base-url',
     baseUrl,
-    ...bearerFileArgs()
+    ...bearerFileArgs(),
+    '--strict'
   ];
 
   if (argSet.has('--skip-post')) {

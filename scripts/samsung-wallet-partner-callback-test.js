@@ -57,7 +57,9 @@ function configured(value) {
 }
 
 function normalizeAuthorization(value) {
-  const text = String(value || '').trim();
+  const text = String(value || '')
+    .trim()
+    .replace(/^Authorization:\s*/i, '');
 
   if (!text) {
     return '';

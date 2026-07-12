@@ -35,6 +35,7 @@ assertIncludesAll('Samsung Partner Callback Test Script', script, [
   'SAMSUNG_WALLET_TEST_AUTHORIZATION',
   'SAMSUNG_WALLET_TEST_GET_AUTHORIZATION',
   'SAMSUNG_WALLET_TEST_POST_AUTHORIZATION',
+  "replace(/^Authorization:\\s*/i, '')",
   '/samsung-wallet-server/cards/',
   'GET Card Data',
   'POST Card State',

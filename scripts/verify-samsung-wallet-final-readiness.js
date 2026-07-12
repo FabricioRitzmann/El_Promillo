@@ -41,6 +41,7 @@ assertIncludesAll('Samsung Final Readiness Script', script, [
   'Samsung Verified Callback Evidence',
   'Verified Auth Evidence',
   'samsung-wallet-partner-callback-test.js',
+  "'--strict'",
   'blocked_external',
   'defaultBearerFile',
   'tmp/samsung-bearer.txt',
