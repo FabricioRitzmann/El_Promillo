@@ -1,7 +1,7 @@
 import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
 import { pagePath } from './path.js';
-import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
+import { businessLogoUrl, byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
 import {
   CLUB_FEATURE_DEFAULTS,
   OPTIONAL_FEATURE,
@@ -466,6 +466,7 @@ function templateDraftFromForm() {
   const stampsRequired = Number(formData.get('stamps_required') || 10);
   const streakGoal = Number(formData.get('streak_goal') || 0);
   const settings = templateSettingsFromForm(formData, templateType);
+  const currentBusinessLogoUrl = businessLogoUrl(state.business || {});
   const clubFeatureState = templateType === 'club_card'
     ? settings.club_features
     : { ...CLUB_FEATURE_DEFAULTS };
@@ -481,7 +482,8 @@ function templateDraftFromForm() {
     description: String(formData.get('description') || '').trim(),
     primary_color: formData.get('primary_color') || defaultWalletBackgroundColor,
     text_color: formData.get('text_color') || defaultWalletTextColor,
-    logo_url: String(state.business?.logo_url || '').trim(),
+    logo_url: currentBusinessLogoUrl,
+    business_logo_url: currentBusinessLogoUrl,
     reward_text: rewardText,
     stamps_required: Math.max(1, stampsRequired || 10),
     streak_goal: streakGoal > 0 ? streakGoal : null,
@@ -506,7 +508,7 @@ function renderEditorPreview() {
   editorPreview.innerHTML = walletPreviewHtml({
     ...draft,
     business_name: state.business?.name || draft.business_name,
-    business_logo_url: state.business?.logo_url || ''
+    business_logo_url: businessLogoUrl(state.business || {}) || draft.business_logo_url || draft.logo_url || ''
   }, null, { showWalletInsights: true });
   renderEditorQrPanel();
 }

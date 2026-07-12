@@ -1450,7 +1450,7 @@ function sanitizeBrowserMetadata(value) {
 function publicCardTemplateResponse(template = {}) {
   const business = Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
   const businessName = business?.name || template.business_name;
-  const businessLogoUrl = business?.logo_url || template.business_logo_url || template.company_logo_url || '';
+  const businessLogoUrl = business?.logo_url || template.business_logo_url || template.company_logo_url || template.logo_url || '';
 
   return {
     id: template.id,

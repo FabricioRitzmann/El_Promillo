@@ -77,6 +77,10 @@ assertAll('public/js/ui.js', 'Wallet Preview', [
   'cardFeatureRows(template, card)',
   'featureEnabled(template,',
   "featureEnabled(template, 'eventBackgroundImage')",
+  'const resolvedBusinessLogoUrl = template.business_logo_url || template.logo_url || template.company_logo_url || \'\';',
+  'const classAttribute = className ?',
+  'return `<img${classAttribute}',
+  "businessLogoMarkup(business, 'wallet-logo-placeholder')",
   'walletPreviewHtml'
 ]);
 
