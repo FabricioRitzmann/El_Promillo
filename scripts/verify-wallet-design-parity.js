@@ -41,7 +41,8 @@ function listFiles(directory) {
   'supabase/functions/_shared/walletDesign.ts',
   'supabase/functions/generate-wallet-asset/index.ts',
   'docs/wallet-design-parity.md',
-  'docs/wallet-feature-limitations.md'
+  'docs/wallet-feature-limitations.md',
+  'docs/wallet-design-parity-checklist.md'
 ].forEach(assertFile);
 
 const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
@@ -57,6 +58,7 @@ const claim = read('public/js/claim.js');
 const schema = read('supabase/schema.sql');
 const parityDoc = read('docs/wallet-design-parity.md');
 const limitationsDoc = read('docs/wallet-feature-limitations.md');
+const checklistDoc = read('docs/wallet-design-parity-checklist.md');
 const packageJson = read('package.json');
 
 assertIncludes('Wallet Design Abstraktion', walletDesign, [
@@ -267,6 +269,25 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   'Editor-UI zeigt plattformbezogene Hinweise',
   'separate Apple-, Google- und Samsung-Vorschau-Skizzen',
   '## Security'
+]);
+
+assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
+  '# Wallet Design Parity Checklist',
+  '## Abgeschlossen Im Repository',
+  '## Remote Nachweise',
+  '## Verifizierte Commands',
+  '## Externe Abnahme Noch Noetig',
+  'mapEditorDesignToApplePass',
+  'mapEditorDesignToGoogleWalletObject',
+  'mapEditorDesignToSamsungWalletCard',
+  'generate-wallet-asset',
+  'enqueue_wallet_update_after_template_design_change',
+  'pnpm run check',
+  'node scripts/wallet-remote-schema-check.js --strict',
+  'Echte Apple-Wallet-Karte',
+  'Echte Google-Wallet-Karte',
+  'Samsung Add-to-Wallet-Test',
+  'vollstaendige Zielerfuellung bleibt erst nach echter Apple-/Google-/Samsung-Endgeraeteabnahme beweisbar'
 ]);
 
 const publicSources = listFiles(path.join(rootDir, 'public'))
