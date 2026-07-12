@@ -3935,6 +3935,116 @@ create trigger enqueue_wallet_update_jobs_after_customer_card_update
 after update on public.customer_cards
 for each row execute function public.enqueue_wallet_update_after_customer_card_change();
 
+create or replace function public.enqueue_wallet_update_after_template_design_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  changed_fields text[] := array[]::text[];
+  update_reason text := 'design_changed';
+begin
+  if new.card_name is distinct from old.card_name then
+    changed_fields := array_append(changed_fields, 'card_name');
+  end if;
+
+  if new.description is distinct from old.description then
+    changed_fields := array_append(changed_fields, 'description');
+  end if;
+
+  if new.primary_color is distinct from old.primary_color then
+    changed_fields := array_append(changed_fields, 'primary_color');
+  end if;
+
+  if new.text_color is distinct from old.text_color then
+    changed_fields := array_append(changed_fields, 'text_color');
+  end if;
+
+  if new.logo_url is distinct from old.logo_url then
+    changed_fields := array_append(changed_fields, 'logo_url');
+    update_reason := 'asset_changed';
+  end if;
+
+  if new.reward_text is distinct from old.reward_text then
+    changed_fields := array_append(changed_fields, 'reward_text');
+    if update_reason <> 'asset_changed' then
+      update_reason := 'field_changed';
+    end if;
+  end if;
+
+  if new.settings is distinct from old.settings then
+    changed_fields := array_append(changed_fields, 'settings');
+    update_reason := 'asset_changed';
+  end if;
+
+  if new.template_type is distinct from old.template_type
+    or new.card_type is distinct from old.card_type
+    or new.stamps_required is distinct from old.stamps_required
+    or new.streak_goal is distinct from old.streak_goal
+    or new.vip_tier is distinct from old.vip_tier
+    or new.club_features is distinct from old.club_features
+    or new.club_settings is distinct from old.club_settings then
+    changed_fields := array_cat(changed_fields, array['template_features']);
+    if update_reason <> 'asset_changed' then
+      update_reason := 'feature_changed';
+    end if;
+  end if;
+
+  if array_length(changed_fields, 1) is null then
+    return new;
+  end if;
+
+  insert into public.wallet_update_queue (
+    owner_id,
+    business_id,
+    card_instance_id,
+    wallet_platform,
+    update_type,
+    payload,
+    status,
+    next_attempt_at
+  )
+  select
+    ci.owner_id,
+    ci.business_id,
+    ci.id,
+    ci.wallet_platform,
+    update_reason,
+    jsonb_build_object(
+      'source', 'card_templates_update_trigger',
+      'template_id', new.id,
+      'changed_fields', changed_fields,
+      'old_updated_at', old.updated_at,
+      'new_updated_at', new.updated_at
+    ),
+    'pending',
+    now()
+  from public.card_instances ci
+  where ci.template_id = new.id
+    and ci.owner_id = new.owner_id
+    and ci.business_id is not distinct from new.business_id
+    and ci.business_id is not null
+    and ci.wallet_platform in ('apple', 'google')
+    and not exists (
+      select 1
+      from public.wallet_update_queue existing
+      where existing.card_instance_id = ci.id
+        and existing.wallet_platform = ci.wallet_platform
+        and existing.update_type = update_reason
+        and existing.status in ('pending', 'processing')
+        and existing.payload->>'source' = 'card_templates_update_trigger'
+    );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists enqueue_wallet_update_jobs_after_template_update on public.card_templates;
+create trigger enqueue_wallet_update_jobs_after_template_update
+after update on public.card_templates
+for each row execute function public.enqueue_wallet_update_after_template_design_change();
+
 create or replace function public.handle_new_operator()
 returns trigger
 language plpgsql

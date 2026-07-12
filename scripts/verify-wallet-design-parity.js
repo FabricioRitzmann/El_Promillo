@@ -52,6 +52,7 @@ const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
 const styles = read('public/styles.css');
+const schema = read('supabase/schema.sql');
 const parityDoc = read('docs/wallet-design-parity.md');
 const limitationsDoc = read('docs/wallet-feature-limitations.md');
 const packageJson = read('package.json');
@@ -184,6 +185,20 @@ assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-warning-platforms'
 ]);
 
+assertIncludes('Wallet Design Update Queue', schema, [
+  'create or replace function public.enqueue_wallet_update_after_template_design_change()',
+  "update_reason text := 'design_changed'",
+  "update_reason := 'asset_changed'",
+  "update_reason := 'field_changed'",
+  "update_reason := 'feature_changed'",
+  "insert into public.wallet_update_queue",
+  "'source', 'card_templates_update_trigger'",
+  "ci.wallet_platform in ('apple', 'google')",
+  "existing.payload->>'source' = 'card_templates_update_trigger'",
+  'drop trigger if exists enqueue_wallet_update_jobs_after_template_update on public.card_templates',
+  'create trigger enqueue_wallet_update_jobs_after_template_update'
+]);
+
 assertIncludes('Wallet Design Parity Doku', parityDoc, [
   '# Wallet Design Parity',
   'Apple Wallet Pass Design and Creation',
@@ -197,6 +212,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
+  'Implementiert fuer Apple/Google Template-Designaenderungen',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
 
@@ -216,6 +232,8 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   '## Asset-Fallbacks',
   'generate-wallet-asset` ist implementiert',
   '## Update Queue',
+  'enqueue_wallet_update_after_template_design_change()',
+  'Samsung Wallet Instanzen nutzen weiterhin den separaten Samsung Data-Fetch-/Update-Pfad',
   '## Editor-Warnungen',
   'Editor-UI zeigt plattformbezogene Hinweise',
   '## Security'
