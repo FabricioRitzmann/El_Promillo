@@ -1,6 +1,7 @@
 import { googleWalletProvider } from '../_shared/googleWalletProvider.ts';
 import { publicWalletOperationPayload, publicWalletProviderResult } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
+import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
@@ -406,13 +407,13 @@ Deno.serve(async (request) => {
       );
     }
 
-    const updatePatch = Object.keys(patch).length
-      ? patch
-      : googleWalletProvider.statusPatch(resolved.cardInstance.card_templates, resolved.cardInstance, resolved.objectType);
+    const refreshesStatusPatch = !Object.keys(patch).length;
+    let generatedAssetFallbacks = { generatedAssets: [], generatedAssetUrls: {} };
+    let updatePatch = patch;
     let requestPayload = {
       object_id: resolved.objectId,
       object_type: resolved.objectType,
-      patch: updatePatch,
+      patch: refreshesStatusPatch ? null : updatePatch,
       refresh_status: wantsStatusRefresh,
       ...(idempotencyKey ? { idempotency_scope: IDEMPOTENCY_SCOPE, idempotency_key: idempotencyKey } : {})
     };
@@ -452,13 +453,41 @@ Deno.serve(async (request) => {
       return json(limits, blockedStatus === 'skipped' ? 409 : 429);
     }
 
+    if (refreshesStatusPatch) {
+      generatedAssetFallbacks = await ensureWalletAssetFallbacks({
+        supabaseAdmin: context.supabaseAdmin,
+        supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
+        ownerId: context.ownerId,
+        businessId: context.business.id,
+        template: resolved.cardInstance.card_templates,
+        cardInstance: resolved.cardInstance,
+        walletPlatform: 'google'
+      });
+      updatePatch = googleWalletProvider.statusPatch(resolved.cardInstance.card_templates, resolved.cardInstance, resolved.objectType, [], {
+        generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls
+      });
+      requestPayload = {
+        ...requestPayload,
+        patch: updatePatch
+      };
+    }
+
     const result = await googleWalletProvider.updateObject(resolved.objectType, resolved.objectId, updatePatch);
     const status = result.ok ? 'sent' : 'failed';
+
+    const responsePayload = {
+      ok: Boolean(result.ok),
+      status: result.status || null,
+      error_code: result.error_code || null,
+      error_message: result.error_message || null,
+      error_reason: result.error_reason || null,
+      generated_wallet_assets: generatedAssetFallbacks.generatedAssets
+    };
 
     await logGoogleObjectUpdate(context, resolved.cardInstance, idempotencyReservation, {
       status,
       requestPayload,
-      responsePayload: result,
+      responsePayload,
       errorMessage: result.ok ? null : result.error_message || result.error_reason || 'Google Wallet Object konnte nicht aktualisiert werden.'
     });
 
@@ -513,7 +542,8 @@ Deno.serve(async (request) => {
       ...publicWalletProviderResult(result),
       objectId: resolved.objectId,
       objectType: resolved.objectType,
-      cardInstanceId: resolved.cardInstance.id
+      cardInstanceId: resolved.cardInstance.id,
+      generatedWalletAssets: generatedAssetFallbacks.generatedAssets
     });
   } catch (error) {
     await walletNotificationService.failManualIdempotencyReservation(

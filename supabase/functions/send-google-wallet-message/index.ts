@@ -1,6 +1,7 @@
 import { googleWalletProvider } from '../_shared/googleWalletProvider.ts';
 import { publicGoogleMessageOperationPayload, publicWalletProviderResult } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
+import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
@@ -425,21 +426,34 @@ Deno.serve(async (request) => {
       });
     }
 
-    const fallbackResult = await googleWalletProvider.updateObject(
-      objectType,
-      objectId,
-      googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [
+    const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
+      supabaseAdmin: context.supabaseAdmin,
+      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
+      ownerId: context.ownerId,
+      businessId: context.business.id,
+      template: cardInstance.card_templates,
+      cardInstance,
+      walletPlatform: 'google'
+    });
+    const fallbackPatch = googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [
         {
           id: `manual-message-${crypto.randomUUID()}`,
           header: title,
           body: message
         }
-      ])
+      ], {
+        generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls
+      });
+    const fallbackResult = await googleWalletProvider.updateObject(
+      objectType,
+      objectId,
+      fallbackPatch
     );
     const fallbackStatus = fallbackResult.ok ? 'sent' : 'failed';
     const responsePayload = {
       notification: notificationResult,
-      fallback: fallbackResult
+      fallback: fallbackResult,
+      generated_wallet_assets: generatedAssetFallbacks.generatedAssets
     };
 
     await logGoogleMessage(
@@ -472,7 +486,8 @@ Deno.serve(async (request) => {
       warning_code: fallbackResult.ok ? 'GOOGLE_TEXT_AND_NOTIFY_FALLBACK' : null,
       warning_message: fallbackResult.ok ? 'Google TEXT_AND_NOTIFY war nicht möglich; die Nachricht wurde als Kartenupdate gespeichert.' : null,
       notificationResult: publicWalletProviderResult(notificationResult),
-      fallbackResult: publicWalletProviderResult(fallbackResult)
+      fallbackResult: publicWalletProviderResult(fallbackResult),
+      generatedWalletAssets: generatedAssetFallbacks.generatedAssets
     }, fallbackResult.ok ? 200 : 502);
   } catch (error) {
     await walletNotificationService.failManualIdempotencyReservation(

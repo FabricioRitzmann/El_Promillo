@@ -60,8 +60,12 @@ const walletNotificationService = read('supabase/functions/_shared/walletNotific
 const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
 const issueApplePass = read('supabase/functions/issue-apple-pass/index.ts');
 const claimApplePass = read('supabase/functions/claim-apple-pass/index.ts');
+const updateApplePass = read('supabase/functions/update-apple-pass/index.ts');
+const sendAppleWalletUpdate = read('supabase/functions/send-apple-wallet-update/index.ts');
 const issueGoogleWalletPass = read('supabase/functions/issue-google-wallet-pass/index.ts');
 const googleWalletSaveLink = read('supabase/functions/google-wallet-save-link/index.ts');
+const updateGoogleWalletPass = read('supabase/functions/update-google-wallet-pass/index.ts');
+const sendGoogleWalletMessage = read('supabase/functions/send-google-wallet-message/index.ts');
 const samsungWalletServer = read('supabase/functions/samsung-wallet-server/index.ts');
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
@@ -209,6 +213,22 @@ assertIncludes('Apple Claim erzeugt Wallet Asset Fallbacks', claimApplePass, [
   'generated_wallet_assets: options.generatedWalletAssets || []'
 ]);
 
+assertIncludes('Apple manuelle Updates erzeugen Wallet Asset Fallbacks', updateApplePass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
+  'appleWalletProvider.updatePassFields(context.supabaseAdmin, cardInstance, cardInstance.card_templates, passFields',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets'
+]);
+
+assertIncludes('Apple Push Updates erzeugen Wallet Asset Fallbacks', sendAppleWalletUpdate, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
+  'appleWalletProvider.updatePassFields(context.supabaseAdmin, cardInstance, cardInstance.card_templates, passFields',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets'
+]);
+
 assertIncludes('Google Issue Asset Optionen', issueGoogleWalletPass, [
   "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
@@ -229,6 +249,25 @@ assertIncludes('Public Google Save-Link nutzt zentrale Design- und Asset-Pipelin
   'googleWalletProvider.generateSaveLink(card.card_templates, providerCardInstance',
   'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
   'generated_wallet_assets'
+]);
+
+assertIncludes('Google manuelle Refresh Updates erzeugen Wallet Asset Fallbacks', updateGoogleWalletPass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const refreshesStatusPatch = !Object.keys(patch).length',
+  'generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'googleWalletProvider.statusPatch(resolved.cardInstance.card_templates, resolved.cardInstance, resolved.objectType, [], {',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets'
+]);
+
+assertIncludes('Google Message Fallback erzeugt Wallet Asset Fallbacks', sendGoogleWalletMessage, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'const fallbackPatch = googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets'
 ]);
 
 assert(
@@ -433,6 +472,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Provider Registry bleibt auf derselben Pipeline',
   'Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline',
+  'Manuelle Apple/Google Wallet Updates nutzen dieselbe Asset-Fallback-Pipeline',
   'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'pnpm run check',

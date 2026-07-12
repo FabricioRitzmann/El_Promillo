@@ -19,10 +19,11 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
 | Server-seitige Asset-Generierung | `supabase/functions/generate-wallet-asset/index.ts` |
 | Gemeinsamer Asset-Renderer | `_shared/walletAssetRenderer.ts` wird von `generate-wallet-asset`, Initial-Issue und der Update Queue genutzt |
-| Automatische Asset-Fallbacks | `_shared/walletAssetFallbacks.ts` erzeugt PNG-Fallbacks fuer Apple-Issue, Apple-Claim, Google-Issue/Save-Link, Samsung Partner-Server und Queue-Updates |
+| Automatische Asset-Fallbacks | `_shared/walletAssetFallbacks.ts` erzeugt PNG-Fallbacks fuer Apple-Issue, Apple-Claim, manuelle Apple-Pass-/Push-Updates, Google-Issue/Save-Link, Google-Refresh-/Message-Fallbacks, Samsung Partner-Server und Queue-Updates |
 | Provider Registry bleibt auf derselben Pipeline | `walletProviderRegistry.ts` erzeugt bei serverseitigem `supabaseAdmin` ebenfalls PNG-Fallbacks, bevor Apple/Google/Samsung-Provider-Payloads entstehen |
 | Apple `.pkpass` nimmt generierte PNG-Fallbacks | `_shared/walletAssets.ts`, `appleWalletProvider.ts` fuer `stamp_grid`, `streak_badge`, `wallet_background`, `club_module_badges` |
 | Google Issue/Save-Link nutzt die zentrale Design- und Asset-Pipeline | `issue-google-wallet-pass` und `google-wallet-save-link` erzeugen benoetigte PNG-Fallbacks serverseitig und verwenden `googleWalletProvider.ts` fuer `heroImage`/`imageModulesData` |
+| Manuelle Apple/Google Wallet Updates nutzen dieselbe Asset-Fallback-Pipeline | `update-apple-pass`, `send-apple-wallet-update`, `update-google-wallet-pass` und `send-google-wallet-message` erzeugen benoetigte PNG-Fallbacks vor neu signierten Pass-Versionen bzw. Google Object-Patches |
 | Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |
 | Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql`; `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks vor Apple-/Google-Updates |
 | Clubkarten-Priorisierung | `walletDesign.ts`, Matrix in `docs/wallet-design-parity.md` |

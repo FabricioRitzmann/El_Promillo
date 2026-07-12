@@ -133,7 +133,7 @@ Wenn zu viele Module aktiv sind:
 
 Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.
 
-Initiale Wallet-Erstellungen erzeugen benoetigte Fallback-PNGs ebenfalls serverseitig: `issue-apple-pass`, `claim-apple-pass`, `issue-google-wallet-pass`, `google-wallet-save-link` und der Samsung Partner-Server-GET nutzen `_shared/walletAssetFallbacks.ts`, bevor die jeweilige Wallet-Payload gebaut wird.
+Initiale Wallet-Erstellungen und manuelle sichtbare Updates erzeugen benoetigte Fallback-PNGs ebenfalls serverseitig: `issue-apple-pass`, `claim-apple-pass`, `update-apple-pass`, `send-apple-wallet-update`, `issue-google-wallet-pass`, `google-wallet-save-link`, `update-google-wallet-pass`, `send-google-wallet-message` und der Samsung Partner-Server-GET nutzen `_shared/walletAssetFallbacks.ts`, bevor die jeweilige Wallet-Payload gebaut wird.
 
 ```json
 {
@@ -173,6 +173,7 @@ Aktueller Status:
 - Emblem-/Wallet-Updates sind bereits angebunden.
 - Template-Designaenderungen reihen Apple-/Google-`card_instances` ueber den SQL-Trigger `enqueue_wallet_update_after_template_design_change()` ein.
 - `process-wallet-update-queue` erzeugt benoetigte PNG-Fallbacks automatisch serverseitig, bevor Apple neu signiert oder Google ein Object patcht.
+- Manuelle Apple-Pass-/Push-Updates und Google-Object-/Message-Fallback-Updates erzeugen benoetigte PNG-Fallbacks ebenfalls nach Idempotency-/Limitpruefung und vor dem Provider-Update.
 - Samsung Wallet Instanzen werden im selben Trigger ueber `samsung_wallet_events.event_type=template_design_update_prepared` vorbereitet; die Ausfuehrung laeuft weiterhin ueber den separaten Samsung Data-Fetch-/Update-Pfad.
 
 ## Editor-Warnungen

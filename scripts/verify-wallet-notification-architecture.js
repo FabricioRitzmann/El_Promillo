@@ -1100,6 +1100,7 @@ assertAll('supabase/functions/issue-google-wallet-pass/index.ts', 'Google Wallet
 }
 
 assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Wallet Update Security', [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'loadGoogleCardContext',
   ".eq('owner_id', context.ownerId)",
   ".eq('business_id', context.business.id)",
@@ -1117,6 +1118,11 @@ assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Walle
   'idempotency_scope: IDEMPOTENCY_SCOPE',
   'request_payload->>idempotency_scope',
   'googleWalletProvider.statusPatch',
+  'const refreshesStatusPatch = !Object.keys(patch).length',
+  'generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'manual_google_object_update',
   "checkPlatformLimits(context, resolved.cardInstance, 'google')",
   "blockedStatus = limits.status === 'skipped' ? 'skipped' : 'limited'",
@@ -1138,6 +1144,7 @@ assertAll('supabase/functions/update-google-wallet-pass/index.ts', 'Google Walle
 ]);
 
 assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wallet Message Logging', [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'validateMessage(title, message)',
   'logGoogleMessage',
   'findExistingManualGoogleMessage',
@@ -1162,6 +1169,11 @@ assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wall
   'googleWalletProvider.normalizeObjectType',
   'GOOGLE_OBJECT_TYPE_INVALID',
   'googleWalletProvider.statusPatch',
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'const fallbackPatch = googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType, [',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'touchGoogleWalletObjectMapping',
   'GOOGLE_WALLET_OBJECT_SAVE_FAILED',
   'CARD_WALLET_STATE_UPDATE_FAILED',
@@ -1180,6 +1192,7 @@ assertAll('supabase/functions/send-google-wallet-message/index.ts', 'Google Wall
 ]);
 
 assertAll('supabase/functions/send-apple-wallet-update/index.ts', 'Apple Wallet Push Logging', [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
   'validateOptionalMessage(message)',
   'logAppleUpdate',
   'manual_apple_push_update',
@@ -1205,6 +1218,9 @@ assertAll('supabase/functions/send-apple-wallet-update/index.ts', 'Apple Wallet 
   'publicApplePushResult',
   '...publicApplePushResult(pushResult)',
   'updatePassFields',
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'",
+  'generated_wallet_assets: generatedAssetFallbacks.generatedAssets',
   'const passFields = message',
   'updateCardWalletState(context, cardInstance.id',
   'countNotifications: status === ' + "'sent'",
@@ -1297,6 +1313,15 @@ assert(
 );
 
 assert(
+  manualAppleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')") > -1
+    && manualAppleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')")
+      < manualAppleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+    && manualAppleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+      < manualAppleSend.indexOf('appleWalletProvider.updatePassFields'),
+  'Apple Manual Send muss Asset-Fallbacks nach Limitprüfung und vor neuer Pass-Version erzeugen.'
+);
+
+assert(
   manualGoogleSend.indexOf('const existingResult = await findExistingManualGoogleMessage') > -1
     && manualGoogleSend.indexOf('const existingResult = await findExistingManualGoogleMessage')
       < manualGoogleSend.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'google')"),
@@ -1321,6 +1346,15 @@ assert(
     && manualGoogleSend.indexOf('recentManualDuplicate(context, cardInstance')
       < manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify'),
   'Google Manual Send muss identische Nachrichten vor Reservierung, Limitprüfung und Provider-Aufruf deduplizieren.'
+);
+
+assert(
+  manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify') > -1
+    && manualGoogleSend.indexOf('googleWalletProvider.sendTextAndNotify')
+      < manualGoogleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+    && manualGoogleSend.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+      < manualGoogleSend.indexOf('googleWalletProvider.updateObject'),
+  'Google Manual Send muss Asset-Fallbacks nur vor dem Object-Fallback-Patch erzeugen.'
 );
 
 assert(
@@ -1349,6 +1383,15 @@ assert(
 );
 
 assert(
+  manualApplePassUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')") > -1
+    && manualApplePassUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, cardInstance, 'apple')")
+      < manualApplePassUpdate.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+    && manualApplePassUpdate.indexOf('const generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+      < manualApplePassUpdate.indexOf('appleWalletProvider.updatePassFields'),
+  'Apple Pass Update muss Asset-Fallbacks nach Limitprüfung und vor neuer Pass-Version erzeugen.'
+);
+
+assert(
   manualGoogleObjectUpdate.indexOf('const existingResult = await findExistingManualGoogleObjectUpdate') > -1
     && manualGoogleObjectUpdate.indexOf('const existingResult = await findExistingManualGoogleObjectUpdate')
       < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
@@ -1360,6 +1403,17 @@ assert(
     && manualGoogleObjectUpdate.indexOf('reserveManualIdempotency(context')
       < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
   'Google Object Update muss Idempotency vor dem Provider-Patch reservieren.'
+);
+
+assert(
+  manualGoogleObjectUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, resolved.cardInstance, 'google')") > -1
+    && manualGoogleObjectUpdate.indexOf("const limits = await walletNotificationService.checkPlatformLimits(context, resolved.cardInstance, 'google')")
+      < manualGoogleObjectUpdate.indexOf('generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+    && manualGoogleObjectUpdate.indexOf('generatedAssetFallbacks = await ensureWalletAssetFallbacks({')
+      < manualGoogleObjectUpdate.indexOf('googleWalletProvider.statusPatch')
+    && manualGoogleObjectUpdate.indexOf('googleWalletProvider.statusPatch')
+      < manualGoogleObjectUpdate.indexOf('googleWalletProvider.updateObject'),
+  'Google Object Refresh muss Asset-Fallbacks nach Limitprüfung und vor dem Provider-Patch erzeugen.'
 );
 
 assert(
