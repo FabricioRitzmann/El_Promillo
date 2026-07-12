@@ -1605,7 +1605,7 @@ textarea {
   width: 8rem;
   height: 10.2rem;
   background: var(--card-emblem, var(--brand-emblem)) center / contain no-repeat;
-  opacity: 0.14;
+  opacity: 0.055;
   pointer-events: none;
 }
 
