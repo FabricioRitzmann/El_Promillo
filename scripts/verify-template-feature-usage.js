@@ -81,6 +81,8 @@ assertAll('public/js/ui.js', 'Wallet Preview', [
   'const classAttribute = className ?',
   'return `<img${classAttribute}',
   "businessLogoMarkup(business, 'wallet-logo-placeholder')",
+  'wallet-qr-placeholder',
+  'wallet-code-meta',
   'walletPreviewHtml'
 ]);
 
