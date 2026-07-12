@@ -1797,6 +1797,104 @@ textarea {
   text-align: center;
 }
 
+.wallet-platform-previews {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.wallet-platform-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.wallet-platform-preview-card {
+  min-width: 0;
+  min-height: 11.5rem;
+  display: grid;
+  align-content: start;
+  gap: 0.48rem;
+  padding: 0.72rem;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: rgba(255, 250, 242, 0.76);
+  box-shadow: 0 8px 18px rgba(91, 52, 35, 0.08);
+}
+
+.wallet-platform-apple {
+  border-top: 4px solid #5f8db3;
+}
+
+.wallet-platform-google {
+  border-top: 4px solid #4f9d6d;
+}
+
+.wallet-platform-samsung {
+  border-top: 4px solid #7c6bb0;
+}
+
+.wallet-platform-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.45rem;
+  align-items: center;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.wallet-platform-preview-head strong {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.wallet-platform-preview-title {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 780;
+  overflow-wrap: anywhere;
+}
+
+.wallet-platform-preview-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 0.38rem;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 0.74rem;
+}
+
+.wallet-platform-preview-row span {
+  min-width: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.wallet-platform-preview-row strong {
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 760;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.wallet-platform-preview-code {
+  align-self: end;
+  min-width: 0;
+  margin-top: 0.2rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(145, 106, 67, 0.22);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .wallet-stamp-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(1.55rem, 1fr));
@@ -2131,6 +2229,10 @@ body:has(.modal-backdrop:not([hidden])) {
 
   .editor-preview-panel {
     position: static;
+  }
+
+  .wallet-platform-preview-grid {
+    grid-template-columns: 1fr;
   }
 
   .page-heading,

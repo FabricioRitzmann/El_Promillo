@@ -52,6 +52,8 @@ const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
 const styles = read('public/styles.css');
+const editor = read('public/js/editor.js');
+const claim = read('public/js/claim.js');
 const schema = read('supabase/schema.sql');
 const parityDoc = read('docs/wallet-design-parity.md');
 const limitationsDoc = read('docs/wallet-feature-limitations.md');
@@ -161,7 +163,13 @@ assertIncludes('Wallet Asset Deploy', deployScript, [
 assertIncludes('Editor Wallet Warnungen', editorUi, [
   'function walletPlatformWarnings(template, card',
   'function walletPlatformWarningsHtml(template, card',
+  'function walletPlatformPreviewsHtml(template, card',
+  'function walletPlatformStyleLabels(template)',
   'Wallet-Hinweise',
+  'Plattform-Vorschau',
+  'wallet-platform-apple',
+  'wallet-platform-google',
+  'wallet-platform-samsung',
   'wallet-warning-${escapeHtml(warning.level)}',
   "level: 'info'",
   "level: 'warning'",
@@ -171,12 +179,19 @@ assertIncludes('Editor Wallet Warnungen', editorUi, [
   'Hintergrundbild',
   'Viele Felder',
   'Bild-URL',
-  'walletPreviewHtml(template, card = null)',
+  'walletPreviewHtml(template, card = null, options = {})',
+  'options.showWalletInsights === true',
   'const platformWarnings = walletPlatformWarningsHtml(template, card'
 ]);
 
 assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-preview-stack',
+  '.wallet-platform-previews',
+  '.wallet-platform-preview-grid',
+  '.wallet-platform-preview-card',
+  '.wallet-platform-apple',
+  '.wallet-platform-google',
+  '.wallet-platform-samsung',
   '.wallet-platform-warnings',
   '.wallet-warning-item',
   '.wallet-warning-info',
@@ -184,6 +199,16 @@ assertIncludes('Editor Wallet Warnstyles', styles, [
   '.wallet-warning-critical',
   '.wallet-warning-platforms'
 ]);
+
+assertIncludes('Editor aktiviert Wallet Insights', editor, [
+  'walletPreviewHtml({',
+  'showWalletInsights: true'
+]);
+
+assert(
+  !claim.includes('showWalletInsights: true'),
+  'Die öffentliche Claim-Seite darf keine internen Wallet-Insights aktivieren.'
+);
 
 assertIncludes('Wallet Design Update Queue', schema, [
   'create or replace function public.enqueue_wallet_update_after_template_design_change()',
@@ -215,6 +240,7 @@ assertIncludes('Wallet Design Parity Doku', parityDoc, [
   'generate-wallet-asset',
   'Implementiert fuer PNG-Fallbacks',
   'Implementiert fuer sichtbare Info/Warning/Critical Hinweise',
+  'Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor',
   'Implementiert fuer Apple/Google Queue-Jobs und Samsung Update-Vorbereitung',
   'Keine Apple-, Google- oder Samsung-Secrets im Browser'
 ]);
@@ -239,6 +265,7 @@ assertIncludes('Wallet Feature Limitations Doku', limitationsDoc, [
   'template_design_update_prepared',
   '## Editor-Warnungen',
   'Editor-UI zeigt plattformbezogene Hinweise',
+  'separate Apple-, Google- und Samsung-Vorschau-Skizzen',
   '## Security'
 ]);
 

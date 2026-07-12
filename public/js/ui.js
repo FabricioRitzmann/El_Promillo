@@ -261,7 +261,76 @@ function walletPlatformWarningsHtml(template, card, context = {}) {
   `;
 }
 
-export function walletPreviewHtml(template, card = null) {
+function walletPlatformPreviewRowsHtml(rows, limit = 4) {
+  return rows.slice(0, limit).map((row) => `
+    <div class="wallet-platform-preview-row">
+      <span>${escapeHtml(row.label || row.header || row.key)}</span>
+      <strong>${escapeHtml(row.value || row.body || '')}</strong>
+    </div>
+  `).join('');
+}
+
+function walletPlatformStyleLabels(template) {
+  const templateType = normalizeTemplateType(template);
+
+  return {
+    apple: templateType === 'event_card' ? 'Event Ticket' : templateType === 'coupon_card' ? 'Coupon' : ['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(templateType) ? 'Store Card' : 'Generic',
+    google: templateType === 'event_card' ? 'Event Ticket' : templateType === 'coupon_card' ? 'Offer' : ['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(templateType) ? 'Loyalty' : 'Generic',
+    samsung: templateType === 'event_card' ? 'Ticket' : templateType === 'coupon_card' ? 'Coupon' : ['stamp_card', 'streak_card', 'vip_card', 'balance_card', 'membership_card', 'club_card'].includes(templateType) ? 'Loyalty' : 'Generic'
+  };
+}
+
+function walletPlatformPreviewsHtml(template, card, context = {}) {
+  const featureRows = context.featureRows || cardFeatureRows(template, card);
+  const cardInstanceNumber = context.cardInstanceNumber || card?.card_instance_number || card?.metadata?.card_instance_number || card?.customer_code || 'Karten-ID';
+  const labels = walletPlatformStyleLabels(template);
+  const title = template.card_name || 'Karte';
+  const description = template.description || cardTypeLabel(template);
+  const firstRows = [
+    { label: 'Karten-ID', value: cardInstanceNumber },
+    ...featureRows
+  ];
+  const appleRows = firstRows.slice(0, 4);
+  const googleRows = firstRows.concat(template.reward_text ? [{ label: 'Belohnung', value: template.reward_text }] : []);
+  const samsungRows = firstRows.slice(0, 3).concat(description ? [{ label: 'Details', value: description }] : []);
+
+  return `
+    <div class="wallet-platform-previews" aria-label="Wallet-Plattformvorschau">
+      <div class="wallet-warning-heading">Plattform-Vorschau</div>
+      <div class="wallet-platform-preview-grid">
+        <div class="wallet-platform-preview-card wallet-platform-apple">
+          <div class="wallet-platform-preview-head">
+            <span>Apple</span>
+            <strong>${escapeHtml(labels.apple)}</strong>
+          </div>
+          <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
+          ${walletPlatformPreviewRowsHtml(appleRows, 4)}
+          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+        </div>
+        <div class="wallet-platform-preview-card wallet-platform-google">
+          <div class="wallet-platform-preview-head">
+            <span>Google</span>
+            <strong>${escapeHtml(labels.google)}</strong>
+          </div>
+          <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
+          ${walletPlatformPreviewRowsHtml(googleRows, 5)}
+          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+        </div>
+        <div class="wallet-platform-preview-card wallet-platform-samsung">
+          <div class="wallet-platform-preview-head">
+            <span>Samsung</span>
+            <strong>${escapeHtml(labels.samsung)}</strong>
+          </div>
+          <div class="wallet-platform-preview-title">${escapeHtml(title)}</div>
+          ${walletPlatformPreviewRowsHtml(samsungRows, 4)}
+          <div class="wallet-platform-preview-code">QR · ${escapeHtml(cardInstanceNumber)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function walletPreviewHtml(template, card = null, options = {}) {
   const business = {
     name: template.business_name,
     business_name: template.business_name,
@@ -328,6 +397,12 @@ export function walletPreviewHtml(template, card = null) {
     featureRows,
     eventBackgroundImageUrl
   });
+  const walletInsights = options.showWalletInsights === true
+    ? `
+      ${walletPlatformPreviewsHtml(template, card, { featureRows, cardInstanceNumber })}
+      ${platformWarnings}
+    `
+    : '';
 
   return `
     <div class="wallet-preview-stack">
@@ -347,7 +422,7 @@ export function walletPreviewHtml(template, card = null) {
         ${rewardVisible ? `<div class="wallet-reward">${escapeHtml(template.reward_text)}</div>` : ''}
         <div class="wallet-code">${escapeHtml(cardInstanceNumber)}</div>
       </div>
-      ${platformWarnings}
+      ${walletInsights}
     </div>
   `;
 }

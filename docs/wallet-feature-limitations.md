@@ -180,6 +180,7 @@ Warnquellen:
 
 - `walletDesign.ts` erzeugt `WalletDesignWarning[]`.
 - Die Editor-UI zeigt plattformbezogene Hinweise direkt unter der Live-Vorschau an.
+- Die Editor-UI zeigt zusaetzlich separate Apple-, Google- und Samsung-Vorschau-Skizzen; die oeffentliche Claim-Seite zeigt diese internen Hinweise nicht.
 - Keine Editor-Funktion darf so dargestellt werden, als waere sie in Apple, Google und Samsung identisch moeglich.
 
 ## Security

@@ -507,7 +507,7 @@ function renderEditorPreview() {
     ...draft,
     business_name: state.business?.name || draft.business_name,
     business_logo_url: state.business?.logo_url || ''
-  });
+  }, null, { showWalletInsights: true });
   renderEditorQrPanel();
 }
 

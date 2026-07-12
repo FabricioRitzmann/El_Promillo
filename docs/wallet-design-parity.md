@@ -38,6 +38,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, QR, priorisierte Felder |
 | Komplexe Asset-Generierung | `generate-wallet-asset` | Implementiert fuer PNG-Fallbacks in `wallet-assets` |
 | Plattformwarnungen im Editor | `public/js/ui.js`, `public/styles.css` | Implementiert fuer sichtbare Info/Warning/Critical Hinweise |
+| Plattformspezifische Editor-Previews | `public/js/ui.js`, `public/styles.css` | Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor |
 | Update Queue fuer Design-Aenderungen | `supabase/schema.sql`, `wallet_update_queue`, `samsung_wallet_events` | Implementiert fuer Apple/Google Queue-Jobs und Samsung Update-Vorbereitung |
 
 ## Mapping-Matrix
