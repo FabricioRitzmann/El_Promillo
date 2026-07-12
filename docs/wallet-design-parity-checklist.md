@@ -18,7 +18,8 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Plattform-Previews im Editor | `public/js/ui.js`, `public/styles.css`; nur per `showWalletInsights: true` im Editor |
 | Claim-Seite ohne interne Warnungen | `public/js/claim.js` aktiviert `showWalletInsights` nicht |
 | Server-seitige Asset-Generierung | `supabase/functions/generate-wallet-asset/index.ts` |
-| Gemeinsamer Asset-Renderer | `_shared/walletAssetRenderer.ts` wird von `generate-wallet-asset` und der Update Queue genutzt |
+| Gemeinsamer Asset-Renderer | `_shared/walletAssetRenderer.ts` wird von `generate-wallet-asset`, Initial-Issue und der Update Queue genutzt |
+| Automatische Asset-Fallbacks | `_shared/walletAssetFallbacks.ts` erzeugt PNG-Fallbacks fuer Apple-/Google-Issue, Samsung Partner-Server und Queue-Updates |
 | Apple `.pkpass` nimmt generierte PNG-Fallbacks | `_shared/walletAssets.ts`, `appleWalletProvider.ts` fuer `stamp_grid`, `streak_badge`, `wallet_background`, `club_module_badges` |
 | Google Issue/Save-Link nutzt vorhandene PNG-Fallbacks | `googleWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `heroImage`/`imageModulesData` nur fuer vorhandene Assets |
 | Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |

@@ -36,7 +36,7 @@ Diese Datei beschreibt, wie die Editor-Kartenansicht auf Apple Wallet, Google Wa
 | Apple Mapping | `mapEditorDesignToApplePass` und `appleWalletProvider.ts` | Implementiert fuer Farben, QR, Feldprioritaet, Assets/Fallback-Hinweise und generierte PNG-Fallbacks im `.pkpass` |
 | Google Mapping | `mapEditorDesignToGoogleWalletObject` und `googleWalletProvider.ts` | Implementiert fuer Farben, QR, Logo/Hero/Image-Module, Textmodule und vorhandene generierte PNG-Fallbacks im Issue/Save-Link |
 | Samsung Mapping | `mapEditorDesignToSamsungWalletCard` und `samsungWalletProvider.ts` | Implementiert fuer Attribute, Farben, QR, priorisierte Felder und vorhandene generierte PNG-Fallbacks im Partner-Server-GET |
-| Komplexe Asset-Generierung | `generate-wallet-asset`, `_shared/walletAssets.ts`, `_shared/walletAssetRenderer.ts` | Implementiert fuer PNG-Fallbacks in `wallet-assets` mit gemeinsamem Storage-Pfadvertrag und Queue-Autogenerierung |
+| Komplexe Asset-Generierung | `generate-wallet-asset`, `_shared/walletAssets.ts`, `_shared/walletAssetRenderer.ts`, `_shared/walletAssetFallbacks.ts` | Implementiert fuer PNG-Fallbacks in `wallet-assets` mit gemeinsamem Storage-Pfadvertrag, Issue-Autogenerierung und Queue-Autogenerierung |
 | Plattformwarnungen im Editor | `public/js/ui.js`, `public/styles.css` | Implementiert fuer sichtbare Info/Warning/Critical Hinweise |
 | Plattformspezifische Editor-Previews | `public/js/ui.js`, `public/styles.css` | Implementiert fuer Apple/Google/Samsung Vorschau-Skizzen im Editor |
 | Update Queue fuer Design-Aenderungen | `supabase/schema.sql`, `wallet_update_queue`, `samsung_wallet_events` | Implementiert fuer Apple/Google Queue-Jobs, automatische PNG-Fallbacks vor Updates und Samsung Update-Vorbereitung |

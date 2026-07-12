@@ -41,6 +41,7 @@ function listFiles(directory) {
   'supabase/functions/_shared/walletDesign.ts',
   'supabase/functions/_shared/walletAssets.ts',
   'supabase/functions/_shared/walletAssetRenderer.ts',
+  'supabase/functions/_shared/walletAssetFallbacks.ts',
   'supabase/functions/generate-wallet-asset/index.ts',
   'docs/wallet-design-parity.md',
   'docs/wallet-feature-limitations.md',
@@ -50,11 +51,15 @@ function listFiles(directory) {
 const walletDesign = read('supabase/functions/_shared/walletDesign.ts');
 const walletAssets = read('supabase/functions/_shared/walletAssets.ts');
 const walletAssetRenderer = read('supabase/functions/_shared/walletAssetRenderer.ts');
+const walletAssetFallbacks = read('supabase/functions/_shared/walletAssetFallbacks.ts');
 const appleProvider = read('supabase/functions/_shared/appleWalletProvider.ts');
 const googleProvider = read('supabase/functions/_shared/googleWalletProvider.ts');
 const samsungProvider = read('supabase/functions/_shared/samsungWalletProvider.ts');
 const walletNotificationService = read('supabase/functions/_shared/walletNotificationService.ts');
 const generateWalletAsset = read('supabase/functions/generate-wallet-asset/index.ts');
+const issueApplePass = read('supabase/functions/issue-apple-pass/index.ts');
+const issueGoogleWalletPass = read('supabase/functions/issue-google-wallet-pass/index.ts');
+const samsungWalletServer = read('supabase/functions/samsung-wallet-server/index.ts');
 const deployScript = read('scripts/deploy-wallet-functions.sh');
 const editorUi = read('public/js/ui.js');
 const styles = read('public/styles.css');
@@ -129,6 +134,18 @@ assertIncludes('Wallet Asset Renderer', walletAssetRenderer, [
   'CompressionStream('
 ]);
 
+assertIncludes('Wallet Asset Autogenerierung', walletAssetFallbacks, [
+  "import { editorCardDesignFromTemplate } from './walletDesign.ts'",
+  "import { walletAssetBucket, walletAssetStoragePath, walletAssetTypesForFallbacks } from './walletAssets.ts'",
+  "import { encodeWalletAssetPng, MAX_WALLET_ASSET_BYTES, renderWalletAsset } from './walletAssetRenderer.ts'",
+  'export async function ensureWalletAssetFallbacks',
+  'walletAssetTypesForFallbacks(editorDesign.assetFallbacks, walletPlatform)',
+  'renderWalletAsset(assetType as WalletAssetType, template, cardInstance, walletPlatform)',
+  'encodeWalletAssetPng(rendered.width, rendered.height, rendered.rgba)',
+  'generatedAssetUrls[assetType] = publicUrl',
+  'generatedAssets.push'
+]);
+
 assertIncludes('Apple Provider Design Mapping', appleProvider, [
   "import { editorCardDesignFromTemplate, mapEditorDesignToApplePass } from './walletDesign.ts'",
   "import { walletAssetPublicUrl } from './walletAssets.ts'",
@@ -175,8 +192,19 @@ assertIncludes('Google Provider Design Mapping', googleProvider, [
   'mergeImageModules(payload.imageModulesData'
 ]);
 
-assertIncludes('Google Issue Asset Optionen', read('supabase/functions/issue-google-wallet-pass/index.ts'), [
-  'const googleWalletAssetOptions = { supabaseAdmin: context.supabaseAdmin }',
+assertIncludes('Apple Issue erzeugt Wallet Assets', issueApplePass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'apple'"
+]);
+
+assertIncludes('Google Issue Asset Optionen', issueGoogleWalletPass, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'google'",
+  'const googleWalletAssetOptions = {',
+  'supabaseAdmin: context.supabaseAdmin',
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
   'googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)',
   'googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance, googleWalletAssetOptions)'
 ]);
@@ -198,7 +226,11 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   'cardDataForInstanceWithAssets'
 ]);
 
-assertIncludes('Samsung Server Asset Optionen', read('supabase/functions/samsung-wallet-server/index.ts'), [
+assertIncludes('Samsung Server Asset Optionen', samsungWalletServer, [
+  "import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts'",
+  'const generatedAssetFallbacks = await ensureWalletAssetFallbacks({',
+  "walletPlatform: 'samsung'",
+  'generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls',
   'await samsungWalletProvider.cardDataForInstanceWithAssets(template, instance',
   'supabaseAdmin,',
   'fields: new URL(request.url).searchParams.get'
@@ -227,15 +259,8 @@ assertIncludes('Serverseitige Wallet Asset Generierung', generateWalletAsset, [
 ]);
 
 assertIncludes('Queue erzeugt Wallet Asset Fallbacks', walletNotificationService, [
-  "import { editorCardDesignFromTemplate } from './walletDesign.ts'",
-  "import { walletAssetBucket, walletAssetStoragePath, walletAssetTypesForFallbacks } from './walletAssets.ts'",
-  "import { encodeWalletAssetPng, MAX_WALLET_ASSET_BYTES, renderWalletAsset } from './walletAssetRenderer.ts'",
-  'async function ensureQueueWalletAssets',
-  'walletAssetTypesForFallbacks(editorDesign.assetFallbacks, walletPlatform)',
-  'renderWalletAsset(assetType as WalletAssetType, template, cardInstance, walletPlatform)',
-  'encodeWalletAssetPng(rendered.width, rendered.height, rendered.rgba)',
-  'generatedAssetUrls[assetType] = publicUrl',
-  'const walletAssetGeneration = await ensureQueueWalletAssets(context, job, cardInstance)',
+  "import { ensureWalletAssetFallbacks } from './walletAssetFallbacks.ts'",
+  'const walletAssetGeneration = await ensureWalletAssetFallbacks({',
   'generatedAssetUrls: walletAssetGeneration.generatedAssetUrls',
   'generated_wallet_assets'
 ]);

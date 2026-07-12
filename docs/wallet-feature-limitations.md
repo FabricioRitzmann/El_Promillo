@@ -133,6 +133,8 @@ Wenn zu viele Module aktiv sind:
 
 Die sichere Edge Function `generate-wallet-asset` ist implementiert. Sie laeuft serverseitig, verlangt Betreiber-Login, prueft `owner_id` und `business_id`, rendert PNG-Fallbacks und speichert sie im oeffentlichen Bucket `wallet-assets`. Der gemeinsame Helper `_shared/walletAssets.ts` legt denselben Storage-Pfad fuer Generator und Wallet-Provider fest.
 
+Initiale Wallet-Erstellungen erzeugen benoetigte Fallback-PNGs ebenfalls serverseitig: `issue-apple-pass`, `issue-google-wallet-pass` und der Samsung Partner-Server-GET nutzen `_shared/walletAssetFallbacks.ts`, bevor die jeweilige Wallet-Payload gebaut wird.
+
 ```json
 {
   "card_instance_id": "...",

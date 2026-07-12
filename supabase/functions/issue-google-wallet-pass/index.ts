@@ -1,4 +1,5 @@
 import { googleWalletProvider } from '../_shared/googleWalletProvider.ts';
+import { ensureWalletAssetFallbacks } from '../_shared/walletAssetFallbacks.ts';
 import { publicGoogleWalletIssuePayload } from '../_shared/publicResponses.ts';
 import { corsHeaders, createStructuredError, errorJson, json, walletNotificationService } from '../_shared/walletNotificationService.ts';
 
@@ -373,7 +374,19 @@ Deno.serve(async (request) => {
     }
 
     idempotencyReservation = reservedIdempotency.reservedLog;
-    const googleWalletAssetOptions = { supabaseAdmin: context.supabaseAdmin };
+    const generatedAssetFallbacks = await ensureWalletAssetFallbacks({
+      supabaseAdmin: context.supabaseAdmin,
+      supabaseUrl: Deno.env.get('SUPABASE_URL') || '',
+      ownerId: context.ownerId,
+      businessId: context.business.id,
+      template: cardInstance.card_templates,
+      cardInstance,
+      walletPlatform: 'google'
+    });
+    const googleWalletAssetOptions = {
+      supabaseAdmin: context.supabaseAdmin,
+      generatedAssetUrls: generatedAssetFallbacks.generatedAssetUrls
+    };
     const objectResult = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance, googleWalletAssetOptions);
     const saveLink = await googleWalletProvider.generateSaveLink(cardInstance.card_templates, cardInstance, googleWalletAssetOptions);
     const issueStatus = normalizedIssueStatus(objectResult, saveLink);
