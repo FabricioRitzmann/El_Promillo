@@ -1,7 +1,7 @@
 import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
 import { pagePath } from './path.js';
-import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
+import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js?v=wallet-preview-20260712';
 import {
   CLUB_FEATURE_DEFAULTS,
   OPTIONAL_FEATURE,
