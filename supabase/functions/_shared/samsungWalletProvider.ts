@@ -7,6 +7,8 @@
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { normalizeTemplateType } from './templateFeatures.ts';
 import { editorCardDesignFromTemplate, mapEditorDesignToSamsungWalletCard } from './walletDesign.ts';
+import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts';
+import type { WalletAssetUrls } from './walletAssets.ts';
 
 type Row = Record<string, any>;
 
@@ -331,11 +333,43 @@ function normalizeRefId(value: unknown) {
   return /^[A-Za-z0-9_-]{8,32}$/.test(text) ? text : '';
 }
 
-function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
+function samsungGeneratedMainImage(assetUrls: WalletAssetUrls = {}) {
+  return stringValue(
+    assetUrls.wallet_background
+      || assetUrls.club_module_badges
+      || assetUrls.stamp_grid
+      || assetUrls.streak_badge
+      || assetUrls.decorative_title
+  );
+}
+
+async function generatedSamsungWalletAssetUrls(template: Row, instance: Row, options: Row = {}) {
+  if (options.generatedAssetUrls && typeof options.generatedAssetUrls === 'object') {
+    return options.generatedAssetUrls as WalletAssetUrls;
+  }
+
+  if (!options.supabaseAdmin) {
+    return {};
+  }
+
+  const editorDesign = editorCardDesignFromTemplate(template, instance);
+  const assetTypes = walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'samsung');
+
+  return existingWalletAssetPublicUrls(options.supabaseAdmin, Deno.env.get('SUPABASE_URL') || '', {
+    ownerId: instance.owner_id,
+    businessId: instance.business_id,
+    templateId: instance.template_id,
+    cardInstanceId: instance.card_instance_id || instance.id,
+    walletPlatform: 'samsung'
+  }, assetTypes);
+}
+
+function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}, options: Row = {}) {
   const business = firstBusiness(template) || {};
   const providerName = textLimit(business.name || template.business_name || 'El Promillo', 32, 'El Promillo');
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
+  const generatedMainImage = samsungGeneratedMainImage(options.generatedAssetUrls);
   const linkUrl = appLinkUrl(template);
   const editorDesign = editorCardDesignFromTemplate(template, instance);
   const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
@@ -361,6 +395,7 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
     appLinkLogo: imageUrl,
     appLinkName: textLimit(providerName, 32, 'El Promillo'),
     appLinkData: linkUrl,
+    mainImg: generatedMainImage || stringValue(mappedAttributes.mainImg || imageUrl),
     bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
     fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
     'barcode.value': stringValue(mappedAttributes['barcode.value'] || instance.customer_code || instance.card_instance_number || instance.ref_id),
@@ -374,11 +409,12 @@ function buildSamsungLoyaltyAttributes(template: Row = {}, instance: Row = {}) {
   };
 }
 
-function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}) {
+function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}, options: Row = {}) {
   const business = firstBusiness(template) || {};
   const providerName = textLimit(business.name || template.business_name || 'El Promillo', 32, 'El Promillo');
   const title = textLimit(template.card_name || template.name || 'Kundenkarte', 32, 'Kundenkarte');
   const imageUrl = logoImageUrl(template);
+  const generatedMainImage = samsungGeneratedMainImage(options.generatedAssetUrls);
   const startDate = Date.parse(stringValue(template.settings?.eventDate || template.created_at)) || Date.now();
   const editorDesign = editorCardDesignFromTemplate(template, instance);
   const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance);
@@ -396,7 +432,7 @@ function buildSamsungGenericAttributes(template: Row = {}, instance: Row = {}) {
   return {
     title: textLimit(mappedAttributes.title || title, 32, title),
     providerName,
-    mainImg: stringValue(mappedAttributes.mainImg || imageUrl),
+    mainImg: generatedMainImage || stringValue(mappedAttributes.mainImg || imageUrl),
     startDate,
     bgColor: hexColor(mappedAttributes.bgColor || template.primary_color, '#fffdf9'),
     fontColor: stringValue(mappedAttributes.fontColor || samsungFontColor(template.text_color)),
@@ -419,8 +455,8 @@ function buildCardDataPayload(template: Row = {}, instance: Row = {}, options: R
   const createdAt = Date.parse(stringValue(instance.created_at)) || Date.now();
   const updatedAt = Date.parse(stringValue(instance.updated_at || instance.last_synced_at)) || Date.now();
   const attributes = config.cardType === 'generic'
-    ? buildSamsungGenericAttributes(template, instance)
-    : buildSamsungLoyaltyAttributes(template, instance);
+    ? buildSamsungGenericAttributes(template, instance, options)
+    : buildSamsungLoyaltyAttributes(template, instance, options);
 
   if (attributes?.ok === false) {
     return attributes;
@@ -826,6 +862,15 @@ export const samsungWalletProvider = {
 
   cardDataForInstance(template: Row, instance: Row, options: Row = {}) {
     return buildCardDataPayload(template, instance, options);
+  },
+
+  async cardDataForInstanceWithAssets(template: Row, instance: Row, options: Row = {}) {
+    const generatedAssetUrls = await generatedSamsungWalletAssetUrls(template, instance, options);
+
+    return buildCardDataPayload(template, instance, {
+      ...options,
+      generatedAssetUrls
+    });
   },
 
   verifyPartnerServerAuthorization(request: Request, expected: Row) {

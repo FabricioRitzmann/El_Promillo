@@ -63,6 +63,7 @@ Diese Datei listet die bekannten Abweichungen zwischen Editor-Vorschau und den e
 - Wichtige Felder werden in Attribute wie `amount`, `balance`, `level`, `noticeDesc` und Barcode-Felder gemappt.
 - Nicht passende Features landen in `noticeDesc`.
 - Logo/App-Link-Assets bleiben ueber die bestehende Public-HTTPS-Pruefung abgesichert.
+- Im Samsung Partner-Server-GET prueft `samsungWalletProvider.ts` vorhandene PNGs im Bucket `wallet-assets` und nutzt sie nur dann als `mainImg`, wenn sie wirklich existieren.
 - Samsung-spezifische Partner- und Bearer-Validierung bleibt in `samsungWalletProvider.ts`.
 
 ## Unterschiede Zwischen Plattformen

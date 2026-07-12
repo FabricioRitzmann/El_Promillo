@@ -167,6 +167,7 @@ assertIncludes('Google Issue Asset Optionen', read('supabase/functions/issue-goo
 
 assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   "import { editorCardDesignFromTemplate, mapEditorDesignToSamsungWalletCard } from './walletDesign.ts'",
+  "import { existingWalletAssetPublicUrls, walletAssetTypesForFallbacks } from './walletAssets.ts'",
   'const editorDesign = editorCardDesignFromTemplate(template, instance)',
   'const samsungDesign = mapEditorDesignToSamsungWalletCard(editorDesign, instance)',
   'const mappedAttributes = samsungDesign.attributes',
@@ -174,7 +175,17 @@ assertIncludes('Samsung Provider Design Mapping', samsungProvider, [
   'mappedAttributes.noticeDesc',
   "mappedAttributes['barcode.value']",
   'mappedAttributes.bgColor',
-  'mappedAttributes.fontColor'
+  'mappedAttributes.fontColor',
+  'generatedSamsungWalletAssetUrls',
+  "walletAssetTypesForFallbacks(editorDesign.assetFallbacks, 'samsung')",
+  'samsungGeneratedMainImage',
+  'cardDataForInstanceWithAssets'
+]);
+
+assertIncludes('Samsung Server Asset Optionen', read('supabase/functions/samsung-wallet-server/index.ts'), [
+  'await samsungWalletProvider.cardDataForInstanceWithAssets(template, instance',
+  'supabaseAdmin,',
+  'fields: new URL(request.url).searchParams.get'
 ]);
 
 assertIncludes('Serverseitige Wallet Asset Generierung', generateWalletAsset, [
@@ -324,6 +335,7 @@ assertIncludes('Wallet Design Parity Checkliste', checklistDoc, [
   'generate-wallet-asset',
   'Apple `.pkpass` nimmt generierte PNG-Fallbacks',
   'Google Issue/Save-Link nutzt vorhandene PNG-Fallbacks',
+  'Samsung Partner-Server nutzt vorhandene PNG-Fallbacks',
   'enqueue_wallet_update_after_template_design_change',
   'pnpm run check',
   'node scripts/wallet-remote-schema-check.js --strict',

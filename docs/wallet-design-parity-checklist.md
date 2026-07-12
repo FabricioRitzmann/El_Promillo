@@ -20,6 +20,7 @@ Diese Checkliste dokumentiert den aktuellen Nachweisstand fuer das Wallet-Design
 | Server-seitige Asset-Generierung | `supabase/functions/generate-wallet-asset/index.ts` |
 | Apple `.pkpass` nimmt generierte PNG-Fallbacks | `_shared/walletAssets.ts`, `appleWalletProvider.ts` fuer `stamp_grid`, `streak_badge`, `wallet_background`, `club_module_badges` |
 | Google Issue/Save-Link nutzt vorhandene PNG-Fallbacks | `googleWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `heroImage`/`imageModulesData` nur fuer vorhandene Assets |
+| Samsung Partner-Server nutzt vorhandene PNG-Fallbacks | `samsungWalletProvider.ts` prueft `wallet-assets` serverseitig und setzt `mainImg` nur fuer vorhandene Assets |
 | Wallet-Updates bei Designaenderungen | `enqueue_wallet_update_after_template_design_change()` in `supabase/schema.sql` |
 | Clubkarten-Priorisierung | `walletDesign.ts`, Matrix in `docs/wallet-design-parity.md` |
 | Keine Wallet-Secrets im Frontend | `scripts/verify-browser-secret-boundary.js`, `scripts/verify-wallet-design-parity.js` |

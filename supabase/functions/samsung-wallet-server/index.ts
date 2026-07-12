@@ -299,7 +299,8 @@ async function handleGetCardData(request: Request, supabaseAdmin: any, cardId: s
   }
 
   const template = templateForInstance(instance);
-  const payload = samsungWalletProvider.cardDataForInstance(template, instance, {
+  const payload = await samsungWalletProvider.cardDataForInstanceWithAssets(template, instance, {
+    supabaseAdmin,
     refId,
     fields: new URL(request.url).searchParams.get('fields') || ''
   });
