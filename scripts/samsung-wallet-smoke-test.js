@@ -155,9 +155,17 @@ async function main() {
   const customerCode = String(addLinkBody.card?.customer_code || '');
   const isDataFetchLink = addUrl.includes('pdata=') && !addUrl.includes('cdata=');
   const isCdataLink = addUrl.includes('cdata=') && !addUrl.includes('pdata=');
+  const addUrlPathParts = (() => {
+    try {
+      return new URL(addUrl).pathname.split('/').filter(Boolean);
+    } catch {
+      return [];
+    }
+  })();
 
   add(results, addUrl.startsWith('https://a.swallet.link/atw/v3/') ? 'ok' : 'fail', 'Samsung Add URL Host', redactUrl(addUrl));
   add(results, isDataFetchLink || isCdataLink ? 'ok' : 'fail', 'Samsung Add Link Token', isCdataLink ? 'Add URL nutzt cdata.' : 'Add URL nutzt pdata.');
+  add(results, (isCdataLink ? addUrlPathParts.length === 3 : addUrlPathParts.length === 4) ? 'ok' : 'fail', 'Samsung Add Link Path', isCdataLink ? 'cdata nutzt /atw/v3/{cardId}.' : 'pdata nutzt /atw/v3/{certificateId}/{cardId}.');
   add(results, /^[A-Za-z0-9_-]{8,32}$/.test(refId) ? 'ok' : 'fail', 'Samsung Ref ID', `Laenge ${refId.length}.`);
   add(results, /^SW-[A-Z0-9_-]{8,40}$/.test(customerCode) ? 'ok' : 'fail', 'Samsung Customer Code', 'Kundencode wurde generiert.');
 

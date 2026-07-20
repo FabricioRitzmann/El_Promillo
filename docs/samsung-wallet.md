@@ -15,7 +15,7 @@ Wichtig: Nutze den Modus, den die konkrete Wallet Card im Samsung Partner Portal
 4. Die Function speichert diese `refId` in `samsung_wallet_instances`.
 5. Je nach `SAMSUNG_WALLET_ADD_FLOW` zeigt der öffentliche Link auf:
    - `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`
-   - `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?cdata={JWS-wrapped-JWE}`
+   - `https://a.swallet.link/atw/v3/{cardId}#Clip?cdata={JWS-wrapped-JWE}`
 6. Beim `data_fetch`-Flow ruft Samsung danach `samsung-wallet-server` auf:
    - `GET /cards/{cardId}/{refId}` für aktuelle Kartendaten
    - `POST /cards/{cardId}/{refId}` für Status-Callbacks. `event`/`cc2` werden als Query-Parameter, JSON-Body oder Form-Body akzeptiert.

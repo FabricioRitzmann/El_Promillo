@@ -612,7 +612,7 @@ function generateAddLink(template: Row = {}, instance: Row = {}) {
       partnerCode: config.partnerCode,
       rdClickUrl: config.rdClickUrl,
       rdImpressionUrl: config.rdImpressionUrl,
-      addUrl: `https://a.swallet.link/atw/v3/${encodeURIComponent(config.certificateId)}/${encodeURIComponent(config.cardId)}#Clip?cdata=${encodeURIComponent(cdata.token)}`
+      addUrl: `https://a.swallet.link/atw/v3/${encodeURIComponent(config.cardId)}#Clip?cdata=${encodeURIComponent(cdata.token)}`
     };
   }
 
