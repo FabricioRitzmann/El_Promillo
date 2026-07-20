@@ -10,6 +10,7 @@ type Row = Record<string, any>;
 
 const SAMSUNG_PUBLIC_API_BASE = 'https://tsapi-card.walletsvc.samsung.com';
 const SAMSUNG_AUTH_TOKEN_MAX_AGE_MS = 5 * 60 * 1000;
+const SAMSUNG_FALLBACK_LOGO_PATH = '/assets/el-promillo-mini-wallet-emblem-transparent.png';
 
 function stringValue(value: unknown) {
   return String(value || '').trim();
@@ -219,7 +220,7 @@ function logoImageUrl(template: Row = {}) {
       || template.logo_url
   );
 
-  return candidate || publicAssetUrl('/assets/el-promillo-mini-wallet-emblem-transparent.png');
+  return candidate || publicAssetUrl(SAMSUNG_FALLBACK_LOGO_PATH);
 }
 
 function appLinkUrl(template: Row = {}) {
@@ -561,7 +562,7 @@ function generateCdataToken(template: Row = {}, instance: Row = {}) {
       token: signRs256CompactPayload(jwe, config.privateKeyPem, {
         alg: 'RS256',
         cty: 'CARD',
-        ver: 3,
+        ver: '3',
         certificateId: config.certificateId,
         partnerId: config.partnerId,
         utc: Date.now()

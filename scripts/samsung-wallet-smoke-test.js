@@ -53,6 +53,22 @@ function redactUrl(value) {
   }
 }
 
+function base64UrlJson(value) {
+  const padded = String(value || '').replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(String(value || '').length / 4) * 4, '=');
+  return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+}
+
+function cdataHeaderFromAddUrl(value) {
+  try {
+    const parsed = new URL(value);
+    const cdata = parsed.hash.split('?')[1] ? new URLSearchParams(parsed.hash.split('?')[1]).get('cdata') : '';
+    const headerSegment = String(cdata || '').split('.')[0];
+    return headerSegment ? base64UrlJson(headerSegment) : null;
+  } catch {
+    return null;
+  }
+}
+
 function functionsBaseUrl(config) {
   const explicit = argValue('--functions-base-url');
   const configuredUrl = config.publicUrls?.supabaseFunctionBaseUrl;
@@ -166,6 +182,14 @@ async function main() {
   add(results, addUrl.startsWith('https://a.swallet.link/atw/v3/') ? 'ok' : 'fail', 'Samsung Add URL Host', redactUrl(addUrl));
   add(results, isDataFetchLink || isCdataLink ? 'ok' : 'fail', 'Samsung Add Link Token', isCdataLink ? 'Add URL nutzt cdata.' : 'Add URL nutzt pdata.');
   add(results, (isCdataLink ? addUrlPathParts.length === 3 : addUrlPathParts.length === 4) ? 'ok' : 'fail', 'Samsung Add Link Path', isCdataLink ? 'cdata nutzt /atw/v3/{cardId}.' : 'pdata nutzt /atw/v3/{certificateId}/{cardId}.');
+
+  if (isCdataLink) {
+    const cdataHeader = cdataHeaderFromAddUrl(addUrl);
+
+    add(results, cdataHeader?.cty === 'CARD' && cdataHeader?.ver === '3' ? 'ok' : 'fail', 'Samsung cdata Header', cdataHeader ? `cty=${cdataHeader.cty}, ver=${cdataHeader.ver}` : 'Header konnte nicht gelesen werden.');
+    add(results, cdataHeader?.certificateId && cdataHeader?.partnerId ? 'ok' : 'fail', 'Samsung cdata Partner Header', cdataHeader ? 'certificateId und partnerId vorhanden.' : 'Header fehlt.');
+  }
+
   add(results, /^[A-Za-z0-9_-]{8,32}$/.test(refId) ? 'ok' : 'fail', 'Samsung Ref ID', `Laenge ${refId.length}.`);
   add(results, /^SW-[A-Z0-9_-]{8,40}$/.test(customerCode) ? 'ok' : 'fail', 'Samsung Customer Code', 'Kundencode wurde generiert.');
 
