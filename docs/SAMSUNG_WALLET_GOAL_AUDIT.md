@@ -14,7 +14,7 @@ Repo-seitig umgesetzt und geprüft:
 - Samsung Wallet ist als zusätzlicher Provider neben Apple und Google ergänzt.
 - Apple- und Google-Pfade bleiben getrennt und unverändert erreichbar.
 - Die öffentliche Claim-Seite routet iPhone/iPad zu Apple, Samsung Android zu Samsung, andere Android-Geräte zu Google und unsichere Geräte zur manuellen Auswahl.
-- Samsung nutzt den Data-Fetch-Link-Flow mit `pdata={refId}`.
+- Samsung unterstützt Data-Fetch-Links mit `pdata={refId}` und Data-Transmit-Links mit signiertem/verschlüsseltem `cdata`.
 - QR-/Claim-Links enthalten keine Samsung-Secrets und keine vollständigen Kartendaten.
 - Alle Samsung-Aktionen laufen über Supabase Edge Functions.
 - Samsung-Secrets bleiben serverseitig in Supabase Secrets.
@@ -39,7 +39,7 @@ Noch extern zu beweisen:
 | Robuste Device Detection | umgesetzt | `public/js/walletDeviceDetection.js`, `scripts/verify-wallet-device-detection.js` |
 | Hauptbutton wählt passenden Provider | umgesetzt | `public/js/claim.js`, `scripts/verify-claim-page-output-safety.js` |
 | Manuelle Apple-/Google-/Samsung-Buttons | umgesetzt | `public/claim.html`, `public/js/claim.js` |
-| Samsung Data Fetch Link | umgesetzt | `supabase/functions/_shared/samsungWalletProvider.ts`, `samsung-wallet-add-link` |
+| Samsung Data Fetch Link / cdata Add Link | umgesetzt | `supabase/functions/_shared/samsungWalletProvider.ts`, `samsung-wallet-add-link` |
 | GET Card Data | umgesetzt | `supabase/functions/samsung-wallet-server/index.ts` |
 | POST Card State | umgesetzt | `supabase/functions/samsung-wallet-server/index.ts` |
 | Update Notification | umgesetzt | `supabase/functions/update-samsung-wallet-pass/index.ts`, `samsungWalletProvider.update()` |

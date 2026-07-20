@@ -153,9 +153,11 @@ async function main() {
   const addUrl = String(addLinkBody.addUrl || '');
   const refId = String(addLinkBody.refId || '');
   const customerCode = String(addLinkBody.card?.customer_code || '');
+  const isDataFetchLink = addUrl.includes('pdata=') && !addUrl.includes('cdata=');
+  const isCdataLink = addUrl.includes('cdata=') && !addUrl.includes('pdata=');
 
   add(results, addUrl.startsWith('https://a.swallet.link/atw/v3/') ? 'ok' : 'fail', 'Samsung Add URL Host', redactUrl(addUrl));
-  add(results, addUrl.includes('pdata=') && !addUrl.includes('cdata=') ? 'ok' : 'fail', 'Samsung Data Fetch Link', 'Add URL nutzt pdata und kein cdata.');
+  add(results, isDataFetchLink || isCdataLink ? 'ok' : 'fail', 'Samsung Add Link Token', isCdataLink ? 'Add URL nutzt cdata.' : 'Add URL nutzt pdata.');
   add(results, /^[A-Za-z0-9_-]{8,32}$/.test(refId) ? 'ok' : 'fail', 'Samsung Ref ID', `Laenge ${refId.length}.`);
   add(results, /^SW-[A-Z0-9_-]{8,40}$/.test(customerCode) ? 'ok' : 'fail', 'Samsung Customer Code', 'Kundencode wurde generiert.');
 
@@ -170,7 +172,7 @@ async function main() {
     return results;
   }
 
-  add(results, instance.add_flow === 'data_fetch' ? 'ok' : 'fail', 'Samsung Instance Add Flow', instance.add_flow);
+  add(results, ['data_fetch', 'cdata'].includes(instance.add_flow) ? 'ok' : 'fail', 'Samsung Instance Add Flow', instance.add_flow);
   add(results, instance.card_status === 'pending' ? 'ok' : 'fail', 'Samsung Initial Status', instance.card_status);
 
   const { data: events, error: eventError } = await supabase

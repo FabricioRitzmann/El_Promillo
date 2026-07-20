@@ -44,6 +44,7 @@ assertIncludes(claim, [
   "url.origin === 'https://a.swallet.link'",
   "url.pathname.startsWith('/atw/v3/')",
   "clipParams.has('pdata')",
+  "clipParams.has('cdata')",
   'throw new Error(\'Samsung-Wallet-Link ist ungültig.\')',
   'samsung-wallet-add-link'
 ], 'Samsung Add-Link Validierung');

@@ -85,7 +85,7 @@ assertIncludesAll('Samsung Smoke Unauthorized Coverage', smoke, [
   'Samsung Unauthorized Gate',
   'SAMSUNG_AUTHORIZATION_REQUIRED',
   'unauthorizedResponse.status === 401',
-  'Samsung Data Fetch Link',
+  'Samsung Add Link Token',
   'Samsung Instance Add Flow',
   'Samsung Event Persisted'
 ]);

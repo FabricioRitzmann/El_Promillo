@@ -152,6 +152,7 @@ const providerRegistry = read('supabase/functions/_shared/walletProviderRegistry
 [
   'https://a.swallet.link/atw/v3/',
   'pdata=',
+  'cdata=',
   'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM',
   'verifyPartnerServerAuthorization',
   'cardDataForInstance',

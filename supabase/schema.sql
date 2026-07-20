@@ -760,7 +760,7 @@ drop constraint if exists samsung_wallet_instances_add_flow_check;
 
 alter table public.samsung_wallet_instances
 add constraint samsung_wallet_instances_add_flow_check
-check (add_flow in ('data_fetch')) not valid;
+check (add_flow in ('data_fetch', 'cdata')) not valid;
 
 alter table public.samsung_wallet_instances
 drop constraint if exists samsung_wallet_instances_card_status_check;

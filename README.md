@@ -656,6 +656,7 @@ supabase secrets set SAMSUNG_WALLET_CERTIFICATE_ID="..."
 supabase secrets set SAMSUNG_WALLET_COUNTRY_CODE="CH"
 supabase secrets set SAMSUNG_WALLET_ENV="sandbox"
 supabase secrets set SAMSUNG_WALLET_ADD_FLOW="data_fetch"
+# Oder "cdata", wenn der Samsung Partner Portal Script Guide cdata="${CARD DATA as JWT}" zeigt.
 supabase secrets set SAMSUNG_WALLET_PRIVATE_KEY_PEM="$(cat samsung-wallet-keys/samsung_wallet_private.key)"
 supabase secrets set SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM="$(cat samsung-wallet-keys/samsung_public_cert.pem)"
 supabase secrets set SAMSUNG_WALLET_RD_CLICK_URL="https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?..."

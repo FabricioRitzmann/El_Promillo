@@ -155,7 +155,7 @@ Lokal geprüft:
 
 Lokale Samsung-Secret-Vorbereitung findet 15 Samsung-Werte. Es fehlen keine Samsung-Werte mehr.
 
-Der Samsung-Smoke-Test erzeugte erfolgreich einen Data-Fetch-Link mit `pdata`, speicherte eine `samsung_wallet_instances`-Zeile, loggte `add_link_created` und bestätigt je nach Remote-Modus entweder, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert, oder dass der bewusst aktivierte Sandbox-Fallback greift.
+Der Samsung-Smoke-Test erzeugt je nach `SAMSUNG_WALLET_ADD_FLOW` einen `pdata`- oder `cdata`-Add-Link, speichert eine `samsung_wallet_instances`-Zeile, loggt `add_link_created` und bestätigt je nach Remote-Modus entweder, dass `samsung-wallet-server` ohne Samsung Bearer-JWS mit `401 SAMSUNG_AUTHORIZATION_REQUIRED` blockiert, oder dass der bewusst aktivierte Sandbox-Fallback greift.
 
 Die Device Detection ist in `public/js/claim.js` eingebunden. Der Hauptbutton `Zu Wallet hinzufügen` öffnet je nach Gerät Apple, Samsung oder Google Wallet; Apple-, Google- und Samsung-Buttons bleiben zusätzlich manuell verfügbar. Neue QR-Codes und QR-PDFs öffnen `/claim.html?token=<public_claim_token>`; alte `/claim.html?template=<template_id>` Links bleiben weiterhin gültig.
 

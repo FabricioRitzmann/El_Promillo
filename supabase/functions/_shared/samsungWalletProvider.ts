@@ -1,8 +1,7 @@
 // Samsung Wallet provider helpers for Supabase Edge Functions.
 //
-// The MVP uses Samsung's Data Fetch Link flow. The public link contains only a
-// high-entropy refId (pdata); Samsung then calls samsung-wallet-server to fetch
-// current card data.
+// The MVP supports both Samsung Add-to-Wallet modes used by the Partner Portal:
+// Data Fetch Link (pdata) and Data Transmit Link (cdata).
 
 import forge from 'https://esm.sh/node-forge@1.3.1?target=deno';
 import { normalizeTemplateType } from './templateFeatures.ts';
@@ -63,6 +62,23 @@ function binaryStringToBytes(value: string) {
   for (let index = 0; index < value.length; index += 1) {
     bytes[index] = value.charCodeAt(index);
   }
+
+  return bytes;
+}
+
+function bytesToBinaryString(value: Uint8Array) {
+  let binary = '';
+
+  for (const byte of value) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return binary;
+}
+
+function randomBytes(length: number) {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
 
   return bytes;
 }
@@ -237,6 +253,16 @@ function samsungCardSubType(value: unknown) {
   return text || 'others';
 }
 
+function samsungAddFlow(value: unknown) {
+  const text = stringValue(value || 'data_fetch').toLowerCase().replace(/[-\s]+/g, '_');
+
+  if (['cdata', 'card_data', 'data_transmit', 'data_transmit_link', 'typical'].includes(text)) {
+    return 'cdata';
+  }
+
+  return 'data_fetch';
+}
+
 function isProductionSamsungEnv(value: unknown) {
   return ['production', 'prod', 'live'].includes(stringValue(value).toLowerCase());
 }
@@ -271,7 +297,8 @@ function samsungConfig() {
   const rawCardSubType = stringValue(Deno.env.get('SAMSUNG_WALLET_CARD_SUB_TYPE') || 'others');
   const walletEnv = stringValue(Deno.env.get('SAMSUNG_WALLET_ENV') || 'sandbox').toLowerCase();
   const countryCode = stringValue(Deno.env.get('SAMSUNG_WALLET_COUNTRY_CODE') || 'CH').toUpperCase();
-  const addFlow = stringValue(Deno.env.get('SAMSUNG_WALLET_ADD_FLOW') || 'data_fetch').toLowerCase();
+  const rawAddFlow = stringValue(Deno.env.get('SAMSUNG_WALLET_ADD_FLOW') || 'data_fetch');
+  const addFlow = samsungAddFlow(rawAddFlow);
   const privateKeyPem = stringValue(Deno.env.get('SAMSUNG_WALLET_PRIVATE_KEY_PEM') || Deno.env.get('SAMSUNG_WALLET_PRIVATE_KEY'));
   const samsungPublicKeyPem = stringValue(Deno.env.get('SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM') || Deno.env.get('SAMSUNG_WALLET_SAMSUNG_CERT_PEM'));
   const allowUnverifiedAuthRequested = stringValue(Deno.env.get('SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH')).toLowerCase() === 'true';
@@ -289,8 +316,18 @@ function samsungConfig() {
     ['APP_PUBLIC_BASE_URL', appPublicBaseUrl()]
   ].filter(([, value]) => !configured(value)).map(([name]) => name);
 
-  if (addFlow !== 'data_fetch') {
-    missing.push('SAMSUNG_WALLET_ADD_FLOW=data_fetch');
+  if (configured(rawAddFlow) && !['data_fetch', 'data-fetch', 'cdata', 'card_data', 'data_transmit', 'data-transmit', 'data_transmit_link', 'data-transmit-link', 'typical'].includes(rawAddFlow.toLowerCase())) {
+    missing.push('SAMSUNG_WALLET_ADD_FLOW=data_fetch|cdata');
+  }
+
+  if (addFlow === 'cdata') {
+    if (!configured(privateKeyPem)) {
+      missing.push('SAMSUNG_WALLET_PRIVATE_KEY_PEM');
+    }
+
+    if (!configured(samsungPublicKeyPem)) {
+      missing.push('SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM');
+    }
   }
 
   return {
@@ -438,7 +475,109 @@ function buildCardDataPayload(template: Row = {}, instance: Row = {}, options: R
   };
 }
 
-function generateAddLink(instance: Row = {}) {
+function cardDataTokenPayload(template: Row = {}, instance: Row = {}) {
+  const payload = buildCardDataPayload(template, instance, {
+    includeState: false
+  });
+
+  if (!payload.ok) {
+    return payload;
+  }
+
+  const card = JSON.parse(JSON.stringify(payload.card));
+
+  for (const item of card.data || []) {
+    delete item.state;
+  }
+
+  return {
+    ok: true,
+    card
+  };
+}
+
+function encryptCardDataJwe(payloadText: string, samsungPublicKeyPem: string) {
+  const protectedHeader = base64Url(JSON.stringify({
+    alg: 'RSA1_5',
+    enc: 'A128GCM'
+  }));
+  const cek = randomBytes(16);
+  const iv = randomBytes(12);
+  const publicKey = publicKeyFromPem(samsungPublicKeyPem);
+  let encryptedKeyBinary = '';
+
+  try {
+    encryptedKeyBinary = publicKey.encrypt(bytesToBinaryString(cek), 'RSAES-PKCS1-V1_5');
+  } catch (_error) {
+    encryptedKeyBinary = publicKey.encrypt(bytesToBinaryString(cek));
+  }
+
+  const cipher = forge.cipher.createCipher('AES-GCM', bytesToBinaryString(cek));
+  cipher.start({
+    iv: bytesToBinaryString(iv),
+    additionalData: protectedHeader,
+    tagLength: 128
+  });
+  cipher.update(forge.util.createBuffer(payloadText, 'utf8'));
+
+  if (!cipher.finish()) {
+    throw new Error('AES-GCM encryption failed.');
+  }
+
+  return [
+    protectedHeader,
+    base64Url(binaryStringToBytes(encryptedKeyBinary)),
+    base64Url(iv),
+    base64Url(binaryStringToBytes(cipher.output.getBytes())),
+    base64Url(binaryStringToBytes(cipher.mode.tag.getBytes()))
+  ].join('.');
+}
+
+function signRs256CompactPayload(payloadText: string, privateKeyPem: string, header: Row = {}) {
+  const signingInput = `${base64Url(JSON.stringify(header))}.${base64Url(payloadText)}`;
+  const privateKey = forge.pki.privateKeyFromPem(normalizePem(privateKeyPem));
+  const md = forge.md.sha256.create();
+  md.update(signingInput, 'utf8');
+  const signature = privateKey.sign(md);
+
+  return `${signingInput}.${base64Url(binaryStringToBytes(signature))}`;
+}
+
+function generateCdataToken(template: Row = {}, instance: Row = {}) {
+  const config = samsungConfig();
+  const payload = cardDataTokenPayload(template, instance);
+
+  if (!payload.ok) {
+    return payload;
+  }
+
+  try {
+    const jwe = encryptCardDataJwe(JSON.stringify({
+      card: payload.card
+    }), config.samsungPublicKeyPem);
+
+    return {
+      ok: true,
+      token: signRs256CompactPayload(jwe, config.privateKeyPem, {
+        alg: 'RS256',
+        cty: 'CARD',
+        ver: 3,
+        certificateId: config.certificateId,
+        partnerId: config.partnerId,
+        utc: Date.now()
+      })
+    };
+  } catch (error) {
+    return providerStructuredError(
+      501,
+      'SAMSUNG_CDATA_TOKEN_FAILED',
+      'Samsung cdata Token konnte nicht erzeugt werden.',
+      error instanceof Error ? error.message : 'Prüfe Samsung Private Key und Samsung Public Key.'
+    );
+  }
+}
+
+function generateAddLink(template: Row = {}, instance: Row = {}) {
   const config = samsungConfig();
   const refId = normalizeRefId(instance.ref_id || instance.refId);
 
@@ -455,10 +594,33 @@ function generateAddLink(instance: Row = {}) {
     );
   }
 
+  if (config.addFlow === 'cdata') {
+    const cdata = generateCdataToken(template, instance);
+
+    if (!cdata.ok) {
+      return cdata;
+    }
+
+    return {
+      ok: true,
+      provider: 'samsung',
+      action: 'generateAddLink',
+      addFlow: 'cdata',
+      refId,
+      cardId: config.cardId,
+      certificateId: config.certificateId,
+      partnerCode: config.partnerCode,
+      rdClickUrl: config.rdClickUrl,
+      rdImpressionUrl: config.rdImpressionUrl,
+      addUrl: `https://a.swallet.link/atw/v3/${encodeURIComponent(config.certificateId)}/${encodeURIComponent(config.cardId)}#Clip?cdata=${encodeURIComponent(cdata.token)}`
+    };
+  }
+
   return {
     ok: true,
     provider: 'samsung',
     action: 'generateAddLink',
+    addFlow: 'data_fetch',
     refId,
     cardId: config.cardId,
     certificateId: config.certificateId,
@@ -775,12 +937,12 @@ export const samsungWalletProvider = {
     return samsungServerApi(path, updatePayload(refId, 'CANCELED', ''), refId);
   },
 
-  generateAddLink(_template: Row, instance: Row) {
-    return generateAddLink(instance);
+  generateAddLink(template: Row, instance: Row) {
+    return generateAddLink(template, instance);
   },
 
-  generateQRCode(_template: Row, instance: Row) {
-    const link = generateAddLink(instance);
+  generateQRCode(template: Row, instance: Row) {
+    const link = generateAddLink(template, instance);
 
     return link.ok
       ? {

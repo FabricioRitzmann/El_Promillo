@@ -34,7 +34,8 @@ assertIncludesAll('Samsung Goal Audit', audit, [
   '# Samsung Wallet Goal Audit',
   'Samsung Wallet ist als zusätzlicher Provider neben Apple und Google ergänzt.',
   'Apple- und Google-Pfade bleiben getrennt',
-  'Data-Fetch-Link-Flow',
+  'Data-Fetch-Links',
+  'cdata',
   'Authorization: Bearer <JWS>',
   'SAMSUNG_WALLET_ENV=production',
   'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false',
@@ -70,6 +71,7 @@ assertIncludesAll('Provider Registry', providerRegistry, [
 
 assertIncludesAll('Samsung Provider', samsungProvider, [
   'pdata=',
+  'cdata=',
   'verifyPartnerServerAuthorization',
   'signAuthorizationToken',
   'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH',

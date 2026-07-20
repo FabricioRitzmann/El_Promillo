@@ -209,7 +209,7 @@ function safeSamsungWalletAddUrl(addUrl) {
     if (
       url.origin === 'https://a.swallet.link'
       && url.pathname.startsWith('/atw/v3/')
-      && clipParams.has('pdata')
+      && (clipParams.has('pdata') || clipParams.has('cdata'))
     ) {
       return url.href;
     }

@@ -94,6 +94,10 @@ assertObjectMethods(providerPath, 'samsungWalletProvider', [
 assertIncludesAll('Samsung Provider Data-Fetch/Auth', provider, [
   'https://a.swallet.link/atw/v3/',
   'pdata=',
+  'cdata=',
+  'generateCdataToken',
+  'encryptCardDataJwe',
+  'SAMSUNG_CDATA_TOKEN_FAILED',
   'SAMSUNG_WALLET_PARTNER_ID',
   'SAMSUNG_WALLET_CARD_ID',
   'SAMSUNG_WALLET_CARD_TYPE',

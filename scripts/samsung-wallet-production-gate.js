@@ -272,7 +272,8 @@ async function main() {
     add(results, configured(envValue(env, secretName)) ? 'ok' : 'fail', `Secret ${secretName}`, configured(envValue(env, secretName)) ? 'gesetzt' : 'fehlt oder Platzhalter');
   }
 
-  add(results, envValue(env, 'SAMSUNG_WALLET_ADD_FLOW').toLowerCase() === 'data_fetch' ? 'ok' : 'fail', 'Samsung Data Fetch Flow', envValue(env, 'SAMSUNG_WALLET_ADD_FLOW') || 'leer');
+  const addFlow = envValue(env, 'SAMSUNG_WALLET_ADD_FLOW').toLowerCase();
+  add(results, ['data_fetch', 'cdata'].includes(addFlow) ? 'ok' : 'fail', 'Samsung Add Flow', addFlow || 'leer');
   add(results, safeHttpsUrl(envValue(env, 'SAMSUNG_WALLET_PARTNER_SERVER_URL')) ? 'ok' : 'fail', 'Partner Server HTTPS', safeHttpsUrl(envValue(env, 'SAMSUNG_WALLET_PARTNER_SERVER_URL')) ? 'HTTPS ok' : 'keine gültige HTTPS-URL');
   add(results, safeHttpsUrl(envValue(env, 'APP_PUBLIC_BASE_URL')) ? 'ok' : 'fail', 'App Public HTTPS', safeHttpsUrl(envValue(env, 'APP_PUBLIC_BASE_URL')) ? 'HTTPS ok' : 'keine gültige HTTPS-URL');
 

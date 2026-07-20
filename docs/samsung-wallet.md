@@ -1,6 +1,11 @@
 # Samsung Wallet Setup
 
-Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
+Diese App unterstützt für Samsung Wallet zwei Add-to-Wallet-Flows:
+
+- `data_fetch`: Der Data-Fetch-Link enthält nur `pdata/refId`, Samsung ruft danach unseren Partner-Server ab.
+- `cdata`: Der Link enthält die verschlüsselte und signierte Kartendaten-JWT aus dem Partner Portal Script Guide.
+
+Wichtig: Nutze den Modus, den die konkrete Wallet Card im Samsung Partner Portal unter "Add to Wallet Script Guide" zeigt. Wenn dort `cdata="${CARD DATA as JWT}"` steht, muss `SAMSUNG_WALLET_ADD_FLOW=cdata` gesetzt werden.
 
 ## Flow
 
@@ -8,10 +13,13 @@ Diese App nutzt für Samsung Wallet den Data-Fetch-Link-Flow.
 2. Die Claim-Seite erkennt Samsung-Android-Geräte über `public/js/walletDeviceDetection.js`. Der Hauptbutton `Zu Wallet hinzufügen` öffnet dann Samsung Wallet; Apple, Google und Samsung bleiben zusätzlich als manuelle Buttons sichtbar.
 3. Die App erzeugt über `samsung-wallet-add-link` eine `refId`; bei Token-Claims validiert die Function serverseitig `public_claim_token`.
 4. Die Function speichert diese `refId` in `samsung_wallet_instances`.
-5. Der öffentliche Link zeigt auf `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`.
-6. Samsung ruft danach `samsung-wallet-server` auf:
+5. Je nach `SAMSUNG_WALLET_ADD_FLOW` zeigt der öffentliche Link auf:
+   - `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?pdata={refId}`
+   - `https://a.swallet.link/atw/v3/{certificateId}/{cardId}#Clip?cdata={JWS-wrapped-JWE}`
+6. Beim `data_fetch`-Flow ruft Samsung danach `samsung-wallet-server` auf:
    - `GET /cards/{cardId}/{refId}` für aktuelle Kartendaten
    - `POST /cards/{cardId}/{refId}` für Status-Callbacks. `event`/`cc2` werden als Query-Parameter, JSON-Body oder Form-Body akzeptiert.
+7. Beim `cdata`-Flow werden die Kartendaten direkt in der Edge Function `samsung-wallet-add-link` verschlüsselt und signiert. Die `refId` wird trotzdem gespeichert, damit die Karte später in El Promillo gefunden und aktualisiert werden kann.
 
 ## Supabase Secrets
 
@@ -37,20 +45,23 @@ SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false
 
 `SAMSUNG_WALLET_PRIVATE_KEY_PEM` kommt aus `samsung-wallet-keys/samsung_wallet_private.key` und muss zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` kommt aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole.
 
+Für den `cdata`-Flow müssen `SAMSUNG_WALLET_PRIVATE_KEY_PEM` und `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` zwingend gesetzt sein. Die App erzeugt daraus einen JWE mit `RSA1_5`/`A128GCM` und signiert ihn als JWS mit `RS256`.
+
 ## Samsung Partner Portal
 
 1. Wallet Card öffnen.
 2. Add to Wallet Script Guide prüfen.
 3. Card ID, Partner Code, Certificate ID, RD Click URL und RD Impression URL übernehmen.
-4. Data Fetch Link aktivieren.
-5. Partner Server URL setzen:
+4. Prüfen, ob der Script Guide `pdata` oder `cdata` zeigt.
+5. Bei `pdata`: Data Fetch Link aktivieren und Partner Server URL setzen:
 
 ```text
 https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server
 ```
 
-6. Samsung Public Key oder Zertifikat herunterladen bzw. aus dem Portal kopieren und als `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` setzen.
-7. Sicherstellen, dass der lokale Partner Private Key zum Samsung-Partner-Zertifikat passt. Falls der originale Private Key fehlt, die vorhandene CSR/Private-Key-Kombination neu im Samsung Portal hinterlegen und ein dazu passendes Partner-Zertifikat herunterladen.
+6. Bei `cdata`: `SAMSUNG_WALLET_ADD_FLOW=cdata` setzen. Ein Partner-Server-Callback ist für das Hinzufügen nicht der primäre Datenweg.
+7. Samsung Public Key oder Zertifikat herunterladen bzw. aus dem Portal kopieren und als `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` setzen.
+8. Sicherstellen, dass der lokale Partner Private Key zum Samsung-Partner-Zertifikat passt. Falls der originale Private Key fehlt, die vorhandene CSR/Private-Key-Kombination neu im Samsung Portal hinterlegen und ein dazu passendes Partner-Zertifikat herunterladen.
 
 ## Deploy
 

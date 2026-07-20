@@ -204,15 +204,16 @@ Deno.serve(async (request) => {
         card_type: config.cardType,
         card_sub_type: config.cardSubType,
         country_code: config.countryCode,
-        add_flow: 'data_fetch',
+        add_flow: config.addFlow,
         card_status: 'pending',
         metadata: {
           source: 'samsung-wallet-add-link',
+          add_flow: config.addFlow,
           template_type: template.template_type,
           customer_code: customerCode
         }
       })
-      .select('id, owner_id, business_id, template_id, ref_id, customer_code, card_id, card_type, card_sub_type, country_code, card_status, created_at, updated_at')
+      .select('id, owner_id, business_id, template_id, ref_id, customer_code, card_id, card_type, card_sub_type, country_code, add_flow, card_status, created_at, updated_at')
       .single();
 
     if (insertError) {
@@ -238,7 +239,7 @@ Deno.serve(async (request) => {
     await insertSamsungEvent(supabaseAdmin, instance, 'add_link_created', {
       template_id: template.id,
       card_id: config.cardId,
-      add_flow: 'data_fetch'
+      add_flow: link.addFlow || config.addFlow
     });
 
     return json({
