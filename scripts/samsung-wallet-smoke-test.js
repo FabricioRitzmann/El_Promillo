@@ -69,6 +69,17 @@ function cdataHeaderFromAddUrl(value) {
   }
 }
 
+function cdataPayloadFromAddUrl(value) {
+  try {
+    const parsed = new URL(value);
+    const cdata = parsed.hash.split('?')[1] ? new URLSearchParams(parsed.hash.split('?')[1]).get('cdata') : '';
+    const payloadSegment = String(cdata || '').split('.')[1];
+    return payloadSegment ? Buffer.from(payloadSegment.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(payloadSegment.length / 4) * 4, '='), 'base64').toString('utf8') : '';
+  } catch {
+    return '';
+  }
+}
+
 function functionsBaseUrl(config) {
   const explicit = argValue('--functions-base-url');
   const configuredUrl = config.publicUrls?.supabaseFunctionBaseUrl;
@@ -185,9 +196,12 @@ async function main() {
 
   if (isCdataLink) {
     const cdataHeader = cdataHeaderFromAddUrl(addUrl);
+    const cdataPayload = cdataPayloadFromAddUrl(addUrl);
+    const encryptedPayloadParts = cdataPayload.split('.');
 
     add(results, cdataHeader?.cty === 'CARD' && cdataHeader?.ver === '3' ? 'ok' : 'fail', 'Samsung cdata Header', cdataHeader ? `cty=${cdataHeader.cty}, ver=${cdataHeader.ver}` : 'Header konnte nicht gelesen werden.');
     add(results, cdataHeader?.certificateId && cdataHeader?.partnerId ? 'ok' : 'fail', 'Samsung cdata Partner Header', cdataHeader ? 'certificateId und partnerId vorhanden.' : 'Header fehlt.');
+    add(results, encryptedPayloadParts.length === 4 ? 'ok' : 'fail', 'Samsung cdata JWE Format', `Innerer Payload hat ${encryptedPayloadParts.length} Teile.`);
   }
 
   add(results, /^[A-Za-z0-9_-]{8,32}$/.test(refId) ? 'ok' : 'fail', 'Samsung Ref ID', `Laenge ${refId.length}.`);

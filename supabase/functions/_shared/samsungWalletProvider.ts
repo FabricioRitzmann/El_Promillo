@@ -498,10 +498,6 @@ function cardDataTokenPayload(template: Row = {}, instance: Row = {}) {
 }
 
 function encryptCardDataJwe(payloadText: string, samsungPublicKeyPem: string) {
-  const protectedHeader = base64Url(JSON.stringify({
-    alg: 'RSA1_5',
-    enc: 'A128GCM'
-  }));
   const cek = randomBytes(16);
   const iv = randomBytes(12);
   const publicKey = publicKeyFromPem(samsungPublicKeyPem);
@@ -516,7 +512,6 @@ function encryptCardDataJwe(payloadText: string, samsungPublicKeyPem: string) {
   const cipher = forge.cipher.createCipher('AES-GCM', bytesToBinaryString(cek));
   cipher.start({
     iv: bytesToBinaryString(iv),
-    additionalData: protectedHeader,
     tagLength: 128
   });
   cipher.update(forge.util.createBuffer(payloadText, 'utf8'));
@@ -526,7 +521,6 @@ function encryptCardDataJwe(payloadText: string, samsungPublicKeyPem: string) {
   }
 
   return [
-    protectedHeader,
     base64Url(binaryStringToBytes(encryptedKeyBinary)),
     base64Url(iv),
     base64Url(binaryStringToBytes(cipher.output.getBytes())),

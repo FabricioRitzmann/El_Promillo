@@ -36,6 +36,8 @@ const report = read('REPORT.md');
   'cdata=',
   'Samsung Add Link Token',
   'Samsung Add Link Path',
+  'Samsung cdata JWE Format',
+  'Innerer Payload hat',
   'cdata nutzt /atw/v3/{cardId}.',
   'pdata nutzt /atw/v3/{certificateId}/{cardId}.',
   'samsung_wallet_instances',

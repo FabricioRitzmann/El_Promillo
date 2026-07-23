@@ -45,7 +45,7 @@ SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false
 
 `SAMSUNG_WALLET_PRIVATE_KEY_PEM` kommt aus `samsung-wallet-keys/samsung_wallet_private.key` und muss zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` kommt aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole.
 
-Für den `cdata`-Flow müssen `SAMSUNG_WALLET_PRIVATE_KEY_PEM` und `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` zwingend gesetzt sein. Die App erzeugt daraus einen JWE mit `RSA1_5`/`A128GCM` und signiert ihn als JWS mit `RS256`. Der äußere Samsung-Header nutzt `cty=CARD` und `ver="3"`. Bilder für Samsung sollten öffentlich per HTTPS erreichbar und kleiner als 256 KB sein; das Projekt nutzt deshalb als Fallback das kleine El-Promillo-Wallet-Emblem.
+Für den `cdata`-Flow müssen `SAMSUNG_WALLET_PRIVATE_KEY_PEM` und `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` zwingend gesetzt sein. Die App erzeugt daraus Samsungs v1.1.3-Sample-Format: RSA PKCS#1 v1.5 verschlüsselter AES-Key, AES-128-GCM Payload und ein vierteiliger innerer Payload `encryptedKey.iv.ciphertext.tag`, der danach als JWS mit `RS256` signiert wird. Der äußere Samsung-Header nutzt `cty=CARD` und `ver="3"`. Bilder für Samsung sollten öffentlich per HTTPS erreichbar und kleiner als 256 KB sein; das Projekt nutzt deshalb als Fallback das kleine El-Promillo-Wallet-Emblem.
 
 ## Samsung Partner Portal
 
