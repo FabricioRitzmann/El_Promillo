@@ -220,6 +220,72 @@ function safeSamsungWalletAddUrl(addUrl) {
   throw new Error('Samsung-Wallet-Link ist ungültig.');
 }
 
+function samsungCdataFromAddUrl(addUrl) {
+  const url = new URL(safeSamsungWalletAddUrl(addUrl));
+  const clipParams = new URLSearchParams(url.hash.replace(/^#Clip\??/, ''));
+  const cdata = String(clipParams.get('cdata') || '').trim();
+
+  if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(cdata)) {
+    return '';
+  }
+
+  return cdata;
+}
+
+function loadSamsungWalletScript() {
+  if (window.samsungWallet?.addButton) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector('script[data-samsung-wallet-script]');
+
+    if (existingScript) {
+      existingScript.addEventListener('load', resolve, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Samsung Wallet Script konnte nicht geladen werden.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://us-cdn-gpp.mcsvc.samsung.com/lib/wallet-card.js';
+    script.async = true;
+    script.dataset.samsungWalletScript = 'true';
+    script.addEventListener('load', resolve, { once: true });
+    script.addEventListener('error', () => reject(new Error('Samsung Wallet Script konnte nicht geladen werden.')), { once: true });
+    document.head.append(script);
+  });
+}
+
+async function renderSamsungWalletButton(walletResult, addUrl) {
+  const cdata = samsungCdataFromAddUrl(addUrl);
+  const targetId = 'samsungWalletOfficialTarget';
+  const buttonId = 'samsungWalletOfficialButton';
+  const target = byId(targetId);
+
+  if (!cdata || !target) {
+    return false;
+  }
+
+  await loadSamsungWalletScript();
+
+  if (!window.samsungWallet?.addButton) {
+    return false;
+  }
+
+  target.innerHTML = '';
+  window.samsungWallet.addButton({
+    partnerCode: String(walletResult.partnerCode || ''),
+    cardId: String(walletResult.cardId || ''),
+    data: cdata,
+    RDClickUrl: String(walletResult.rdClickUrl || ''),
+    RDImpressionUrl: String(walletResult.rdImpressionUrl || ''),
+    targetId,
+    buttonId
+  });
+
+  return true;
+}
+
 async function claimCard(walletPlatform = 'apple') {
   setClaimButtonsDisabled(true);
   showMessage(claimMessage, 'Kundenkarte wird erstellt ...');
@@ -302,15 +368,20 @@ async function claimSamsungWallet() {
     resultPanel.innerHTML = `
       <h2>Samsung-Karte vorbereitet</h2>
       <p class="customer-code">${escapeHtml(cardCode)}</p>
-      <p class="muted">Diese Karten-ID ist eindeutig und kann im Samsung Wallet Partner-Server verwendet werden.</p>
-      <a class="button primary" href="${escapeHtml(addUrl)}">In Samsung Wallet speichern</a>
+      <p class="muted">Tippe auf den Samsung Wallet Button. Falls er nicht lädt, nutze den Ersatzlink darunter.</p>
+      <div id="samsungWalletOfficialTarget" class="samsung-wallet-button-host"></div>
+      <a class="button secondary" href="${escapeHtml(addUrl)}">Samsung Ersatzlink öffnen</a>
     `;
 
-    if (detectedDeviceWallet === 'samsung') {
-      showMessage(claimMessage, 'Samsung Wallet wird geöffnet ...', 'success');
-      window.location.href = addUrl;
-    } else {
-      showMessage(claimMessage, 'Samsung-Wallet-Link wurde erstellt.', 'success');
+    try {
+      const rendered = await renderSamsungWalletButton(walletResult, addUrl);
+      showMessage(
+        claimMessage,
+        rendered ? 'Samsung Wallet Button ist bereit.' : 'Samsung-Wallet-Link wurde erstellt.',
+        'success'
+      );
+    } catch (error) {
+      showMessage(claimMessage, `${error.message} Nutze den Samsung Ersatzlink.`, 'info');
     }
   } catch (error) {
     showMessage(claimMessage, error.message, 'error');

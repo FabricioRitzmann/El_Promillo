@@ -35,6 +35,8 @@ const report = read('REPORT.md');
   'pdata=',
   'cdata=',
   'Samsung Add Link Token',
+  'Samsung Web Button Fields',
+  'partnerCode, cardId und RD URLs vorhanden.',
   'Samsung Add Link Path',
   'Samsung cdata JWE Format',
   'Innerer Payload hat',

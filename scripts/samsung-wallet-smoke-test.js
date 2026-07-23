@@ -192,6 +192,7 @@ async function main() {
 
   add(results, addUrl.startsWith('https://a.swallet.link/atw/v3/') ? 'ok' : 'fail', 'Samsung Add URL Host', redactUrl(addUrl));
   add(results, isDataFetchLink || isCdataLink ? 'ok' : 'fail', 'Samsung Add Link Token', isCdataLink ? 'Add URL nutzt cdata.' : 'Add URL nutzt pdata.');
+  add(results, addLinkBody.partnerCode && addLinkBody.cardId && addLinkBody.rdClickUrl && addLinkBody.rdImpressionUrl ? 'ok' : 'fail', 'Samsung Web Button Fields', 'partnerCode, cardId und RD URLs vorhanden.');
   add(results, (isCdataLink ? addUrlPathParts.length === 3 : addUrlPathParts.length === 4) ? 'ok' : 'fail', 'Samsung Add Link Path', isCdataLink ? 'cdata nutzt /atw/v3/{cardId}.' : 'pdata nutzt /atw/v3/{certificateId}/{cardId}.');
 
   if (isCdataLink) {

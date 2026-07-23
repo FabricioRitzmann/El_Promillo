@@ -246,6 +246,11 @@ Deno.serve(async (request) => {
       ok: true,
       provider: 'samsung',
       addUrl: link.addUrl,
+      addFlow: link.addFlow || config.addFlow,
+      cardId: link.cardId || config.cardId,
+      partnerCode: link.partnerCode || config.partnerCode,
+      rdClickUrl: link.rdClickUrl || config.rdClickUrl,
+      rdImpressionUrl: link.rdImpressionUrl || config.rdImpressionUrl,
       refId: link.refId,
       card: {
         customer_code: instance.customer_code,

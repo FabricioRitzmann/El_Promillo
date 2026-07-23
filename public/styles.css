@@ -2221,3 +2221,14 @@ body:has(.modal-backdrop:not([hidden])) {
     padding: 0.85rem;
   }
 }
+
+.samsung-wallet-button-host {
+  display: flex;
+  justify-content: center;
+  min-height: 48px;
+  margin: 12px 0;
+}
+
+.samsung-wallet-button-host:empty {
+  display: none;
+}
