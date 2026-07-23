@@ -1,19 +1,19 @@
 {
   "app": {
     "name": "El_Promillo",
-    "baseUrl": "https://el-promillo-j1n0.onrender.com",
+    "baseUrl": "https://fabricioritzmann.github.io/El_Promillo/public",
     "apiBaseUrl": "https://el-promillo-j1n0.onrender.com"
   },
   "publicUrls": {
-    "webAppDomain": "https://el-promillo-j1n0.onrender.com",
+    "webAppDomain": "https://fabricioritzmann.github.io/El_Promillo/public",
     "supabaseFunctionBaseUrl": "https://mfyltmjzofahbavrwpac.supabase.co/functions/v1",
-    "walletInstallPage": "https://el-promillo-j1n0.onrender.com/claim.html",
+    "walletInstallPage": "https://fabricioritzmann.github.io/El_Promillo/claim.html",
     "appPublicBaseUrl": "SET_AS_SUPABASE_EDGE_SECRET_APP_PUBLIC_BASE_URL"
   },
   "server": {
     "host": "0.0.0.0",
     "port": 3000,
-    "corsOrigin": "https://el-promillo-j1n0.onrender.com"
+    "corsOrigin": "https://fabricioritzmann.github.io/El_Promillo"
   },
   "automation": {
     "walletCronSecret": "SET_AS_SUPABASE_EDGE_SECRET_WALLET_CRON_SECRET",
@@ -37,7 +37,7 @@
     "serviceAccountEmail": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL",
     "privateKey": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_PRIVATE_KEY",
     "serviceAccountJson": "SET_AS_SUPABASE_EDGE_SECRET_GOOGLE_WALLET_SERVICE_ACCOUNT_JSON",
-    "origins": "https://el-promillo-j1n0.onrender.com",
+    "origins": "https://fabricioritzmann.github.io",
     "desiredPassTypes": [
       "generic",
       "loyalty",
