@@ -29,6 +29,7 @@ const claim = read('public/js/claim.js');
 const detection = read('public/js/walletDeviceDetection.js');
 const schema = read('supabase/schema.sql');
 const report = read('REPORT.md');
+const pausedDoc = read('docs/samsung-wallet-paused.md');
 
 assertIncludesAll('Samsung Goal Audit', audit, [
   '# Samsung Wallet Goal Audit',
@@ -79,13 +80,26 @@ assertIncludesAll('Samsung Provider', samsungProvider, [
   'SAMSUNG_AUTHORIZATION_PUBLIC_KEY_REQUIRED_IN_PRODUCTION'
 ]);
 
-assertIncludesAll('Claim Device Routing', `${claim}\n${detection}`, [
-  'claimSamsungWallet',
-  'samsung-wallet-add-link',
+assertIncludesAll('Claim Device Routing', `${claim}
+${detection}`, [
   'detectWalletDevice',
-  'samsung',
-  'android',
-  'manual'
+  "claimCard('apple')",
+  "claimCard('google')",
+  'android_google_wallet',
+  'manual_choice_required'
+]);
+
+assert(
+  !claim.includes('claimSamsungWallet')
+    && !claim.includes('samsung-wallet-add-link')
+    && !claim.includes('samsungWalletButton'),
+  'Samsung Wallet ist pausiert und darf im aktiven Claim-Frontend nicht geroutet werden.'
+);
+
+assertIncludesAll('Samsung Paused Routing', pausedDoc, [
+  'Samsung Wallet ist in der aktiven El-Promillo-App vorerst deaktiviert',
+  'Android, inklusive Samsung-Geräte: Google Wallet',
+  '/Users/fabricio/Desktop/samsung/el-promillo-samsung-wallet-archive-2026-07-23-201919'
 ]);
 
 assertIncludesAll('Samsung SQL', schema, [
@@ -109,4 +123,4 @@ assertIncludesAll('Package Check', packageJson, [
   'node scripts/verify-samsung-wallet-goal-audit.js'
 ]);
 
-console.log('Samsung Wallet Goal Audit ist dokumentiert und gegen Prompt-Kernanforderungen abgesichert.');
+console.log('Samsung Wallet Goal Audit ist dokumentiert und gegen den pausierten Samsung-Stand abgesichert.');

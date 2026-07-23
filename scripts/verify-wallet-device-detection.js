@@ -26,24 +26,24 @@ const cases = [
     wallet: 'apple'
   },
   {
-    name: 'Samsung Android routes to Samsung Wallet',
+    name: 'Samsung Android routes to Google Wallet',
     input: {
       userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 SamsungBrowser/25.0 Chrome/121.0 Mobile Safari/537.36',
       platform: 'Android',
       brands: [{ brand: 'Samsung Internet' }],
       maxTouchPoints: 5
     },
-    wallet: 'samsung'
+    wallet: 'google'
   },
   {
-    name: 'Samsung Chrome with Galaxy model routes to Samsung Wallet',
+    name: 'Samsung Chrome with Galaxy model routes to Google Wallet',
     input: {
       userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Chrome/121.0 Mobile Safari/537.36',
       platform: 'Android',
       brands: [{ brand: 'Google Chrome' }],
       maxTouchPoints: 5
     },
-    wallet: 'samsung'
+    wallet: 'google'
   },
   {
     name: 'Other Android routes to Google Wallet',
@@ -74,4 +74,4 @@ for (const testCase of cases) {
   assert(result.reason, `${testCase.name}: reason missing`);
 }
 
-console.log('Wallet Device Detection ist für Apple, Samsung, Google und manuelle Auswahl abgesichert.');
+console.log('Wallet Device Detection ist für Apple, Android/Google und manuelle Auswahl abgesichert.');

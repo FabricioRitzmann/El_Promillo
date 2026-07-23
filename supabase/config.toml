@@ -16,13 +16,6 @@ verify_jwt = false
 
 [functions.google-wallet-save-link]
 verify_jwt = false
-
-[functions.samsung-wallet-add-link]
-verify_jwt = false
-
-[functions.samsung-wallet-server]
-verify_jwt = false
-
 [functions.create-topup-payment-session]
 verify_jwt = false
 

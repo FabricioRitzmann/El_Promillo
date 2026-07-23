@@ -48,6 +48,7 @@ const providerPath = 'supabase/functions/_shared/samsungWalletProvider.ts';
 const addLinkPath = 'supabase/functions/samsung-wallet-add-link/index.ts';
 const serverPath = 'supabase/functions/samsung-wallet-server/index.ts';
 const updatePath = 'supabase/functions/update-samsung-wallet-pass/index.ts';
+const pausedDoc = read('docs/samsung-wallet-paused.md');
 
 [
   providerPath,
@@ -112,6 +113,7 @@ assertIncludesAll('Samsung Provider Data-Fetch/Auth', provider, [
   'SAMSUNG_AUTHORIZATION_PUBLIC_KEY_REQUIRED_IN_PRODUCTION',
   'SAMSUNG_WALLET_RD_CLICK_URL',
   'SAMSUNG_WALLET_RD_IMPRESSION_URL',
+  'SAMSUNG_WALLET_LOGO_URL',
   'SAMSUNG_WALLET_PARTNER_SERVER_URL',
   'SAMSUNG_AUTHORIZATION_PUBLIC_KEY_MISSING',
   'SAMSUNG_AUTHORIZATION_SIGNATURE_INVALID',
@@ -207,16 +209,22 @@ assertIncludesAll('Samsung SQL Tabellen und RLS', schema, [
   'revoke select, insert, update, delete on public.samsung_wallet_events from authenticated'
 ]);
 
-assertIncludesAll('Samsung Deploy und JWT Policy', config, [
-  '[functions.samsung-wallet-add-link]',
-  '[functions.samsung-wallet-server]',
-  'verify_jwt = false'
-]);
+assert(
+  !config.includes('[functions.samsung-wallet-add-link]') && !config.includes('[functions.samsung-wallet-server]'),
+  'Samsung Wallet ist pausiert und darf in supabase/config.toml nicht als aktive public Function markiert sein.'
+);
 
-assertIncludesAll('Samsung Deploy Script', deploy, [
-  'samsung-wallet-add-link',
-  'samsung-wallet-server',
-  'update-samsung-wallet-pass'
+assert(
+  !deploy.includes('  samsung-wallet-add-link')
+    && !deploy.includes('  samsung-wallet-server')
+    && !deploy.includes('  update-samsung-wallet-pass'),
+  'Samsung Wallet ist pausiert und darf im Standard-Deploy-Script nicht aktiv deployt werden.'
+);
+
+assertIncludesAll('Samsung Pause Dokumentation', pausedDoc, [
+  'Samsung Wallet ist in der aktiven El-Promillo-App vorerst deaktiviert',
+  'Android, inklusive Samsung-Geräte: Google Wallet',
+  '/Users/fabricio/Desktop/samsung/el-promillo-samsung-wallet-archive-2026-07-23-201919'
 ]);
 
 [
@@ -233,6 +241,7 @@ assertIncludesAll('Samsung Deploy Script', deploy, [
   'SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM',
   'SAMSUNG_WALLET_RD_CLICK_URL',
   'SAMSUNG_WALLET_RD_IMPRESSION_URL',
+  'SAMSUNG_WALLET_LOGO_URL',
   'SAMSUNG_WALLET_PARTNER_SERVER_URL',
   'SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH'
 ].forEach((secretName) => {
@@ -255,4 +264,4 @@ assertIncludesAll('Samsung Doku', `${setupDoc}\n${globalSetupDoc}\n${providerDoc
   'keine Änderung an bestehenden `wallet_platform` Constraints'
 ]);
 
-console.log('Samsung Wallet Contract ist für Provider, Edge Functions, SQL, Secrets und Doku statisch abgesichert.');
+console.log('Samsung Wallet Contract ist für pausierten Provider, Edge Functions, SQL, Secrets und Doku statisch abgesichert.');

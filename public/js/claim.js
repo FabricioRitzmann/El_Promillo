@@ -8,7 +8,6 @@ const claimMessage = byId('claimMessage');
 const walletPrimaryButton = byId('walletPrimaryButton');
 const claimButton = byId('claimButton');
 const googleWalletButton = byId('googleWalletButton');
-const samsungWalletButton = byId('samsungWalletButton');
 const preview = byId('claimPreview');
 const resultPanel = byId('claimResult');
 
@@ -67,7 +66,6 @@ async function loadTemplate() {
   walletPrimaryButton.disabled = false;
   claimButton.disabled = false;
   googleWalletButton.disabled = false;
-  samsungWalletButton.disabled = false;
   configureWalletButtons();
 }
 
@@ -136,9 +134,6 @@ function setClaimButtonsDisabled(disabled) {
     googleWalletButton.disabled = disabled;
   }
 
-  if (samsungWalletButton) {
-    samsungWalletButton.disabled = disabled;
-  }
 }
 
 function createBrowserWalletObjectId(walletPlatform) {
@@ -199,92 +194,6 @@ function safeGoogleWalletSaveUrl(saveUrl) {
   throw new Error('Google-Wallet-Link ist ungültig.');
 }
 
-function safeSamsungWalletAddUrl(addUrl) {
-  const value = String(addUrl || '').trim();
-
-  try {
-    const url = new URL(value);
-    const clipParams = new URLSearchParams(url.hash.replace(/^#Clip\??/, ''));
-
-    if (
-      url.origin === 'https://a.swallet.link'
-      && url.pathname.startsWith('/atw/v3/')
-      && (clipParams.has('pdata') || clipParams.has('cdata'))
-    ) {
-      return url.href;
-    }
-  } catch {
-    // Strukturierter Fehler folgt unten.
-  }
-
-  throw new Error('Samsung-Wallet-Link ist ungültig.');
-}
-
-function samsungCdataFromAddUrl(addUrl) {
-  const url = new URL(safeSamsungWalletAddUrl(addUrl));
-  const clipParams = new URLSearchParams(url.hash.replace(/^#Clip\??/, ''));
-  const cdata = String(clipParams.get('cdata') || '').trim();
-
-  if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(cdata)) {
-    return '';
-  }
-
-  return cdata;
-}
-
-function loadSamsungWalletScript() {
-  if (window.samsungWallet?.addButton) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    const existingScript = document.querySelector('script[data-samsung-wallet-script]');
-
-    if (existingScript) {
-      existingScript.addEventListener('load', resolve, { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Samsung Wallet Script konnte nicht geladen werden.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://us-cdn-gpp.mcsvc.samsung.com/lib/wallet-card.js';
-    script.async = true;
-    script.dataset.samsungWalletScript = 'true';
-    script.addEventListener('load', resolve, { once: true });
-    script.addEventListener('error', () => reject(new Error('Samsung Wallet Script konnte nicht geladen werden.')), { once: true });
-    document.head.append(script);
-  });
-}
-
-async function renderSamsungWalletButton(walletResult, addUrl) {
-  const cdata = samsungCdataFromAddUrl(addUrl);
-  const targetId = 'samsungWalletOfficialTarget';
-  const buttonId = 'samsungWalletOfficialButton';
-  const target = byId(targetId);
-
-  if (!cdata || !target) {
-    return false;
-  }
-
-  await loadSamsungWalletScript();
-
-  if (!window.samsungWallet?.addButton) {
-    return false;
-  }
-
-  target.innerHTML = '';
-  window.samsungWallet.addButton({
-    partnerCode: String(walletResult.partnerCode || ''),
-    cardId: String(walletResult.cardId || ''),
-    data: cdata,
-    RDClickUrl: String(walletResult.rdClickUrl || ''),
-    RDImpressionUrl: String(walletResult.rdImpressionUrl || ''),
-    targetId,
-    buttonId
-  });
-
-  return true;
-}
 
 async function claimCard(walletPlatform = 'apple') {
   setClaimButtonsDisabled(true);
@@ -355,40 +264,6 @@ async function claimCard(walletPlatform = 'apple') {
   }
 }
 
-async function claimSamsungWallet() {
-  setClaimButtonsDisabled(true);
-  showMessage(claimMessage, 'Samsung-Wallet-Link wird erstellt ...');
-
-  try {
-    const walletResult = await createSamsungWalletAddLink();
-    const addUrl = safeSamsungWalletAddUrl(walletResult.addUrl);
-    const cardCode = walletResult.card?.customer_code || walletResult.refId || '';
-
-    resultPanel.hidden = false;
-    resultPanel.innerHTML = `
-      <h2>Samsung-Karte vorbereitet</h2>
-      <p class="customer-code">${escapeHtml(cardCode)}</p>
-      <p class="muted">Tippe auf den Samsung Wallet Button. Falls er nicht lädt, nutze den Ersatzlink darunter.</p>
-      <div id="samsungWalletOfficialTarget" class="samsung-wallet-button-host"></div>
-      <a class="button secondary" href="${escapeHtml(addUrl)}">Samsung Ersatzlink öffnen</a>
-    `;
-
-    try {
-      const rendered = await renderSamsungWalletButton(walletResult, addUrl);
-      showMessage(
-        claimMessage,
-        rendered ? 'Samsung Wallet Button ist bereit.' : 'Samsung-Wallet-Link wurde erstellt.',
-        'success'
-      );
-    } catch (error) {
-      showMessage(claimMessage, `${error.message} Nutze den Samsung Ersatzlink.`, 'info');
-    }
-  } catch (error) {
-    showMessage(claimMessage, error.message, 'error');
-  } finally {
-    setClaimButtonsDisabled(false);
-  }
-}
 
 async function claimPreferredWallet() {
   detectedDeviceWallet = detectWalletDevice().wallet;
@@ -402,11 +277,7 @@ async function claimPreferredWallet() {
     return claimCard('google');
   }
 
-  if (detectedDeviceWallet === 'samsung') {
-    return claimSamsungWallet();
-  }
-
-  showMessage(claimMessage, 'Bitte wähle Apple, Google oder Samsung Wallet.', 'info');
+  showMessage(claimMessage, 'Bitte wähle Apple oder Google Wallet.', 'info');
   return null;
 }
 
@@ -564,35 +435,6 @@ async function createGoogleWalletSaveLink(result) {
   return payload;
 }
 
-async function createSamsungWalletAddLink() {
-  const supabaseUrl = publicConfig?.supabase?.url?.replace(/\/$/, '');
-  const anonKey = publicConfig?.supabase?.anonKey;
-
-  if (!supabaseUrl || !anonKey) {
-    throw new Error('Supabase Edge Function ist nicht konfiguriert.');
-  }
-
-  const response = await fetch(`${supabaseUrl}/functions/v1/samsung-wallet-add-link`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`
-    },
-    body: JSON.stringify({
-      templateId: template.id,
-      claimToken: currentClaimToken || undefined
-    })
-  });
-
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(payload.error_message || payload.error || 'Samsung-Wallet-Link konnte nicht erstellt werden.');
-  }
-
-  return payload;
-}
 
 async function claimCardViaEdge(walletPlatform, walletObjectId) {
   const supabaseUrl = publicConfig?.supabase?.url?.replace(/\/$/, '');
@@ -685,14 +527,6 @@ googleWalletButton?.addEventListener('click', () => {
     showMessage(claimMessage, error.message, 'error');
   });
 });
-
-samsungWalletButton?.addEventListener('click', () => {
-  claimSamsungWallet().catch((error) => {
-    setClaimButtonsDisabled(false);
-    showMessage(claimMessage, error.message, 'error');
-  });
-});
-
 resultPanel?.addEventListener('submit', (event) => {
   if (event.target?.id !== 'topupForm') {
     return;

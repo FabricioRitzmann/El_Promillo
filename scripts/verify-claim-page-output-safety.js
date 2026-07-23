@@ -32,29 +32,18 @@ assertIncludes(claim, [
   'async function claimPreferredWallet()',
   "claimCard('apple')",
   "claimCard('google')",
-  'claimSamsungWallet()',
   'function safeGoogleWalletSaveUrl(saveUrl)',
   "url.origin === 'https://pay.google.com'",
   "url.pathname.startsWith('/gp/v/save/')",
   'throw new Error(\'Google-Wallet-Link ist ungültig.\')'
 ], 'Google Save-Link Validierung');
 
-assertIncludes(claim, [
-  'function safeSamsungWalletAddUrl(addUrl)',
-  "url.origin === 'https://a.swallet.link'",
-  "url.pathname.startsWith('/atw/v3/')",
-  "clipParams.has('pdata')",
-  "clipParams.has('cdata')",
-  'throw new Error(\'Samsung-Wallet-Link ist ungültig.\')',
-  'samsung-wallet-add-link'
-], 'Samsung Add-Link Validierung');
 
 assertIncludes(claim, [
   'const cardCode = result.card?.card_instance_number || result.card?.customer_code || \'\';',
   '<p class="customer-code">${escapeHtml(cardCode)}</p>',
   'resultPanel.insertAdjacentHTML(\'beforeend\'',
   '<a class="button primary" href="${escapeHtml(saveUrl)}">In Google Wallet speichern</a>',
-  '<a class="button primary" href="${escapeHtml(addUrl)}">In Samsung Wallet speichern</a>'
 ], 'Claim Result Escaping');
 
 assertIncludes(claim, [
@@ -80,14 +69,12 @@ assertIncludes(read('public/claim.html'), [
   'id="walletPrimaryButton"',
   'Zu Wallet hinzufügen',
   'id="claimButton"',
-  'id="googleWalletButton"',
-  'id="samsungWalletButton"'
+  'id="googleWalletButton"'
 ], 'Claim Wallet Haupt- und Provider-Buttons');
 
 assertIncludes(contextDoc, [
   'Claim-Seite',
   'safeGoogleWalletSaveUrl',
-  'safeSamsungWalletAddUrl',
   'escapeHtml'
 ], 'Kontextdoku Claim Output Safety');
 
@@ -101,4 +88,4 @@ assert(
   'package.json muss verify-claim-page-output-safety.js in pnpm check ausführen.'
 );
 
-console.log('Claim-Seite escaped öffentliche Ausgabe und validiert Google- und Samsung-Wallet-Links.');
+console.log('Claim-Seite escaped öffentliche Ausgabe und validiert Google-Wallet-Links.');

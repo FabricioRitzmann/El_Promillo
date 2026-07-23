@@ -572,6 +572,7 @@ SAMSUNG_WALLET_PRIVATE_KEY_PEM
 SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM
 SAMSUNG_WALLET_RD_CLICK_URL
 SAMSUNG_WALLET_RD_IMPRESSION_URL
+SAMSUNG_WALLET_LOGO_URL
 SAMSUNG_WALLET_PARTNER_SERVER_URL
 SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH
 SUPABASE_URL
@@ -661,6 +662,7 @@ supabase secrets set SAMSUNG_WALLET_PRIVATE_KEY_PEM="$(cat samsung-wallet-keys/s
 supabase secrets set SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM="$(cat samsung-wallet-keys/samsung_public_cert.pem)"
 supabase secrets set SAMSUNG_WALLET_RD_CLICK_URL="https://us-rd.mcsvc.samsung.com/statistics/click/addtowlt?..."
 supabase secrets set SAMSUNG_WALLET_RD_IMPRESSION_URL="https://us-rd.mcsvc.samsung.com/statistics/impression/addtowlt?..."
+supabase secrets set SAMSUNG_WALLET_LOGO_URL="https://deine-domain.ch/assets/logo.png"
 supabase secrets set SAMSUNG_WALLET_PARTNER_SERVER_URL="https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server"
 supabase secrets set SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH="false"
 supabase secrets set PAYMENT_PROVIDER="manual"
