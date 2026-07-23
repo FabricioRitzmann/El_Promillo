@@ -39,13 +39,14 @@ SAMSUNG_WALLET_PRIVATE_KEY_PEM=...
 SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM=...
 SAMSUNG_WALLET_RD_CLICK_URL=...
 SAMSUNG_WALLET_RD_IMPRESSION_URL=...
+SAMSUNG_WALLET_LOGO_URL=https://deine-domain.ch/assets/logo.png
 SAMSUNG_WALLET_PARTNER_SERVER_URL=https://<PROJECT_REF>.supabase.co/functions/v1/samsung-wallet-server
 SAMSUNG_WALLET_ALLOW_UNVERIFIED_AUTH=false
 ```
 
 `SAMSUNG_WALLET_PRIVATE_KEY_PEM` kommt aus `samsung-wallet-keys/samsung_wallet_private.key` und muss zum Samsung-Partner-Zertifikat passen. `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` kommt aus dem Samsung-Zertifikat/Public-Key der Partner-Konsole.
 
-Für den `cdata`-Flow müssen `SAMSUNG_WALLET_PRIVATE_KEY_PEM` und `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` zwingend gesetzt sein. Die App erzeugt daraus Samsungs v1.1.3-Sample-Format: RSA PKCS#1 v1.5 verschlüsselter AES-Key, AES-128-GCM Payload und ein vierteiliger innerer Payload `encryptedKey.iv.ciphertext.tag`, der danach als JWS mit `RS256` signiert wird. Der äußere Samsung-Header nutzt `cty=CARD` und `ver="3"`. Bilder für Samsung sollten öffentlich per HTTPS erreichbar und kleiner als 256 KB sein; das Projekt nutzt deshalb als Fallback das kleine El-Promillo-Wallet-Emblem.
+Für den `cdata`-Flow müssen `SAMSUNG_WALLET_PRIVATE_KEY_PEM` und `SAMSUNG_WALLET_SAMSUNG_PUBLIC_KEY_PEM` zwingend gesetzt sein. Die App erzeugt daraus Samsungs v1.1.3-Sample-Format: RSA PKCS#1 v1.5 verschlüsselter AES-Key, AES-128-GCM Payload und ein vierteiliger innerer Payload `encryptedKey.iv.ciphertext.tag`, der danach als JWS mit `RS256` signiert wird. Der äußere Samsung-Header nutzt `cty=CARD` und `ver="3"`. Bilder für Samsung sollten öffentlich per HTTPS erreichbar, kleiner als 256 KB und als klarer Bildpfad mit `.png`, `.jpg`, `.jpeg` oder `.webp` nutzbar sein. Externe Thumbnail-URLs ohne Dateiendung werden für Samsung ignoriert; das Projekt nutzt dann `SAMSUNG_WALLET_LOGO_URL` oder als Fallback das kleine El-Promillo-Wallet-Emblem.
 
 ## Samsung Partner Portal
 

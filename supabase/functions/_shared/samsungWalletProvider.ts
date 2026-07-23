@@ -108,6 +108,22 @@ function publicAssetUrl(path: string) {
   return baseUrl ? `${baseUrl}/${path.replace(/^\/+/, '')}` : '';
 }
 
+function samsungCompatibleImageUrl(value: unknown) {
+  const url = safeHttpsUrl(value);
+
+  if (!url) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(url);
+
+    return /\.(png|jpe?g|webp)$/i.test(parsed.pathname) ? url : '';
+  } catch (_error) {
+    return '';
+  }
+}
+
 function firstBusiness(template: Row = {}) {
   return Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
 }
@@ -213,14 +229,15 @@ function rewardOrDescription(template: Row = {}, instance: Row = {}) {
 
 function logoImageUrl(template: Row = {}) {
   const business = firstBusiness(template) || {};
-  const candidate = safeHttpsUrl(
+  const override = samsungCompatibleImageUrl(Deno.env.get('SAMSUNG_WALLET_LOGO_URL'));
+  const candidate = samsungCompatibleImageUrl(
     business.logo_url
       || template.business_logo_url
       || template.company_logo_url
       || template.logo_url
   );
 
-  return candidate || publicAssetUrl(SAMSUNG_FALLBACK_LOGO_PATH);
+  return override || candidate || publicAssetUrl(SAMSUNG_FALLBACK_LOGO_PATH);
 }
 
 function appLinkUrl(template: Row = {}) {
