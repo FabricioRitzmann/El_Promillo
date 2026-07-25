@@ -11,6 +11,9 @@ verify_jwt = false
 [functions.get-public-template]
 verify_jwt = false
 
+[functions.get-wallet-message]
+verify_jwt = false
+
 [functions.claim-apple-pass]
 verify_jwt = false
 

@@ -3,6 +3,7 @@ import { featureEnabled, normalizeTemplateType } from './templateFeatures.ts';
 import { appleWalletProvider } from './appleWalletProvider.ts';
 import { googleWalletProvider } from './googleWalletProvider.ts';
 import { publicApplePushResult, publicWalletProviderResult } from './publicResponses.ts';
+import { walletMessageUrlForCard } from './walletMessageLinks.ts';
 
 type Row = Record<string, any>;
 const MANUAL_WALLET_LOG_SELECT = 'id,owner_id,business_id,card_instance_id,wallet_platform,status,action,request_payload,response_payload,error_message,created_at';
@@ -3245,9 +3246,11 @@ export const walletNotificationService = {
 
   async sendToApplePass(context: Row, campaign: Row, recipient: Row, cardInstance: Row) {
     const template = cardInstance.card_templates;
+    const messageUrl = await walletMessageUrlForCard(cardInstance);
     const passFields: Row = {
       latestMessage: campaign.message,
-      message: campaign.message
+      message: campaign.message,
+      messageUrl
     };
 
     if (campaign.send_type === 'location_based' && campaign.location_lat != null && campaign.location_lng != null) {
@@ -3313,6 +3316,18 @@ export const walletNotificationService = {
       };
     }
 
+    const messageUrl = await walletMessageUrlForCard(cardInstance);
+    const readableMessage = messageUrl
+      ? campaign.message + '\n\nNachricht öffnen: ' + messageUrl
+      : campaign.message;
+    const messageLinkRows = messageUrl
+      ? [{
+        id: `wallet-message-link-${campaign.id}`,
+        header: 'Nachricht öffnen',
+        body: messageUrl
+      }]
+      : [];
+
     if (campaign.send_type === 'location_based') {
       const fallbackResult = await googleWalletProvider.updateObject(
         objectType,
@@ -3322,7 +3337,8 @@ export const walletNotificationService = {
             id: `wallet-location-message-${campaign.id}`,
             header: campaign.title,
             body: campaign.message
-          }
+          },
+          ...messageLinkRows
         ])
       );
 
@@ -3347,7 +3363,7 @@ export const walletNotificationService = {
       };
     }
 
-    const result = await googleWalletProvider.sendTextAndNotify(objectType, objectId, campaign.title, campaign.message);
+    const result = await googleWalletProvider.sendTextAndNotify(objectType, objectId, campaign.title, readableMessage);
 
     if (!result.ok) {
       const fallbackResult = await googleWalletProvider.updateObject(
@@ -3358,7 +3374,8 @@ export const walletNotificationService = {
             id: `wallet-message-${campaign.id}`,
             header: campaign.title,
             body: campaign.message
-          }
+          },
+          ...messageLinkRows
         ])
       ).catch((error: Error) => ({
         ok: false,

@@ -7,6 +7,7 @@ cd "$ROOT_DIR"
 FUNCTIONS=(
   claim-card
   get-public-template
+  get-wallet-message
   claim-apple-pass
   create-topup-payment-session
   confirm-topup-payment

@@ -57,6 +57,14 @@ function compactFrontMessage(value: unknown, maxLength = 64) {
   return text.slice(0, Math.max(0, maxLength - 3)).trimEnd() + '...';
 }
 
+function htmlEscape(value: unknown) {
+  return stringValue(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function configured(value: unknown) {
   const text = stringValue(value);
   return Boolean(text && !text.startsWith('YOUR_') && !text.includes('CHANGE_THIS'));
@@ -727,6 +735,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const cardCode = cardCodeFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
   const latestMessagePreview = compactFrontMessage(latestMessage);
+  const messageUrl = stringValue(fields.messageUrl || cardInstance.customer_cards?.metadata?.latest_wallet_message_url);
   const featureRows = walletFeatureRows(template, cardInstance);
   const headerRow = latestMessage
     ? {
@@ -786,6 +795,12 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         label: 'Vollständige Nachricht',
         value: latestMessage,
         changeMessage: '%@'
+      },
+      {
+        key: 'messageUrlBack',
+        label: 'Nachricht öffnen',
+        value: messageUrl,
+        attributedValue: messageUrl ? '<a href="' + htmlEscape(messageUrl) + '">Nachricht öffnen</a>' : ''
       },
       {
         key: 'cardIdBack',

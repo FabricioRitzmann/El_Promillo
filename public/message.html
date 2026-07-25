@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>El Promillo - Nachricht</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="message-layout">
+      <section class="message-panel">
+        <p class="eyebrow">Wallet Nachricht</p>
+        <header class="wallet-message-header">
+          <div>
+            <h1 id="messageTitle">Nachricht</h1>
+            <p id="messageMeta" class="muted">Wird geladen ...</p>
+          </div>
+        </header>
+
+        <div id="messageNotice" class="message" hidden></div>
+
+        <article id="messageCard" class="wallet-message-card" hidden>
+          <p id="messageBody" class="wallet-message-body"></p>
+          <dl class="wallet-message-facts">
+            <div>
+              <dt>Unternehmen</dt>
+              <dd id="messageBusiness">-</dd>
+            </div>
+            <div>
+              <dt>Karte</dt>
+              <dd id="messageCardName">-</dd>
+            </div>
+            <div>
+              <dt>Karten-ID</dt>
+              <dd id="messageCardCode">-</dd>
+            </div>
+          </dl>
+        </article>
+
+        <section id="messageHistorySection" class="wallet-message-history" hidden>
+          <h2>Weitere Nachrichten</h2>
+          <div id="messageHistory" class="stack"></div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="js/message.js"></script>
+  </body>
+</html>

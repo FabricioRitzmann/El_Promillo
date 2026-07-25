@@ -17,6 +17,7 @@
   },
   "automation": {
     "walletCronSecret": "SET_AS_SUPABASE_EDGE_SECRET_WALLET_CRON_SECRET",
+    "walletMessageLinkSecret": "SET_AS_SUPABASE_EDGE_SECRET_WALLET_MESSAGE_LINK_SECRET_OPTIONAL",
     "scheduledNotificationsFunction": "process-scheduled-wallet-notifications",
     "walletUpdateQueueFunction": "process-wallet-update-queue"
   },

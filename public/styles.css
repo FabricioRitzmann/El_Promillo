@@ -2221,3 +2221,103 @@ body:has(.modal-backdrop:not([hidden])) {
     padding: 0.85rem;
   }
 }
+
+
+.message-layout {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--page-padding-x);
+}
+
+.message-panel {
+  width: min(620px, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.1rem, 3vw, 1.7rem);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.wallet-message-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.65rem, 7vw, 2.55rem);
+  line-height: 1.05;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wallet-message-card {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 1px solid rgba(139, 79, 47, 0.18);
+  border-radius: var(--radius);
+  background: rgba(255, 250, 242, 0.9);
+}
+
+.wallet-message-body {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.05rem, 4vw, 1.22rem);
+  line-height: 1.58;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wallet-message-facts {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.wallet-message-facts div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.wallet-message-facts dt,
+.wallet-message-history-item time {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wallet-message-facts dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.wallet-message-history {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.wallet-message-history h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.wallet-message-history-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.wallet-message-history-item p {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
