@@ -47,6 +47,16 @@ function stringValue(value: unknown) {
   return String(value || '').trim();
 }
 
+function compactFrontMessage(value: unknown, maxLength = 64) {
+  const text = stringValue(value).replace(/\s+/g, ' ');
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return text.slice(0, Math.max(0, maxLength - 3)).trimEnd() + '...';
+}
+
 function configured(value: unknown) {
   const text = stringValue(value);
   return Boolean(text && !text.startsWith('YOUR_') && !text.includes('CHANGE_THIS'));
@@ -716,13 +726,13 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
+  const latestMessagePreview = compactFrontMessage(latestMessage);
   const featureRows = walletFeatureRows(template, cardInstance);
   const headerRow = latestMessage
     ? {
       key: 'latestMessage',
-      label: 'Nachricht',
-      value: latestMessage,
-      changeMessage: 'Neue Nachricht: %@'
+      label: 'Update',
+      value: latestMessagePreview || 'Neue Nachricht'
     }
     : {
       key: 'currentProgress',
@@ -773,9 +783,9 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     backFields: [
       {
         key: 'messageBack',
-        label: 'Letzte Nachricht',
+        label: 'Vollständige Nachricht',
         value: latestMessage,
-        changeMessage: 'Neue Nachricht: %@'
+        changeMessage: '%@'
       },
       {
         key: 'cardIdBack',

@@ -163,6 +163,16 @@ function compactWalletText(value) {
   return String(value ?? '').trim();
 }
 
+function compactWalletPreviewText(value, maxLength = 64) {
+  const text = compactWalletText(value).replace(/\s+/g, ' ');
+
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return text.slice(0, Math.max(0, maxLength - 3)).trimEnd() + '...';
+}
+
 function walletPreviewStatusLabel(value) {
   const status = compactWalletText(value).toLowerCase();
 
@@ -183,11 +193,12 @@ function walletPreviewPassFields(template, card, business) {
     || card?.customer_code
     || 'Karten-ID';
   const latestMessage = compactWalletText(card?.metadata?.latest_wallet_message || card?.latest_wallet_message);
+  const latestMessagePreview = compactWalletPreviewText(latestMessage);
   const headerField = latestMessage
     ? {
       key: 'latestMessage',
-      label: 'Nachricht',
-      value: latestMessage
+      label: 'Update',
+      value: latestMessagePreview || 'Neue Nachricht'
     }
     : {
       key: 'currentProgress',
