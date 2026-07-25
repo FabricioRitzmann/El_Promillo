@@ -95,6 +95,16 @@ export function walletMessageToken(value) {
   return TOKEN_PATTERN.test(token) ? token : '';
 }
 
+export function walletMessageLinkPayload(value) {
+  const payload = stringValue(value);
+  const [cardId, token] = payload.split('.');
+
+  return {
+    cardId: walletMessageCardId(cardId),
+    token: walletMessageToken(token)
+  };
+}
+
 export function walletMessageLinksConfigured() {
   return configured(walletMessageSecret()) && Boolean(appPublicBaseUrl());
 }
@@ -119,7 +129,7 @@ export async function walletMessageUrlForCard(cardInstance) {
     return '';
   }
 
-  return baseUrl + '/message.html?card=' + encodeURIComponent(cardId) + '&token=' + encodeURIComponent(token);
+  return baseUrl + '/message.html?m=' + encodeURIComponent(cardId + '.' + token);
 }
 
 export async function verifyWalletMessageToken(cardInstance, token) {

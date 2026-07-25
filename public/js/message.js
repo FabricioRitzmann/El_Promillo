@@ -55,10 +55,17 @@ function renderHistory(messages = []) {
   ].join('')).join('');
 }
 
+function unpackMessageLink(value) {
+  const [card = '', token = ''] = String(value || '').split('.');
+
+  return { card, token };
+}
+
 async function loadWalletMessage() {
   const params = new URLSearchParams(window.location.search);
-  const card = params.get('card') || params.get('card_id') || '';
-  const token = params.get('token') || '';
+  const packedLink = unpackMessageLink(params.get('m'));
+  const card = packedLink.card || params.get('card') || params.get('card_id') || '';
+  const token = packedLink.token || params.get('token') || params.get('amp;token') || '';
 
   if (!card || !token) {
     throw new Error('Dieser Nachrichten-Link ist unvollständig. Öffne die Nachricht direkt aus deiner Wallet-Karte.');

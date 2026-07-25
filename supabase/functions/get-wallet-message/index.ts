@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { enforcePublicClaimRateLimit } from '../_shared/publicRateLimit.ts';
-import { verifyWalletMessageToken, walletMessageCardId, walletMessageToken } from '../_shared/walletMessageLinks.ts';
+import { verifyWalletMessageToken, walletMessageCardId, walletMessageLinkPayload, walletMessageToken } from '../_shared/walletMessageLinks.ts';
 
 type Row = Record<string, any>;
 
@@ -145,8 +145,9 @@ Deno.serve(async (request) => {
 
     const url = new URL(request.url);
     const body = await requestBody(request) as Row;
-    const cardId = walletMessageCardId(body.card || body.cardId || body.card_id || url.searchParams.get('card') || url.searchParams.get('card_id'));
-    const token = walletMessageToken(body.token || url.searchParams.get('token'));
+    const packedLink = walletMessageLinkPayload(body.m || body.messageLink || body.message_link || url.searchParams.get('m'));
+    const cardId = packedLink.cardId || walletMessageCardId(body.card || body.cardId || body.card_id || url.searchParams.get('card') || url.searchParams.get('card_id'));
+    const token = packedLink.token || walletMessageToken(body.token || url.searchParams.get('token') || url.searchParams.get('amp;token'));
 
     if (!cardId || !token) {
       throw createStructuredError(
