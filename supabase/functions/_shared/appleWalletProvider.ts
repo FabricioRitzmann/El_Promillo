@@ -721,12 +721,14 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     ? {
       key: 'latestMessage',
       label: 'Nachricht',
-      value: latestMessage
+      value: latestMessage,
+      changeMessage: 'Neue Nachricht: %@'
     }
     : {
       key: 'currentProgress',
       label: featureRows[0]?.label || 'Status',
-      value: featureRows[0]?.value || statusLabel(cardInstance.customer_cards?.status || cardInstance.status)
+      value: featureRows[0]?.value || statusLabel(cardInstance.customer_cards?.status || cardInstance.status),
+      changeMessage: '%@'
     };
   const auxiliaryRows = latestMessage ? featureRows : featureRows.slice(1);
   const rewardText = rewardTextForTemplate(template);
@@ -747,12 +749,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   }
 
   const generic = {
-    headerFields: [
-      {
-        ...headerRow,
-        changeMessage: '%@'
-      }
-    ],
+    headerFields: [headerRow],
     primaryFields: [
       {
         key: 'cardName',
@@ -777,7 +774,8 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
       {
         key: 'messageBack',
         label: 'Letzte Nachricht',
-        value: latestMessage
+        value: latestMessage,
+        changeMessage: 'Neue Nachricht: %@'
       },
       {
         key: 'cardIdBack',
