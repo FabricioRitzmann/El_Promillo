@@ -720,7 +720,11 @@ function applyWalletNotificationDefaults() {
   const messageField = notificationField('message');
   const sendTypeField = notificationField('send_type');
   const defaultTitle = String(deliveryRules.defaultTitle || '').trim();
-  const defaultMessage = String(deliveryRules.defaultMessage || '').trim();
+  const selectedTemplate = selectedNotificationTemplate();
+  const sendType = String(sendTypeField?.value || notificationField('send_type')?.value || 'now');
+  const targetType = String(notificationField('target_type')?.value || 'template');
+  const templateDefaultMessage = walletNotificationTemplateDefaultMessage(selectedTemplate, sendType, targetType);
+  const defaultMessage = templateDefaultMessage || String(deliveryRules.defaultMessage || '').trim();
 
   if (titleField) {
     titleField.placeholder = defaultTitle || 'Kurzer Wallet-Hinweis';
@@ -732,10 +736,7 @@ function applyWalletNotificationDefaults() {
 
   if (messageField) {
     messageField.placeholder = defaultMessage || 'Text für Apple Wallet und Google Wallet';
-
-    if (!String(messageField.value || '').trim() && defaultMessage) {
-      messageField.value = defaultMessage;
-    }
+    setAutofilledWalletNotificationMessage(messageField, defaultMessage);
   }
 
   if (sendTypeField?.value === 'location_based') {
@@ -765,6 +766,47 @@ function selectedNotificationTemplate() {
   }
 
   return state.notificationTemplates.find((template) => template.id === selectedId) || state.template || null;
+}
+
+function walletNotificationTemplateDefaultMessage(template, sendType = '', targetType = '') {
+  const settings = templateSettings(template || {});
+  const textCandidates = [];
+
+  if (sendType === 'location_based') {
+    textCandidates.push(settings.cloakroomLocationMessage);
+  }
+
+  if (sendType === 'scheduled' && targetType === 'cloakroom_open') {
+    textCandidates.push(settings.cloakroomNoonMessage);
+  }
+
+  textCandidates.push(
+    settings.notificationMessage,
+    settings.cloakroomNoonMessage,
+    settings.cloakroomLocationMessage
+  );
+
+  return textCandidates
+    .map((value) => String(value || '').trim())
+    .find(Boolean) || '';
+}
+
+function setAutofilledWalletNotificationMessage(messageField, nextMessage) {
+  if (!messageField || !nextMessage) {
+    return;
+  }
+
+  const currentValue = String(messageField.value || '').trim();
+  const previousAutofill = String(messageField.dataset.autofilledMessage || '').trim();
+
+  if (!currentValue || (previousAutofill && currentValue === previousAutofill)) {
+    messageField.value = nextMessage;
+    messageField.dataset.autofilledMessage = nextMessage;
+  }
+}
+
+function walletNotificationMessageFromForm(formData) {
+  return String(formData.get('message') || '').trim();
 }
 
 async function callWalletNotificationFunction(functionName, payload) {
@@ -958,7 +1000,7 @@ function notificationFormPayload() {
     targetType,
     targetFilter: targetFilterFromForm(formData, targetType),
     title: String(formData.get('title') || '').trim(),
-    message: String(formData.get('message') || '').trim(),
+    message: walletNotificationMessageFromForm(formData),
     sendType,
     scheduledAt: formData.get('scheduled_at') ? new Date(String(formData.get('scheduled_at'))).toISOString() : null,
     locationLat: formData.get('location_lat') ? Number(formData.get('location_lat')) : null,
@@ -1056,7 +1098,7 @@ function updateWalletNotificationPreview() {
 
   const formData = new FormData(walletNotificationForm);
   const title = String(formData.get('title') || 'Titel').trim() || 'Titel';
-  const message = String(formData.get('message') || 'Nachricht').trim() || 'Nachricht';
+  const message = walletNotificationMessageFromForm(formData) || 'Nachricht';
   const sendType = String(formData.get('send_type') || 'now');
 
   updateWalletNotificationTargetFilters();
@@ -1573,6 +1615,12 @@ async function submitWalletNotification(event) {
 
   if (payload.targetType === 'template' && !payload.templateId) {
     showMessage(walletNotificationMessage, 'Wähle für diese Zielgruppe zuerst ein Template.', 'error');
+    return;
+  }
+
+  if (!payload.message) {
+    showMessage(walletNotificationMessage, 'Gib zuerst die Nachricht ein, die der Kunde in der Wallet sehen soll.', 'error');
+    notificationField('message')?.focus();
     return;
   }
 
