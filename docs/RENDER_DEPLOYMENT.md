@@ -44,6 +44,19 @@ Ein Render Static Site Deployment waere nicht passend, weil `/api/config`, QR/PD
 
 Auf Render ist `SERVE_STATIC_FRONTEND=true` gesetzt. Dadurch bedient `server/index.js` die Dateien aus `public/` und liefert fuer Frontend-Routen den `index.html`-Fallback.
 
+## Render als Kunden-Frontend
+
+Render ist die produktive Kunden-Frontend-Seite. GitHub Pages bleibt die Developer-/Quellseite.
+
+Die Webapp enthaelt deshalb eine bewusst eingebaute Render-only-Regel:
+
+- Render-Domain oder Custom Domain `el-promillo.ch` auf PC/Laptop: volle Webapp
+- Render-Domain oder Custom Domain `el-promillo.ch` auf Tablet: volle Webapp
+- Render-Domain oder Custom Domain `el-promillo.ch` auf Mobiltelefon: nach Login nur Scanner
+- GitHub Pages: immer volle Webapp, auch auf Mobiltelefonen
+
+Die Regel liegt im Browsercode in `public/js/appMode.js` und wird zentral in `public/js/guards.js` durchgesetzt. Der Build-Check `scripts/verify-render-mobile-scanner-mode.js` ist in `pnpm run build` eingebunden. Dadurch scheitert ein Render-Deploy sichtbar, wenn diese Render-only-Mobile-Scanner-Regel versehentlich entfernt oder auf GitHub Pages ausgeweitet wird.
+
 `render.yaml` definiert:
 
 - `runtime: node`

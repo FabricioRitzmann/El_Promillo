@@ -658,6 +658,25 @@ textarea {
   transition: background 0.18s ease, color 0.18s ease, opacity 0.18s ease;
 }
 
+.app-tabbar button.app-tab {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.scanner-only-logout {
+  display: none;
+}
+
+.scanner-only-mode .scanner-only-logout {
+  display: inline-flex;
+  align-items: center;
+}
+
+.scanner-only-mode .app-tab-account {
+  display: none;
+}
+
 .app-tab:hover {
   color: var(--ink);
   background: transparent;

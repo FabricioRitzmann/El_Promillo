@@ -1,7 +1,8 @@
 import { createSupabaseRestClient } from './supabaseClient.js';
+import { isRenderPhoneScannerMode } from './appMode.js';
 import { pagePath } from './path.js';
 
-const MOBILE_SCANNER_MEDIA_QUERY = '(max-width: 767px)';
+const SCANNER_ONLY_ALLOWED_PAGES = new Set(['', 'index.html', 'scanner.html', 'wait.html']);
 const operatorProfileSelect = [
   'id',
   'email',
@@ -12,11 +13,24 @@ const operatorProfileSelect = [
 ].join(',');
 
 export function isMobileScannerOnly() {
-  return false;
+  return isRenderPhoneScannerMode();
 }
 
 export function operatorHomePath() {
-  return pagePath('dashboard.html');
+  return pagePath(isMobileScannerOnly() ? 'scanner.html' : 'dashboard.html');
+}
+
+function currentPageName() {
+  return String(window.location.pathname || '')
+    .split('/')
+    .pop()
+    .toLowerCase();
+}
+
+function shouldRedirectToScannerOnlyPage(profile) {
+  return Boolean(profile?.unlock)
+    && isMobileScannerOnly()
+    && !SCANNER_ONLY_ALLOWED_PAGES.has(currentPageName());
 }
 
 export async function getOwnProfile(client, session) {
@@ -48,6 +62,11 @@ export async function requireLogin({ requireUnlock = false } = {}) {
 
   if (requireUnlock && !profile?.unlock) {
     window.location.replace(pagePath('wait.html'));
+    return null;
+  }
+
+  if (shouldRedirectToScannerOnlyPage(profile)) {
+    window.location.replace(pagePath('scanner.html'));
     return null;
   }
 

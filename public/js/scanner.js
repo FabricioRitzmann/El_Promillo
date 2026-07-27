@@ -1,5 +1,6 @@
 import { requireLogin } from './guards.js';
 import { apiUrl } from './config.js';
+import { pagePath } from './path.js';
 import { byId, cardTypeLabel, escapeHtml, normalizeCode, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
 import { cardEmblemMeta } from './cardEmblems.js';
 import { activeFeatureLabels, featureEnabled, normalizeScannerAction, normalizeTemplateType, validateScannerAction } from './templateFeatures.js';
@@ -104,6 +105,7 @@ const scannerMessage = byId('scannerMessage');
 const manualForm = byId('manualScanForm');
 const video = byId('scannerVideo');
 const cardPanel = byId('cardPanel');
+const scannerOnlyLogoutButton = byId('scannerOnlyLogoutButton');
 const demographicsModal = byId('demographicsModal');
 const demographicsForm = byId('demographicsForm');
 const demographicsTemplateType = byId('demographicsTemplateType');
@@ -845,6 +847,11 @@ async function initScanner() {
   });
 
   byId('stopScanner')?.addEventListener('click', stopCamera);
+
+  scannerOnlyLogoutButton?.addEventListener('click', async () => {
+    await state.client.signOut();
+    window.location.replace(pagePath('index.html'));
+  });
 
   manualForm?.addEventListener('submit', (event) => {
     event.preventDefault();
