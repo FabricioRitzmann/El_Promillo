@@ -47,7 +47,7 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - Bei Karten mit erlaubter Guthabenfunktion zeigt die Claim-Seite eine Aufladebox und erstellt Topup-Sessions über die Edge Function `create-topup-payment-session`
 - Mindest- und Maximalbetrag für Aufladungen werden im Editor lesbar als Betrag gepflegt und zusätzlich als Cent-Werte für Edge Functions gespeichert
 - Betreiber sehen im Dashboard pro ausgegebener Kundenkarte, auf welcher Karte wie viel Guthaben und welcher Fortschritt vorhanden ist
-- Scanner-/Bearbeitungsseite mit Kamera-Scan per `BarcodeDetector` und manueller Eingabe
+- Scanner-/Bearbeitungsseite mit Kamera-Scan per nativer `BarcodeDetector`-API, mobilem `jsQR`-Fallback und manueller Eingabe
 - Scanner zeigt nur zur Matrix passende Aktionen und blockiert unpassende Aktionen mit sichtbarer Fehlermeldung
 - Scanner-Aktionen laufen im Frontend zuerst über die Supabase Edge Function `scanner-actions`; der lokale Node-Endpunkt ist nur Fallback für lokale Entwicklung
 - Beim ersten Scan einer Kundenkarte fragt der Scanner Geschlecht und Altersgruppe für anonymisierte Besucherstatistik ab; danach bleibt diese Erfassung pro Karteninstanz gespeichert

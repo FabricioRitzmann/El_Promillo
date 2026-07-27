@@ -14,10 +14,17 @@ const state = {
   stream: null,
   detector: null,
   scanTimer: null,
+  scanAnimationFrame: null,
+  scanInProgress: false,
+  scannerMode: '',
+  scanCanvas: null,
+  scanCanvasContext: null,
   business: null,
   pendingDemographicsAction: null,
   pendingDemographicsPayload: null
 };
+
+const JSQR_CDN_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
 
 const businessScannerSelect = [
   'id',
@@ -121,6 +128,7 @@ const clubFeatureBadgeLabels = {
 };
 
 let scannerResetTimer = null;
+let jsQrLoaderPromise = null;
 
 async function loadBusinessHeader() {
   state.business = await state.client.selectRows('businesses', {
@@ -140,8 +148,21 @@ function stopCamera() {
     state.scanTimer = null;
   }
 
+  if (state.scanAnimationFrame) {
+    cancelAnimationFrame(state.scanAnimationFrame);
+    state.scanAnimationFrame = null;
+  }
+
   state.stream?.getTracks().forEach((track) => track.stop());
   state.stream = null;
+  state.detector = null;
+  state.scannerMode = '';
+  state.scanInProgress = false;
+
+  if (video) {
+    video.pause();
+    video.srcObject = null;
+  }
 }
 
 function renderCard() {
@@ -794,41 +815,190 @@ function showScannerActionError(error) {
   });
 }
 
+function loadJsQrDecoder() {
+  if (window.jsQR) {
+    return Promise.resolve(window.jsQR);
+  }
+
+  if (jsQrLoaderPromise) {
+    return jsQrLoaderPromise;
+  }
+
+  jsQrLoaderPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = JSQR_CDN_URL;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = () => {
+      if (window.jsQR) {
+        resolve(window.jsQR);
+        return;
+      }
+
+      reject(new Error('QR-Decoder konnte nicht geladen werden.'));
+    };
+    script.onerror = () => reject(new Error('QR-Decoder konnte nicht geladen werden. Bitte Internetverbindung prüfen oder den Kundencode manuell eingeben.'));
+    document.head.append(script);
+  });
+
+  return jsQrLoaderPromise;
+}
+
+function cameraErrorMessage(error) {
+  const name = String(error?.name || '');
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return 'Kamera-Zugriff wurde verweigert. Bitte erlaube Kamera-Zugriff im Browser und starte den Scan erneut.';
+  }
+
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return 'Keine Kamera gefunden. Bitte Kundencode manuell eingeben.';
+  }
+
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return 'Kamera ist gerade nicht verfügbar. Bitte andere Kamera-Apps schliessen und erneut versuchen.';
+  }
+
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+    return 'Kamera-Scan benötigt HTTPS. Bitte die Render-Seite über https öffnen.';
+  }
+
+  return error?.message || 'Kamera konnte nicht gestartet werden. Bitte Kundencode manuell eingeben.';
+}
+
+function decodeFrameWithJsQr() {
+  if (!window.jsQR || !video?.videoWidth || !video?.videoHeight) {
+    return '';
+  }
+
+  if (!state.scanCanvas) {
+    state.scanCanvas = document.createElement('canvas');
+    state.scanCanvasContext = state.scanCanvas.getContext('2d', { willReadFrequently: true });
+  }
+
+  const canvas = state.scanCanvas;
+  const context = state.scanCanvasContext;
+
+  if (!context) {
+    return '';
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts: 'attemptBoth'
+  });
+
+  return code?.data || '';
+}
+
 async function scanFrame() {
-  if (!state.detector || !video || video.readyState < 2) {
+  if (!video || video.readyState < 2 || state.scanInProgress) {
     return;
   }
 
-  const codes = await state.detector.detect(video).catch(() => []);
+  state.scanInProgress = true;
 
-  if (!codes.length) {
-    return;
+  try {
+    let rawValue = '';
+
+    if (state.detector) {
+      const codes = await state.detector.detect(video).catch(() => []);
+      rawValue = codes[0]?.rawValue || '';
+    } else if (state.scannerMode === 'jsqr') {
+      rawValue = decodeFrameWithJsQr();
+    }
+
+    if (!rawValue) {
+      return;
+    }
+
+    stopCamera();
+    await loadCardByCode(rawValue);
+  } finally {
+    state.scanInProgress = false;
   }
+}
 
-  stopCamera();
-  await loadCardByCode(codes[0].rawValue);
+function scheduleJsQrScanLoop() {
+  state.scanAnimationFrame = requestAnimationFrame(async () => {
+    await scanFrame().catch((error) => showMessage(scannerMessage, error.message, 'error'));
+
+    if (state.stream && state.scannerMode === 'jsqr') {
+      scheduleJsQrScanLoop();
+    }
+  });
 }
 
 async function startCamera() {
-  if (!('BarcodeDetector' in window)) {
-    showMessage(scannerMessage, 'Kamera-Scan ist in diesem Browser nicht verfügbar. Manuelle Eingabe ist aktiv.', 'info');
+  stopCamera();
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    showMessage(scannerMessage, 'Kamera-Zugriff ist in diesem Browser nicht verfügbar. Bitte Kundencode manuell eingeben.', 'error');
     return;
   }
 
-  state.detector = new BarcodeDetector({ formats: ['qr_code'] });
-  state.stream = await navigator.mediaDevices.getUserMedia({
-    video: {
-      facingMode: 'environment'
-    },
-    audio: false
-  });
+  showMessage(scannerMessage, 'Kamera wird gestartet ...');
+
+  let detector = null;
+
+  if ('BarcodeDetector' in window) {
+    try {
+      detector = new BarcodeDetector({ formats: ['qr_code'] });
+    } catch {
+      detector = null;
+    }
+  }
+
+  if (!detector) {
+    await loadJsQrDecoder();
+  }
+
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+  } catch (error) {
+    showMessage(scannerMessage, cameraErrorMessage(error), 'error');
+    return;
+  }
 
   video.srcObject = state.stream;
-  await video.play();
-  state.scanTimer = setInterval(() => {
-    scanFrame().catch((error) => showMessage(scannerMessage, error.message, 'error'));
-  }, 700);
-  showMessage(scannerMessage, 'Scanner aktiv.', 'success');
+
+  try {
+    await video.play();
+  } catch (error) {
+    stopCamera();
+    showMessage(scannerMessage, cameraErrorMessage(error), 'error');
+    return;
+  }
+
+  state.detector = detector;
+  state.scannerMode = detector ? 'barcode-detector' : 'jsqr';
+
+  if (state.detector) {
+    state.scanTimer = setInterval(() => {
+      scanFrame().catch((error) => showMessage(scannerMessage, error.message, 'error'));
+    }, 500);
+  } else {
+    scheduleJsQrScanLoop();
+  }
+
+  showMessage(
+    scannerMessage,
+    state.scannerMode === 'jsqr'
+      ? 'Scanner aktiv. Mobile QR-Erkennung ist eingeschaltet.'
+      : 'Scanner aktiv.',
+    'success'
+  );
 }
 
 async function initScanner() {

@@ -44,6 +44,7 @@
       <section class="scanner-grid">
         <div class="panel">
           <h2>Kamera</h2>
+          <p class="muted scanner-camera-hint">Scan funktioniert auf Mobile mit nativer QR-Erkennung oder automatischem Fallback. Bitte Kamera-Zugriff erlauben.</p>
           <video id="scannerVideo" class="scanner-video" playsinline muted></video>
           <div class="button-row">
             <button id="startScanner" class="primary" type="button">Scan starten</button>
@@ -54,7 +55,7 @@
         <form id="manualScanForm" class="panel">
           <h2>Manuelle Eingabe</h2>
           <label>Kundencode
-            <input name="customer_code" placeholder="WC-..." autocomplete="off">
+            <input name="customer_code" placeholder="WC-..." autocomplete="off" autocapitalize="characters" spellcheck="false">
           </label>
           <button class="primary" type="submit">Karte laden</button>
         </form>

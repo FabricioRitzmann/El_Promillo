@@ -1906,6 +1906,10 @@ textarea {
   box-shadow: var(--shadow-soft);
 }
 
+.scanner-camera-hint {
+  margin-top: -0.25rem;
+}
+
 .scanner-shell {
   align-items: start;
 }
