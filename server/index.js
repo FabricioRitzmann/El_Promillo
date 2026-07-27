@@ -1250,8 +1250,20 @@ async function loadBusinessScanStatistics(user, filters) {
 
 app.use(express.json({ limit: '1mb' }));
 app.use((req, res, next) => {
-  const origin = config.server.corsOrigin || config.app.baseUrl || '*';
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  const configuredOrigins = String(config.server.corsOrigin || config.app.baseUrl || '*')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const requestOrigin = req.get('origin');
+  const allowAnyOrigin = configuredOrigins.includes('*');
+  const allowedOrigin = allowAnyOrigin
+    ? '*'
+    : configuredOrigins.includes(requestOrigin)
+      ? requestOrigin
+      : configuredOrigins[0] || '*';
+
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
