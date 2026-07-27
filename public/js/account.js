@@ -37,6 +37,7 @@ const businessAccountSelect = [
 const accountMessage = byId('accountMessage');
 const loginDataList = byId('loginDataList');
 const businessForm = byId('accountBusinessForm');
+const mobileAccountCompanyName = byId('mobileAccountCompanyName');
 const companyLogoPreview = byId('companyLogoPreview');
 const companyLogoUpload = byId('companyLogoUpload');
 const uploadCompanyLogoButton = byId('uploadCompanyLogoButton');
@@ -94,6 +95,14 @@ function renderLoginData() {
   ].join('');
 }
 
+function renderMobileAccountSummary() {
+  if (!mobileAccountCompanyName) {
+    return;
+  }
+
+  mobileAccountCompanyName.textContent = businessDisplayName(state.business || {});
+}
+
 function numberOrNull(value) {
   const text = String(value ?? '').trim();
 
@@ -122,6 +131,7 @@ function fillBusinessForm() {
   businessForm.company_logo_path.value = state.business?.company_logo_path || '';
   renderCompanyLogoPreview();
   renderBusinessHeader(state.business || {});
+  renderMobileAccountSummary();
 }
 
 async function loadBusiness() {
@@ -360,10 +370,13 @@ async function initAccount() {
     removeCompanyLogo().catch((error) => showMessage(accountMessage, error.message, 'error'));
   });
 
-  byId('logoutButton')?.addEventListener('click', async () => {
+  async function logout() {
     await state.client.signOut();
     window.location.replace(pagePath('index.html'));
-  });
+  }
+
+  byId('logoutButton')?.addEventListener('click', logout);
+  byId('mobileLogoutButton')?.addEventListener('click', logout);
 }
 
 initAccount().catch((error) => {

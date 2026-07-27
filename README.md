@@ -17,7 +17,7 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - Aktiver Goal-Kontext für Frontend, Tabellen, Apple/Google-Daten, Public URLs, Design und Versandregeln unter [docs/WALLET_ACTIVE_GOAL_CONTEXT.md](docs/WALLET_ACTIVE_GOAL_CONTEXT.md)
 - Ausführlicher Integrationskontext unter [docs/WALLET_INTEGRATION_CONTEXT.md](docs/WALLET_INTEGRATION_CONTEXT.md)
 - Render Deployment Guide unter [docs/RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md)
-- Render ist das Kunden-Frontend: Mobiltelefone werden dort nach Login automatisch auf den Scanner begrenzt, Desktop und Tablets sehen die volle Webapp; GitHub Pages bleibt unverändert
+- Render ist das Kunden-Frontend: Mobiltelefone werden dort nach Login automatisch auf Scanner plus reduziertes Konto mit Firmenname und Logout begrenzt, Desktop und Tablets sehen die volle Webapp; GitHub Pages bleibt unverändert
 - Externe Apple-/Google-Credential-Anleitung `Wallet External Credentials` unter [docs/WALLET_EXTERNAL_CREDENTIALS.md](docs/WALLET_EXTERNAL_CREDENTIALS.md)
 - Abschluss- und Extern-Test-Audit unter [docs/WALLET_GOAL_COMPLETION_AUDIT.md](docs/WALLET_GOAL_COMPLETION_AUDIT.md)
 - Umsetzungsplan mit Analyse, Dateirollen, SQL-Migrationsplan, Edge-Function-Plan und Secret-Checkliste unter [docs/WALLET_IMPLEMENTATION_PLAN.md](docs/WALLET_IMPLEMENTATION_PLAN.md)

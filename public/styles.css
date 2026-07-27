@@ -334,6 +334,27 @@ textarea {
   gap: var(--section-gap);
 }
 
+.mobile-account-summary {
+  display: none;
+}
+
+.scanner-only-mode .mobile-account-summary {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.scanner-only-mode .account-shell > .page-heading,
+.scanner-only-mode .account-grid,
+.scanner-only-mode .account-form {
+  display: none;
+}
+
+.mobile-account-summary h1 {
+  margin: 0;
+  font-size: clamp(2rem, 9vw, 2.8rem);
+}
+
 .account-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 0.45fr);
@@ -668,13 +689,13 @@ textarea {
   display: none;
 }
 
+.scanner-only-mode .app-tabbar a[href^="dashboard.html"],
 .scanner-only-mode .scanner-only-logout {
-  display: inline-flex;
-  align-items: center;
+  display: none;
 }
 
 .scanner-only-mode .app-tab-account {
-  display: none;
+  display: inline-flex;
 }
 
 .app-tab:hover {

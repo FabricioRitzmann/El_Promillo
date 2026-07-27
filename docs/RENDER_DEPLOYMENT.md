@@ -52,10 +52,10 @@ Die Webapp enthaelt deshalb eine bewusst eingebaute Render-only-Regel:
 
 - Render-Domain oder Custom Domain `el-promillo.ch` auf PC/Laptop: volle Webapp
 - Render-Domain oder Custom Domain `el-promillo.ch` auf Tablet: volle Webapp
-- Render-Domain oder Custom Domain `el-promillo.ch` auf Mobiltelefon: nach Login nur Scanner
+- Render-Domain oder Custom Domain `el-promillo.ch` auf Mobiltelefon: nach Login Scanner plus reduziertes Konto mit Firmenname und Logout
 - GitHub Pages: immer volle Webapp, auch auf Mobiltelefonen
 
-Die Regel liegt im Browsercode in `public/js/appMode.js` und wird zentral in `public/js/guards.js` durchgesetzt. Der Build-Check `scripts/verify-render-mobile-scanner-mode.js` ist in `pnpm run build` eingebunden. Dadurch scheitert ein Render-Deploy sichtbar, wenn diese Render-only-Mobile-Scanner-Regel versehentlich entfernt oder auf GitHub Pages ausgeweitet wird.
+Die Regel liegt im Browsercode in `public/js/appMode.js` und wird zentral in `public/js/guards.js` durchgesetzt. `account.html` bleibt auf Mobiltelefonen erlaubt, zeigt dort aber nur die reduzierte Kontoansicht. Der Build-Check `scripts/verify-render-mobile-scanner-mode.js` ist in `pnpm run build` eingebunden. Dadurch scheitert ein Render-Deploy sichtbar, wenn diese Render-only-Mobile-Scanner-Regel versehentlich entfernt oder auf GitHub Pages ausgeweitet wird.
 
 `render.yaml` definiert:
 

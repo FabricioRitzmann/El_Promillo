@@ -42,9 +42,22 @@ assertIncludes('public/js/guards.js', [
   "import { isRenderPhoneScannerMode } from './appMode.js';",
   'SCANNER_ONLY_ALLOWED_PAGES',
   "'scanner.html'",
+  "'account.html'",
   "pagePath(isMobileScannerOnly() ? 'scanner.html' : 'dashboard.html')",
   'shouldRedirectToScannerOnlyPage',
   'window.location.replace(pagePath(\'scanner.html\'))'
+]);
+
+assertIncludes('public/account.html', [
+  'mobile-account-summary',
+  'mobileAccountCompanyName',
+  'mobileLogoutButton'
+]);
+
+assertIncludes('public/js/account.js', [
+  'mobileAccountCompanyName',
+  'renderMobileAccountSummary',
+  'mobileLogoutButton'
 ]);
 
 assertIncludes('public/scanner.html', [
@@ -63,7 +76,11 @@ assertIncludes('public/js/scanner.js', [
 assertIncludes('public/styles.css', [
   '.scanner-only-logout',
   '.scanner-only-mode .scanner-only-logout',
+  '.scanner-only-mode .app-tabbar a[href^="dashboard.html"]',
   '.scanner-only-mode .app-tab-account',
+  '.scanner-only-mode .mobile-account-summary',
+  '.scanner-only-mode .account-grid',
+  '.scanner-only-mode .account-form',
   '.desktop-only-link'
 ]);
 

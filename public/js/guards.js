@@ -2,7 +2,7 @@ import { createSupabaseRestClient } from './supabaseClient.js';
 import { isRenderPhoneScannerMode } from './appMode.js';
 import { pagePath } from './path.js';
 
-const SCANNER_ONLY_ALLOWED_PAGES = new Set(['', 'index.html', 'scanner.html', 'wait.html']);
+const SCANNER_ONLY_ALLOWED_PAGES = new Set(['', 'index.html', 'scanner.html', 'account.html', 'wait.html']);
 const operatorProfileSelect = [
   'id',
   'email',
