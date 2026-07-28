@@ -23,7 +23,7 @@ const googleTemplateSelect = [
   'primary_color',
   'text_color',
   'logo_url',
-  'businesses(name,logo_url)',
+  'businesses(name,logo_url,updated_at,company_logo_updated_at)',
   'reward_text',
   'stamps_required',
   'streak_goal',
@@ -216,13 +216,18 @@ function timestampMs(value: unknown) {
 }
 
 function newestSourceTimestamp(card: Row, cardInstance: Row | null = null) {
+  const template = card.card_templates || {};
+  const business = Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
+
   return Math.max(
     timestampMs(card.updated_at),
     timestampMs(cardInstance?.updated_at),
-    timestampMs(card.card_templates?.updated_at),
+    timestampMs(template.updated_at),
+    timestampMs(business?.updated_at),
+    timestampMs(business?.company_logo_updated_at),
     timestampMs(card.created_at),
     timestampMs(cardInstance?.created_at),
-    timestampMs(card.card_templates?.created_at)
+    timestampMs(template.created_at)
   );
 }
 
@@ -388,6 +393,20 @@ function imageValue(url: unknown, label = 'Logo') {
     sourceUri: { uri },
     contentDescription: localized(label)
   };
+}
+
+function appPublicAssetUrl(pathname: string) {
+  const baseUrl = stringValue(Deno.env.get('APP_PUBLIC_BASE_URL') || Deno.env.get('APP_BASE_URL') || 'https://el-promillo.ch');
+
+  try {
+    return new URL(pathname, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
+  } catch (_error) {
+    return `https://el-promillo.ch${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+  }
+}
+
+function fallbackLogoImage(label = 'Logo') {
+  return imageValue(appPublicAssetUrl('/assets/el-promillo-header-logo-couple-cutout.png'), label);
 }
 
 function rewardTextForTemplate(template: Row) {
@@ -711,6 +730,22 @@ function businessLogoUrlForTemplate(template: Row) {
   return stringValue(business?.logo_url || template.business_logo_url || template.company_logo_url || template.logo_url);
 }
 
+function eventBackgroundImageForTemplate(template: Row) {
+  const settings = templateSettings(template);
+
+  if (normalizeTemplateType(template) !== 'event_card') {
+    return null;
+  }
+
+  return imageValue(
+    settings.eventGoogleHeroImageUrl
+      || settings.event_google_hero_image_url
+      || settings.eventBackgroundImageUrl
+      || settings.event_background_image_url,
+    'Eventbild'
+  );
+}
+
 function cardEmblemImageForObject(card: Row) {
   return imageValue(
     supabaseCardEmblemUrl(card, Deno.env.get('SUPABASE_URL') || ''),
@@ -725,7 +760,10 @@ function applyObjectEmblemImages(payload: Row, card: Row) {
     return payload;
   }
 
-  payload.heroImage = emblemImage;
+  if (!payload.heroImage) {
+    payload.heroImage = emblemImage;
+  }
+
   payload.imageModulesData = [
     {
       id: 'card_emblem',
@@ -740,6 +778,20 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
   const settings = templateSettings(template);
   const issuerName = businessNameForTemplate(template);
   const logo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
+
+  if (objectType === 'loyaltyObject') {
+    return {
+      id: classId,
+      issuerName,
+      reviewStatus: 'UNDER_REVIEW',
+      programName: stringValue(template.card_name || businessNameForTemplate(template, 'Kundenkarte')) || 'Kundenkarte',
+      programLogo: logo || fallbackLogoImage('Programm-Logo'),
+      accountNameLabel: 'Kunde',
+      accountIdLabel: 'Karten-ID',
+      rewardsTierLabel: 'Status',
+      hexBackgroundColor: cleanHexColor(template.primary_color)
+    };
+  }
 
   if (objectType === 'eventTicketObject') {
     const eventDateTime = dateTimeValue(settings);
@@ -766,25 +818,34 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
   }
 
   if (objectType === 'offerObject') {
+    const title = stringValue(settings.couponTitle || template.card_name || template.description || 'Angebot');
+    const provider = businessNameForTemplate(template, issuerName);
     const offerClass: Row = {
       id: classId,
       issuerName,
       reviewStatus: 'UNDER_REVIEW',
-      title: localized(settings.couponTitle || template.card_name || template.description, 'Angebot'),
-      provider: localized(businessNameForTemplate(template, issuerName), issuerName)
+      title,
+      localizedTitle: localized(title, 'Angebot'),
+      redemptionChannel: 'BOTH',
+      provider,
+      localizedProvider: localized(provider, issuerName),
+      hexBackgroundColor: cleanHexColor(template.primary_color)
     };
     const details = stringValue(template.description || settings.discountValue || settings.discount_value);
     const finePrint = stringValue(settings.redemptionTerms || settings.redemption_terms);
 
     if (details) {
-      offerClass.details = localized(details);
+      offerClass.details = details;
+      offerClass.localizedDetails = localized(details);
     }
 
     if (finePrint) {
-      offerClass.finePrint = localized(finePrint);
+      offerClass.finePrint = finePrint;
+      offerClass.localizedFinePrint = localized(finePrint);
     }
 
     if (logo) {
+      offerClass.titleImage = logo;
       offerClass.logo = logo;
     }
 
@@ -811,6 +872,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
   const metadata = card.metadata && typeof card.metadata === 'object' ? card.metadata : {};
 
   if (objectType === 'eventTicketObject') {
+    const eventBackgroundImage = eventBackgroundImageForTemplate(template);
     const ticketNumber = stringValue(metadata.ticket_number || cardCode);
     const ticketType = stringValue(metadata.ticket_type || settings.ticketType || template.card_name || 'Standard');
     const holderName = stringValue(metadata.ticket_holder_name || metadata.customer_name);
@@ -840,16 +902,20 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
       }))
     };
 
+    if (eventBackgroundImage) {
+      eventObject.heroImage = eventBackgroundImage;
+    }
+
     if (holderName) {
       eventObject.ticketHolderName = holderName;
     }
 
     if (seat || row || section || gate) {
       eventObject.seatInfo = {
-        seat: seat || undefined,
-        row: row || undefined,
-        section: section || undefined,
-        gate: gate || undefined
+        seat: seat ? localized(seat) : undefined,
+        row: row ? localized(row) : undefined,
+        section: section ? localized(section) : undefined,
+        gate: gate ? localized(gate) : undefined
       };
     }
 
@@ -879,6 +945,39 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
     }
 
     return applyObjectEmblemImages(offerObject, card);
+  }
+
+  if (objectType === 'loyaltyObject') {
+    const primaryStatusRow = rows[0] || {
+      id: 'status',
+      header: 'Status',
+      body: 'Aktiv'
+    };
+    const loyaltyObject: Row = {
+      id: objectId,
+      classId,
+      state: 'ACTIVE',
+      accountId: cardCode,
+      accountName: stringValue(card.metadata?.customer_name || card.customer_code || cardCode),
+      loyaltyPoints: {
+        label: primaryStatusRow.header,
+        balance: {
+          string: primaryStatusRow.body
+        }
+      },
+      barcode: {
+        type: 'QR_CODE',
+        value: cardCode,
+        alternateText: cardCode
+      },
+      textModulesData: rows.map((row) => ({
+        id: row.id,
+        header: row.header,
+        body: row.body
+      }))
+    };
+
+    return applyObjectEmblemImages(loyaltyObject, card);
   }
 
   const objectPayload: Row = {
@@ -977,9 +1076,10 @@ async function findReusableGoogleWalletObject(supabaseAdmin: any, card: Row, car
     return null;
   }
 
-  return timestampMs(data.updated_at || data.created_at) >= newestSourceTimestamp(card, cardInstance)
-    ? data
-    : null;
+  // Save-JWTs enthalten die komplette Google-Wallet-Payload. Nach Payload-
+  // Korrekturen muessen alte Links frisch signiert werden, auch wenn die
+  // Karteninstanz selbst unveraendert ist.
+  return null;
 }
 
 async function logGoogleSaveLink(supabaseAdmin: any, card: Row, cardInstance: Row, status: string, payload: Row, errorMessage: string | null = null) {

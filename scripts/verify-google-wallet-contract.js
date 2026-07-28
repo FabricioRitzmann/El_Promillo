@@ -95,6 +95,33 @@ assertIncludes(provider, [
 ], 'Google Event Ticket Hero Image');
 
 assertIncludes(provider, [
+  "objectType === 'loyaltyObject'",
+  'programLogo: logo || fallbackLogoImage',
+  "redemptionChannel: 'BOTH'",
+  'localizedTitle: localized(title',
+  'localizedProvider: localized(provider',
+  'seat: seat ? localized(seat) : undefined',
+  'const loyaltyObject: Row = {',
+  'loyaltyPoints: statusPatch.loyaltyPoints'
+], 'Google spezialisierte Payload-Felder');
+
+const providerLoyaltyObject = bodyBetween(
+  provider,
+  'if (objectType === \'loyaltyObject\') {\n    const loyaltyObject: Row = {',
+  'const businessLogo = imageValue',
+  'Provider LoyaltyObject Payload'
+);
+[
+  'genericType',
+  'cardTitle',
+  'header: localized(',
+  'subheader: localized(',
+  'logo: businessLogo'
+].forEach((forbidden) => {
+  assert(!providerLoyaltyObject.includes(forbidden), `Provider LoyaltyObject darf kein Generic-Feld enthalten: ${forbidden}`);
+});
+
+assertIncludes(provider, [
   'function googleObjectIdFor(config: Row, cardInstance: Row)',
   'stored.startsWith(`${config.issuerId}.`)',
   'safeIdSuffix(stored || fallbackValue)',
@@ -193,8 +220,30 @@ assertIncludes(saveLink, [
   ".select('id')",
   '.maybeSingle()',
   'googleObjectUpsertError || !updatedGoogleObject',
+  'programLogo: logo || fallbackLogoImage',
+  "redemptionChannel: 'BOTH'",
+  'localizedTitle: localized(title',
+  'localizedProvider: localized(provider',
+  'seat: seat ? localized(seat) : undefined',
+  'const loyaltyObject: Row = {',
   'google_wallet_save_link'
 ], 'Google Public Save Link');
+
+const saveLinkLoyaltyObject = bodyBetween(
+  saveLink,
+  'if (objectType === \'loyaltyObject\') {\n    const primaryStatusRow',
+  'const objectPayload: Row = {',
+  'Public Save-Link LoyaltyObject Payload'
+);
+[
+  'genericType',
+  'cardTitle',
+  'header: localized(',
+  'subheader: localized(',
+  'objectPayload.logo'
+].forEach((forbidden) => {
+  assert(!saveLinkLoyaltyObject.includes(forbidden), `Public Save-Link LoyaltyObject darf kein Generic-Feld enthalten: ${forbidden}`);
+});
 
 const saveLinkLogBody = bodyBetween(saveLink, 'async function logGoogleSaveLink', 'Deno.serve', 'Google Save-Link Log Body');
 assert(

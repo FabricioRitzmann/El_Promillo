@@ -814,6 +814,20 @@ function imageValue(url: unknown, label = 'Logo') {
   };
 }
 
+function appPublicAssetUrl(pathname: string) {
+  const baseUrl = stringValue(Deno.env.get('APP_PUBLIC_BASE_URL') || Deno.env.get('APP_BASE_URL') || 'https://el-promillo.ch');
+
+  try {
+    return new URL(pathname, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).toString();
+  } catch (_error) {
+    return `https://el-promillo.ch${pathname.startsWith('/') ? pathname : `/${pathname}`}`;
+  }
+}
+
+function fallbackLogoImage(label = 'Logo') {
+  return imageValue(appPublicAssetUrl('/assets/el-promillo-header-logo-couple-cutout.png'), label);
+}
+
 function templateBusiness(template: Row) {
   return Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
 }
@@ -877,6 +891,20 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
   const issuerName = businessNameForTemplate(template);
   const logo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
 
+  if (objectType === 'loyaltyObject') {
+    return {
+      id: classId,
+      issuerName,
+      reviewStatus: 'UNDER_REVIEW',
+      programName: stringValue(template.card_name || businessNameForTemplate(template, 'Kundenkarte')) || 'Kundenkarte',
+      programLogo: logo || fallbackLogoImage('Programm-Logo'),
+      accountNameLabel: 'Kunde',
+      accountIdLabel: 'Karten-ID',
+      rewardsTierLabel: 'Status',
+      hexBackgroundColor: stringValue(template.primary_color || '#fffdf9')
+    };
+  }
+
   if (objectType === 'eventTicketObject') {
     const eventDateTime = dateTimeValue(settings);
     const eventClass: Row = {
@@ -902,25 +930,34 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
   }
 
   if (objectType === 'offerObject') {
+    const title = stringValue(settings.couponTitle || template.card_name || template.description || 'Angebot');
+    const provider = businessNameForTemplate(template, issuerName);
     const offerClass: Row = {
       id: classId,
       issuerName,
       reviewStatus: 'UNDER_REVIEW',
-      title: localized(settings.couponTitle || template.card_name || template.description, 'Angebot'),
-      provider: localized(businessNameForTemplate(template, issuerName), issuerName)
+      title,
+      localizedTitle: localized(title, 'Angebot'),
+      redemptionChannel: 'BOTH',
+      provider,
+      localizedProvider: localized(provider, issuerName),
+      hexBackgroundColor: stringValue(template.primary_color || '#fffdf9')
     };
     const details = stringValue(template.description || settings.discountValue || settings.discount_value);
     const finePrint = stringValue(settings.redemptionTerms || settings.redemption_terms);
 
     if (details) {
-      offerClass.details = localized(details);
+      offerClass.details = details;
+      offerClass.localizedDetails = localized(details);
     }
 
     if (finePrint) {
-      offerClass.finePrint = localized(finePrint);
+      offerClass.finePrint = finePrint;
+      offerClass.localizedFinePrint = localized(finePrint);
     }
 
     if (logo) {
+      offerClass.titleImage = logo;
       offerClass.logo = logo;
     }
 
@@ -983,10 +1020,10 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
 
     if (seat || row || section || gate) {
       eventObject.seatInfo = {
-        seat: seat || undefined,
-        row: row || undefined,
-        section: section || undefined,
-        gate: gate || undefined
+        seat: seat ? localized(seat) : undefined,
+        row: row ? localized(row) : undefined,
+        section: section ? localized(section) : undefined,
+        gate: gate ? localized(gate) : undefined
       };
     }
 
@@ -1014,6 +1051,25 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     return applyObjectEmblemImages(offerObject, cardInstance);
   }
 
+  if (objectType === 'loyaltyObject') {
+    const loyaltyObject: Row = {
+      id: objectId,
+      classId,
+      state: 'ACTIVE',
+      accountId: statusPatch.accountId,
+      accountName: statusPatch.accountName,
+      loyaltyPoints: statusPatch.loyaltyPoints,
+      barcode: {
+        type: 'QR_CODE',
+        value: cardCode,
+        alternateText: cardCode
+      },
+      textModulesData: statusPatch.textModulesData
+    };
+
+    return applyObjectEmblemImages(loyaltyObject, cardInstance);
+  }
+
   const businessLogo = imageValue(businessLogoUrlForTemplate(template), 'Logo');
   const objectPayload: Row = {
     id: objectId,
@@ -1035,13 +1091,31 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
     objectPayload.logo = businessLogo;
   }
 
-  if (objectType === 'loyaltyObject') {
-    objectPayload.accountId = statusPatch.accountId;
-    objectPayload.accountName = statusPatch.accountName;
-    objectPayload.loyaltyPoints = statusPatch.loyaltyPoints;
+  return applyObjectEmblemImages(objectPayload, cardInstance);
+}
+
+function pickPayloadFields(payload: Row, fieldNames: string[]) {
+  const patch: Row = {};
+
+  for (const fieldName of fieldNames) {
+    if (payload[fieldName] !== undefined && payload[fieldName] !== null) {
+      patch[fieldName] = payload[fieldName];
+    }
   }
 
-  return applyObjectEmblemImages(objectPayload, cardInstance);
+  return patch;
+}
+
+function hasPatchFields(patch: Row) {
+  return Object.keys(patch).length > 0;
+}
+
+function classLogoPatchPayload(payload: Row) {
+  return pickPayloadFields(payload, ['logo', 'programLogo', 'titleImage']);
+}
+
+function objectLogoPatchPayload(payload: Row) {
+  return pickPayloadFields(payload, ['logo']);
 }
 
 export const googleWalletProvider = {
@@ -1074,6 +1148,30 @@ export const googleWalletProvider = {
     const result = await googleApi('POST', `/${classType}`, payload);
 
     if (!result.ok && result.status === 409) {
+      const logoPatch = classLogoPatchPayload(payload);
+
+      if (hasPatchFields(logoPatch)) {
+        const patchResult = await googleApi('PATCH', `/${classType}/${encodeURIComponent(classId)}`, logoPatch);
+
+        if (patchResult.ok) {
+          return {
+            ok: true,
+            status: 'updated',
+            classId,
+            response: result.response
+          };
+        }
+
+        return {
+          ok: true,
+          status: 'exists',
+          classId,
+          response: result.response,
+          warning_code: patchResult.error_code || 'GOOGLE_CLASS_LOGO_PATCH_FAILED',
+          warning_message: patchResult.error_message || patchResult.error_reason || 'Google Wallet Class existiert, das Firmenlogo konnte aber nicht gepatcht werden.'
+        };
+      }
+
       return {
         ok: true,
         status: 'exists',
@@ -1102,6 +1200,34 @@ export const googleWalletProvider = {
     const result = await googleApi('POST', `/${objectType}`, payload);
 
     if (!result.ok && result.status === 409) {
+      const logoPatch = objectLogoPatchPayload(payload);
+
+      if (hasPatchFields(logoPatch)) {
+        const patchResult = await googleApi('PATCH', `/${objectType}/${encodeURIComponent(objectId)}`, logoPatch);
+
+        if (patchResult.ok) {
+          return {
+            ok: true,
+            status: 'updated',
+            objectType,
+            objectId,
+            classId: classResult.classId,
+            response: result.response
+          };
+        }
+
+        return {
+          ok: true,
+          status: 'exists',
+          objectType,
+          objectId,
+          classId: classResult.classId,
+          response: result.response,
+          warning_code: patchResult.error_code || 'GOOGLE_OBJECT_LOGO_PATCH_FAILED',
+          warning_message: patchResult.error_message || patchResult.error_reason || 'Google Wallet Object existiert, das Firmenlogo konnte aber nicht gepatcht werden.'
+        };
+      }
+
       return {
         ok: true,
         status: 'exists',
