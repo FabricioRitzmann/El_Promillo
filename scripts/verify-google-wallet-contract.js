@@ -101,6 +101,7 @@ assertIncludes(provider, [
   'localizedTitle: localized(title',
   'localizedProvider: localized(provider',
   'seat: seat ? localized(seat) : undefined',
+  'address: localized(eventVenueAddressForTemplate(template)',
   'const loyaltyObject: Row = {',
   'loyaltyPoints: statusPatch.loyaltyPoints'
 ], 'Google spezialisierte Payload-Felder');
@@ -225,6 +226,7 @@ assertIncludes(saveLink, [
   'localizedTitle: localized(title',
   'localizedProvider: localized(provider',
   'seat: seat ? localized(seat) : undefined',
+  'address: localized(eventVenueAddressForTemplate(template)',
   'const loyaltyObject: Row = {',
   'google_wallet_save_link'
 ], 'Google Public Save Link');

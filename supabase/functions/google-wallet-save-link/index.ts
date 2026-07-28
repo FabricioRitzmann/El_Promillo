@@ -730,6 +730,21 @@ function businessLogoUrlForTemplate(template: Row) {
   return stringValue(business?.logo_url || template.business_logo_url || template.company_logo_url || template.logo_url);
 }
 
+function eventVenueAddressForTemplate(template: Row) {
+  const settings = templateSettings(template);
+  const business = templateBusiness(template);
+
+  return stringValue(
+    settings.eventAddress
+      || settings.event_address
+      || business?.address
+      || template.business_address
+      || settings.eventLocation
+      || settings.event_location
+      || businessNameForTemplate(template, 'Eventlocation')
+  );
+}
+
 function eventBackgroundImageForTemplate(template: Row) {
   const settings = templateSettings(template);
 
@@ -802,7 +817,8 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
       eventId: safeObjectSuffix(settings.eventId || template.id || template.card_name || classId).slice(0, 64),
       eventName: localized(settings.eventName || template.card_name, 'Event'),
       venue: {
-        name: localized(settings.eventLocation || businessNameForTemplate(template, template.card_name || 'Eventlocation'), 'Eventlocation')
+        name: localized(settings.eventLocation || businessNameForTemplate(template, template.card_name || 'Eventlocation'), 'Eventlocation'),
+        address: localized(eventVenueAddressForTemplate(template), 'Eventlocation')
       }
     };
 
