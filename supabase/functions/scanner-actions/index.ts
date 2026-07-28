@@ -114,6 +114,51 @@ function metadataFrom(card: Row) {
     : {};
 }
 
+const cloakroomReminderTimeZone = 'Europe/Zurich';
+
+function zonedDateParts(date: Date, timeZone = cloakroomReminderTimeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).formatToParts(date);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return {
+    year: Number(byType.year),
+    month: Number(byType.month),
+    day: Number(byType.day),
+    hour: Number(byType.hour),
+    minute: Number(byType.minute),
+    second: Number(byType.second)
+  };
+}
+
+function zonedDateTimeToUtc(year: number, month: number, day: number, hour: number, minute: number, second: number, timeZone = cloakroomReminderTimeZone) {
+  const targetAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  let result = new Date(targetAsUtc);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = zonedDateParts(result, timeZone);
+    const actualAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+    const delta = actualAsUtc - targetAsUtc;
+    const next = new Date(result.getTime() - delta);
+
+    if (Math.abs(next.getTime() - result.getTime()) < 1000) {
+      return next;
+    }
+
+    result = next;
+  }
+
+  return result;
+}
+
 function nextNoonAfter(value: unknown) {
   const baseDate = value ? new Date(String(value)) : new Date();
 
@@ -121,11 +166,11 @@ function nextNoonAfter(value: unknown) {
     return null;
   }
 
-  const noon = new Date(baseDate);
-  noon.setHours(12, 0, 0, 0);
+  const local = zonedDateParts(baseDate);
+  let noon = zonedDateTimeToUtc(local.year, local.month, local.day, 12, 0, 0);
 
   if (noon <= baseDate) {
-    noon.setDate(noon.getDate() + 1);
+    noon = zonedDateTimeToUtc(local.year, local.month, local.day + 1, 12, 0, 0);
   }
 
   return noon.toISOString();
@@ -854,6 +899,7 @@ async function syncCardInstance(supabaseAdmin: any, updatedCard: Row, template: 
   const updateSelectColumns = [
     'id',
     'card_instance_number',
+    'wallet_platform',
     'demographics_collected',
     'customer_gender',
     'customer_age_group',
@@ -905,6 +951,7 @@ async function syncCardInstance(supabaseAdmin: any, updatedCard: Row, template: 
   return {
     id: updatedInstance.id,
     card_instance_number: updatedInstance.card_instance_number || instance.card_instance_number || updatedCard.card_instance_number,
+    wallet_platform: updatedInstance.wallet_platform || updatedCard.wallet_platform,
     demographics_collected: Boolean(updatedInstance.demographics_collected),
     customer_gender: updatedInstance.customer_gender,
     customer_age_group: updatedInstance.customer_age_group,
@@ -1094,6 +1141,223 @@ async function insertClubCardAction(supabaseAdmin: any, payload: Row) {
   }
 }
 
+function zurichDateKey(value: string) {
+  const date = new Date(value);
+  const parts = zonedDateParts(date);
+  const month = String(parts.month).padStart(2, '0');
+  const day = String(parts.day).padStart(2, '0');
+
+  return `${parts.year}-${month}-${day}`;
+}
+
+async function maybeScheduleCloakroomNoonReminder(supabaseAdmin: any, card: Row, template: Row, cardInstance: Row, userId: string) {
+  const metadata = metadataFrom(card);
+  const cloakroomActive = Boolean(card.cloakroom_active ?? metadata.cloakroom_active);
+
+  if (!cloakroomActive || !card.business_id || !cardInstance?.id || !featureEnabled(template, 'cloakroom')) {
+    return {
+      scheduled: false,
+      reason: 'cloakroom_not_active'
+    };
+  }
+
+  const scheduledAt = stringValue(metadata.cloakroom_noon_reminder_at);
+  const scheduledDate = scheduledAt ? new Date(scheduledAt) : null;
+
+  if (!scheduledDate || Number.isNaN(scheduledDate.getTime())) {
+    return {
+      scheduled: false,
+      reason: 'cloakroom_noon_reminder_at_missing'
+    };
+  }
+
+  const message = stringValue(metadata.cloakroom_noon_message)
+    || 'Deine Garderobe ist noch hinterlegt. Bitte prüfe die Abholung.';
+  const title = 'Garderoben-Erinnerung';
+  const idempotencyKey = `cloakroom-noon:${card.id}:${zurichDateKey(scheduledDate.toISOString())}`;
+
+  const { data: existingCampaign, error: existingError } = await supabaseAdmin
+    .from('wallet_notification_campaigns')
+    .select('id,status,scheduled_at')
+    .eq('owner_id', card.owner_id)
+    .eq('business_id', card.business_id)
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  let campaign = existingCampaign;
+
+  if (!campaign) {
+    const { data: insertedCampaign, error: insertError } = await supabaseAdmin
+      .from('wallet_notification_campaigns')
+      .insert({
+        owner_id: card.owner_id,
+        business_id: card.business_id,
+        template_id: card.template_id,
+        title,
+        message,
+        target_type: 'cloakroom_open',
+        target_filter: {},
+        send_type: 'scheduled',
+        scheduled_at: scheduledDate.toISOString(),
+        status: 'scheduled',
+        idempotency_key: idempotencyKey,
+        created_by: userId
+      })
+      .select('id,status,scheduled_at')
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    campaign = insertedCampaign;
+  }
+
+  const { error: recipientError } = await supabaseAdmin
+    .from('wallet_notification_recipients')
+    .upsert({
+      owner_id: card.owner_id,
+      business_id: card.business_id,
+      campaign_id: campaign.id,
+      card_instance_id: cardInstance.id,
+      wallet_platform: cardInstance.wallet_platform || card.wallet_platform || 'apple',
+      status: 'pending'
+    }, {
+      onConflict: 'campaign_id,card_instance_id,wallet_platform',
+      ignoreDuplicates: true
+    });
+
+  if (recipientError) {
+    throw recipientError;
+  }
+
+  return {
+    scheduled: true,
+    reused: Boolean(existingCampaign),
+    campaign_id: campaign.id,
+    scheduled_at: campaign.scheduled_at,
+    time_zone: cloakroomReminderTimeZone
+  };
+}
+
+function normalizedLocationNumber(value: unknown, decimals = 6) {
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return null;
+  }
+
+  return Number(numberValue.toFixed(decimals));
+}
+
+async function maybeScheduleCloakroomLocationReminder(supabaseAdmin: any, card: Row, template: Row, cardInstance: Row, userId: string) {
+  const metadata = metadataFrom(card);
+  const cloakroomActive = Boolean(card.cloakroom_active ?? metadata.cloakroom_active);
+
+  if (!cloakroomActive || !card.business_id || !cardInstance?.id || !featureEnabled(template, 'cloakroom')) {
+    return {
+      scheduled: false,
+      reason: 'cloakroom_not_active'
+    };
+  }
+
+  const lat = normalizedLocationNumber(metadata.cloakroom_location_latitude);
+  const lng = normalizedLocationNumber(metadata.cloakroom_location_longitude);
+  const radius = Math.round(Number(metadata.cloakroom_location_radius_meters || 0));
+
+  if (lat == null || lng == null || !Number.isInteger(radius) || radius < 50 || radius > 100000) {
+    return {
+      scheduled: false,
+      reason: 'cloakroom_location_missing'
+    };
+  }
+
+  const message = stringValue(metadata.cloakroom_location_message)
+    || 'Du bist wieder in der Nähe. Deine Garderobe kann abgeholt werden.';
+  const title = stringValue(metadata.cloakroom_location_name)
+    ? `Garderobe bei ${metadata.cloakroom_location_name}`
+    : 'Garderobe in der Nähe';
+  const startedAt = stringValue(metadata.cloakroom_started_at || card.cloakroom_started_at || new Date().toISOString());
+  const startedAtDate = new Date(startedAt);
+  const startedAtKey = Number.isNaN(startedAtDate.getTime()) ? 'unknown' : String(startedAtDate.getTime());
+  const idempotencyKey = `cloakroom-location:${card.id}:${startedAtKey}`;
+
+  const { data: existingCampaign, error: existingError } = await supabaseAdmin
+    .from('wallet_notification_campaigns')
+    .select('id,status,location_lat,location_lng,location_radius_m')
+    .eq('owner_id', card.owner_id)
+    .eq('business_id', card.business_id)
+    .eq('idempotency_key', idempotencyKey)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  let campaign = existingCampaign;
+
+  if (!campaign) {
+    const { data: insertedCampaign, error: insertError } = await supabaseAdmin
+      .from('wallet_notification_campaigns')
+      .insert({
+        owner_id: card.owner_id,
+        business_id: card.business_id,
+        template_id: card.template_id,
+        title,
+        message,
+        target_type: 'cloakroom_open',
+        target_filter: {},
+        send_type: 'location_based',
+        scheduled_at: null,
+        location_lat: lat,
+        location_lng: lng,
+        location_radius_m: radius,
+        status: 'scheduled',
+        idempotency_key: idempotencyKey,
+        created_by: userId
+      })
+      .select('id,status,location_lat,location_lng,location_radius_m')
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    campaign = insertedCampaign;
+  }
+
+  const { error: recipientError } = await supabaseAdmin
+    .from('wallet_notification_recipients')
+    .upsert({
+      owner_id: card.owner_id,
+      business_id: card.business_id,
+      campaign_id: campaign.id,
+      card_instance_id: cardInstance.id,
+      wallet_platform: cardInstance.wallet_platform || card.wallet_platform || 'apple',
+      status: 'pending'
+    }, {
+      onConflict: 'campaign_id,card_instance_id,wallet_platform',
+      ignoreDuplicates: true
+    });
+
+  if (recipientError) {
+    throw recipientError;
+  }
+
+  return {
+    scheduled: true,
+    reused: Boolean(existingCampaign),
+    campaign_id: campaign.id,
+    location_lat: campaign.location_lat,
+    location_lng: campaign.location_lng,
+    location_radius_m: campaign.location_radius_m
+  };
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -1212,6 +1476,43 @@ Deno.serve(async (request) => {
       : null;
     const activeClubFeatures = activeClubFeaturesSnapshot(template);
     const timeParts = scanTimeParts(now);
+    let cloakroomReminder = null;
+    let cloakroomLocationReminder = null;
+
+    if (normalizedAction === 'cloakroom-toggle') {
+      try {
+        cloakroomReminder = await maybeScheduleCloakroomNoonReminder(
+          supabaseAdmin,
+          updatedCard,
+          template,
+          updatedCardInstance,
+          user.id
+        );
+      } catch (reminderError) {
+        cloakroomReminder = {
+          scheduled: false,
+          error: reminderError?.message || 'Garderoben-Erinnerung konnte nicht geplant werden.'
+        };
+        console.warn('Garderoben-Erinnerung konnte nicht geplant werden:', reminderError?.message || reminderError);
+      }
+
+      try {
+        cloakroomLocationReminder = await maybeScheduleCloakroomLocationReminder(
+          supabaseAdmin,
+          updatedCard,
+          template,
+          updatedCardInstance,
+          user.id
+        );
+      } catch (locationReminderError) {
+        cloakroomLocationReminder = {
+          scheduled: false,
+          error: locationReminderError?.message || 'Garderoben-Standorterinnerung konnte nicht geplant werden.'
+        };
+        console.warn('Garderoben-Standorterinnerung konnte nicht geplant werden:', locationReminderError?.message || locationReminderError);
+      }
+    }
+
     const scanEventId = await insertScanEvent(supabaseAdmin, {
       owner_id: card.owner_id,
       business_id: card.business_id,
@@ -1240,6 +1541,8 @@ Deno.serve(async (request) => {
         resolved_emblem_key: updatedCardInstance.resolved_emblem_key,
         resolved_emblem_url: updatedCardInstance.resolved_emblem_url,
         emblem_update_queued: emblemUpdate.queued,
+        cloakroom_reminder: cloakroomReminder,
+        cloakroom_location_reminder: cloakroomLocationReminder,
         scan_count: updatedCardInstance.scan_count
       }
     });
@@ -1330,6 +1633,8 @@ Deno.serve(async (request) => {
         resolved_emblem_key: updatedCardInstance.resolved_emblem_key,
         resolved_emblem_url: updatedCardInstance.resolved_emblem_url,
         emblem_update_queued: emblemUpdate.queued,
+        cloakroom_reminder: cloakroomReminder,
+        cloakroom_location_reminder: cloakroomLocationReminder,
         scan_count: updatedCardInstance.scan_count,
         before: {
           stamp_count: card.stamp_count,
@@ -1363,6 +1668,8 @@ Deno.serve(async (request) => {
         emblem_updated_at: updatedCardInstance.emblem_updated_at
       },
       emblem_update: emblemUpdate,
+      cloakroom_reminder: cloakroomReminder,
+      cloakroom_location_reminder: cloakroomLocationReminder,
       card: publicOperatorCard(updatedCard)
     });
   } catch (error) {
