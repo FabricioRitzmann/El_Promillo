@@ -9,7 +9,14 @@
   <body>
     <main class="message-layout">
       <section class="message-panel">
-        <p class="eyebrow">Wallet Nachricht</p>
+        <div class="wallet-message-topline">
+          <div class="wallet-message-brand">
+            <span class="wallet-message-brand-mark" aria-hidden="true"></span>
+            <span>El Promillo</span>
+          </div>
+          <span id="messageCountBadge" class="wallet-message-badge" hidden>Neue Nachricht +1</span>
+        </div>
+        <p class="eyebrow">Cardinfo</p>
         <header class="wallet-message-header">
           <div>
             <h1 id="messageTitle">Nachricht</h1>
@@ -20,6 +27,10 @@
         <div id="messageNotice" class="message" hidden></div>
 
         <article id="messageCard" class="wallet-message-card" hidden>
+          <div class="wallet-message-card-head">
+            <span>Aktuelle Nachricht</span>
+            <time id="messageSentAt">-</time>
+          </div>
           <p id="messageBody" class="wallet-message-body"></p>
           <dl class="wallet-message-facts">
             <div>

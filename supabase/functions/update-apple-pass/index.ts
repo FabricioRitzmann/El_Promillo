@@ -243,6 +243,7 @@ function passFieldsFromBody(body: Record<string, any>) {
   if (message) {
     passFields.latestMessage = message;
     passFields.message = message;
+    passFields.newMessageCount = 1;
   }
 
   if (!Object.keys(passFields).length) {

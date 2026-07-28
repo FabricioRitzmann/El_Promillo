@@ -309,7 +309,8 @@ Deno.serve(async (request) => {
     const passFields = message
       ? {
         latestMessage: message,
-        message
+        message,
+        newMessageCount: 1
       }
       : {};
     const passVersion = await appleWalletProvider.updatePassFields(context.supabaseAdmin, cardInstance, cardInstance.card_templates, passFields, {

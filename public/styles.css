@@ -2270,19 +2270,64 @@ body:has(.modal-backdrop:not([hidden])) {
 .message-layout {
   min-height: 100svh;
   display: grid;
-  place-items: center;
-  padding: var(--page-padding-x);
+  place-items: start center;
+  padding: clamp(1rem, 4vw, 2rem) var(--page-padding-x);
+  background:
+    radial-gradient(circle at top left, rgba(214, 184, 137, 0.22), transparent 34rem),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 58%, #fbf6ee 100%);
 }
 
 .message-panel {
-  width: min(620px, 100%);
+  width: min(760px, 100%);
   display: grid;
-  gap: 1rem;
-  padding: clamp(1.1rem, 3vw, 1.7rem);
+  gap: 1.05rem;
+  padding: clamp(1rem, 3vw, 1.65rem);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  background: var(--surface-elevated);
+  background: rgba(255, 250, 242, 0.94);
   box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.wallet-message-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(139, 79, 47, 0.1);
+}
+
+.wallet-message-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.wallet-message-brand-mark {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-image: var(--brand-emblem);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.wallet-message-badge {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(214, 184, 137, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(91, 52, 35, 0.07);
 }
 
 .wallet-message-header h1 {
@@ -2298,21 +2343,42 @@ body:has(.modal-backdrop:not([hidden])) {
   gap: 1rem;
   padding: clamp(1rem, 3vw, 1.35rem);
   border: 1px solid rgba(139, 79, 47, 0.18);
-  border-radius: var(--radius);
-  background: rgba(255, 250, 242, 0.9);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 250, 242, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.wallet-message-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wallet-message-card-head time {
+  text-align: right;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 650;
 }
 
 .wallet-message-body {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(1.05rem, 4vw, 1.22rem);
-  line-height: 1.58;
+  font-size: clamp(1.08rem, 3vw, 1.22rem);
+  line-height: 1.62;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 .wallet-message-facts {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin: 0;
   padding-top: 0.95rem;
@@ -2352,10 +2418,10 @@ body:has(.modal-backdrop:not([hidden])) {
 .wallet-message-history-item {
   display: grid;
   gap: 0.35rem;
-  padding: 0.95rem;
+  padding: 1rem;
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.58);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
 }
 
 .wallet-message-history-item p {
@@ -2364,4 +2430,24 @@ body:has(.modal-backdrop:not([hidden])) {
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .message-layout {
+    padding: 0.85rem;
+  }
+
+  .message-panel {
+    border-radius: var(--radius);
+  }
+
+  .wallet-message-topline,
+  .wallet-message-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wallet-message-facts {
+    grid-template-columns: 1fr;
+  }
 }

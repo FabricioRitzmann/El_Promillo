@@ -4,7 +4,9 @@ import { byId, escapeHtml, showMessage } from './ui.js';
 const messageNotice = byId('messageNotice');
 const messageTitle = byId('messageTitle');
 const messageMeta = byId('messageMeta');
+const messageCountBadge = byId('messageCountBadge');
 const messageCard = byId('messageCard');
+const messageSentAt = byId('messageSentAt');
 const messageBody = byId('messageBody');
 const messageBusiness = byId('messageBusiness');
 const messageCardName = byId('messageCardName');
@@ -34,6 +36,14 @@ function platformLabel(value) {
     apple: 'Apple Wallet',
     google: 'Google Wallet'
   }[String(value || '').toLowerCase()] || 'Wallet';
+}
+
+function messageCountLabel(count) {
+  const normalizedCount = Math.max(1, Number(count) || 1);
+
+  return normalizedCount === 1
+    ? 'Neue Nachricht +1'
+    : `Neue Nachrichten +${normalizedCount}`;
 }
 
 function renderHistory(messages = []) {
@@ -94,11 +104,18 @@ async function loadWalletMessage() {
     showMessage(messageNotice, 'Für diese Karte ist noch keine Nachricht vorhanden.', 'info');
     messageTitle.textContent = data.card?.cardName || 'Nachricht';
     messageMeta.textContent = data.card?.businessName || 'El Promillo';
+    messageCountBadge.hidden = true;
     return;
   }
 
+  const sentAt = formatDate(latest.sentAt);
+  const visibleMessages = (data.messages || []).filter((message) => message?.message);
+
   messageTitle.textContent = latest.title || 'Wallet Nachricht';
-  messageMeta.textContent = [formatDate(latest.sentAt), platformLabel(latest.walletPlatform)].filter(Boolean).join(' · ');
+  messageMeta.textContent = [data.card?.businessName || 'Mein Unternehmen', data.card?.cardName || 'Kundenkarte'].filter(Boolean).join(' · ');
+  messageCountBadge.textContent = messageCountLabel(visibleMessages.length || 1);
+  messageCountBadge.hidden = false;
+  messageSentAt.textContent = [sentAt, platformLabel(latest.walletPlatform)].filter(Boolean).join(' · ') || 'Gerade aktualisiert';
   messageBody.textContent = latest.message;
   messageBusiness.textContent = data.card?.businessName || 'Mein Unternehmen';
   messageCardName.textContent = data.card?.cardName || 'Kundenkarte';

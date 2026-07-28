@@ -47,16 +47,6 @@ function stringValue(value: unknown) {
   return String(value || '').trim();
 }
 
-function compactFrontMessage(value: unknown, maxLength = 64) {
-  const text = stringValue(value).replace(/\s+/g, ' ');
-
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  return text.slice(0, Math.max(0, maxLength - 3)).trimEnd() + '...';
-}
-
 function htmlEscape(value: unknown) {
   return stringValue(value)
     .replace(/&/g, '&amp;')
@@ -420,6 +410,13 @@ function numberValue(...values: unknown[]) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function messageNoticeValue(fields: Row = {}) {
+  const rawCount = numberValue(fields.newMessageCount, fields.unreadMessageCount, fields.messageCount, 1);
+  const count = Math.min(99, Math.max(1, Math.floor(rawCount)));
+
+  return `Neue Nachricht +${count}`;
+}
+
 function metadataFor(cardInstance: Row) {
   const customer = cardInstance.customer_cards || {};
   const customerMetadata = customer.metadata && typeof customer.metadata === 'object'
@@ -734,14 +731,14 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
-  const latestMessagePreview = compactFrontMessage(latestMessage);
   const messageUrl = stringValue(fields.messageUrl || cardInstance.customer_cards?.metadata?.latest_wallet_message_url);
   const featureRows = walletFeatureRows(template, cardInstance);
   const headerRow = latestMessage
     ? {
-      key: 'latestMessage',
-      label: 'Update',
-      value: latestMessagePreview || 'Neue Nachricht'
+      key: 'latestMessageNotice',
+      label: 'Cardinfo',
+      value: messageNoticeValue(fields),
+      changeMessage: '%@'
     }
     : {
       key: 'currentProgress',

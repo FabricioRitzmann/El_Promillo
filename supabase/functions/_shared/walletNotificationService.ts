@@ -3250,6 +3250,7 @@ export const walletNotificationService = {
     const passFields: Row = {
       latestMessage: campaign.message,
       message: campaign.message,
+      newMessageCount: 1,
       messageUrl
     };
 
@@ -3320,26 +3321,30 @@ export const walletNotificationService = {
     const readableMessage = messageUrl
       ? campaign.message + '\n\nNachricht öffnen: ' + messageUrl
       : campaign.message;
-    const messageLinkRows = messageUrl
-      ? [{
-        id: `wallet-message-link-${campaign.id}`,
-        header: 'Nachricht öffnen',
-        body: messageUrl
-      }]
-      : [];
+    const cardInfoMessageRows = [
+      {
+        id: `wallet-message-notice-${campaign.id}`,
+        header: 'Cardinfo',
+        body: 'Neue Nachricht +1'
+      },
+      ...(messageUrl
+        ? [{
+          id: `wallet-message-link-${campaign.id}`,
+          header: 'Nachricht lesen',
+          body: messageUrl
+        }]
+        : [{
+          id: `wallet-message-text-${campaign.id}`,
+          header: campaign.title,
+          body: campaign.message
+        }])
+    ];
 
     if (campaign.send_type === 'location_based') {
       const fallbackResult = await googleWalletProvider.updateObject(
         objectType,
         objectId,
-        googleWalletProvider.statusPatch(template, cardInstance, objectType, [
-          {
-            id: `wallet-location-message-${campaign.id}`,
-            header: campaign.title,
-            body: campaign.message
-          },
-          ...messageLinkRows
-        ])
+        googleWalletProvider.statusPatch(template, cardInstance, objectType, cardInfoMessageRows)
       );
 
       if (fallbackResult.ok) {
@@ -3369,14 +3374,7 @@ export const walletNotificationService = {
       const fallbackResult = await googleWalletProvider.updateObject(
         objectType,
         objectId,
-        googleWalletProvider.statusPatch(template, cardInstance, objectType, [
-          {
-            id: `wallet-message-${campaign.id}`,
-            header: campaign.title,
-            body: campaign.message
-          },
-          ...messageLinkRows
-        ])
+        googleWalletProvider.statusPatch(template, cardInstance, objectType, cardInfoMessageRows)
       ).catch((error: Error) => ({
         ok: false,
         error_message: error.message
@@ -3405,6 +3403,15 @@ export const walletNotificationService = {
       };
     }
 
+    const cardInfoUpdateResult = await googleWalletProvider.updateObject(
+      objectType,
+      objectId,
+      googleWalletProvider.statusPatch(template, cardInstance, objectType, cardInfoMessageRows)
+    ).catch((error: Error) => ({
+      ok: false,
+      error_message: error.message
+    }));
+
     await touchGoogleWalletObjectMapping(context, cardInstance, objectId, objectType);
 
     return {
@@ -3412,6 +3419,7 @@ export const walletNotificationService = {
       status: result.ok ? 'sent' : 'failed',
       provider: 'google',
       template_type: normalizeTemplateType(template),
+      cardinfo_update: cardInfoUpdateResult.response || cardInfoUpdateResult,
       response: result.response || result
     };
   },
