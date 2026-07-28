@@ -997,7 +997,13 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
   const cardCode = cardCodeFor(cardInstance);
   const settings = settingsForTemplate(template);
   const metadata = metadataFor(cardInstance);
-  const statusPatch = statusPatchPayload(template, cardInstance, objectType);
+  const eventBusinessName = objectType === 'eventTicketObject' ? businessNameForTemplate(template) : '';
+  const statusPatch = statusPatchPayload(
+    template,
+    cardInstance,
+    objectType,
+    eventBusinessName ? [{ id: 'business_name', header: 'Firma', body: eventBusinessName }] : []
+  );
 
   if (objectType === 'eventTicketObject') {
     const eventBackgroundImage = eventBackgroundImageForTemplate(template);

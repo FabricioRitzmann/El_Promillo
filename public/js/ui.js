@@ -290,6 +290,7 @@ function walletFieldSetHtml(fields, className = '') {
 }
 
 export function walletPreviewHtml(template, card = null) {
+  const isEventCard = normalizeTemplateType(template) === 'event_card';
   const settings = templateSettings(template);
   const business = {
     name: template.business_name,
@@ -304,7 +305,7 @@ export function walletPreviewHtml(template, card = null) {
   const primaryFieldsHtml = walletFieldSetHtml(passFields.primaryFields, 'wallet-pass-primary-fields');
   const secondaryFieldsHtml = walletFieldSetHtml(passFields.secondaryFields, 'wallet-pass-secondary-fields');
   const auxiliaryFieldsHtml = walletFieldSetHtml(passFields.auxiliaryFields, 'wallet-pass-auxiliary-fields');
-  const eventBackgroundImageUrl = normalizeTemplateType(template) === 'event_card' && featureEnabled(template, 'eventBackgroundImage')
+  const eventBackgroundImageUrl = isEventCard && featureEnabled(template, 'eventBackgroundImage')
     ? settings.eventAppleBackgroundImageUrl || settings.eventGoogleHeroImageUrl || settings.eventBackgroundImageUrl
     : '';
   const eventBackgroundStyle = eventBackgroundImageUrl
@@ -312,9 +313,9 @@ export function walletPreviewHtml(template, card = null) {
     : '';
 
   return `
-    <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
+    <div class="wallet-preview ${isEventCard ? 'wallet-preview-event' : ''}" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
       <div class="wallet-top">
-        <div class="wallet-brand-lockup">
+        <div class="wallet-brand-lockup ${isEventCard ? 'wallet-brand-lockup-event' : ''}">
           ${businessLogoMarkup(business, 'wallet-logo-placeholder')}
           <span>${escapeHtml(businessDisplayName(business, 'Business'))}</span>
         </div>

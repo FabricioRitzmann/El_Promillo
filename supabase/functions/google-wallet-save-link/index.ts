@@ -888,6 +888,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
   const metadata = card.metadata && typeof card.metadata === 'object' ? card.metadata : {};
 
   if (objectType === 'eventTicketObject') {
+    const businessName = businessNameForTemplate(template);
     const eventBackgroundImage = eventBackgroundImageForTemplate(template);
     const ticketNumber = stringValue(metadata.ticket_number || cardCode);
     const ticketType = stringValue(metadata.ticket_type || settings.ticketType || template.card_name || 'Standard');
@@ -911,7 +912,10 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
         value: cardCode,
         alternateText: cardCode
       },
-      textModulesData: rows.map((row) => ({
+      textModulesData: [
+        { id: 'business_name', header: 'Firma', body: businessName },
+        ...rows
+      ].map((row) => ({
         id: row.id,
         header: row.header,
         body: row.body

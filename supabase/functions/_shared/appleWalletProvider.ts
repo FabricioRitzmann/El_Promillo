@@ -882,6 +882,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   };
 
   if (templateType === 'event_card') {
+    passJson.logoText = businessNameForTemplate(template);
     passJson.eventTicket = generic;
   } else {
     passJson.generic = generic;

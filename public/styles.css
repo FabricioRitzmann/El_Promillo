@@ -1689,6 +1689,21 @@ textarea {
   flex: 1 1 auto;
 }
 
+.wallet-brand-lockup-event {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.22rem;
+  max-width: 7.2rem;
+}
+
+.wallet-brand-lockup-event span {
+  font-size: 0.66rem;
+  font-weight: 750;
+  line-height: 1.05;
+  max-width: 7.2rem;
+}
+
 .wallet-brand-lockup span {
   min-width: 0;
   overflow-wrap: anywhere;
