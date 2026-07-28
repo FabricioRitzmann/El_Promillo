@@ -46,8 +46,7 @@ export const FEATURE_LABELS = {
   membership: 'Mitgliedschaft',
   qrPdf: 'QR/PDF',
   notifications: 'Push',
-  customFields: 'Freifelder',
-  eventBackgroundImage: 'Eventbild'
+  customFields: 'Freifelder'
 };
 
 export const OPERATIONAL_FEATURES = [
@@ -75,8 +74,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   streak_card: {
     stamps: false,
@@ -90,8 +88,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   vip_card: {
     stamps: false,
@@ -105,8 +102,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: true,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   balance_card: {
     stamps: false,
@@ -120,8 +116,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   cloakroom_card: {
     stamps: false,
@@ -135,8 +130,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   generic_card: {
     stamps: false,
@@ -150,8 +144,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: true,
     checkin: false,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   event_card: {
     stamps: false,
@@ -165,8 +158,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: true,
     redemption: false,
-    membership: false,
-    eventBackgroundImage: true
+    membership: false
   },
   coupon_card: {
     stamps: false,
@@ -180,8 +172,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: true,
-    membership: false,
-    eventBackgroundImage: false
+    membership: false
   },
   membership_card: {
     stamps: false,
@@ -195,8 +186,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: false,
     checkin: false,
     redemption: false,
-    membership: true,
-    eventBackgroundImage: false
+    membership: true
   },
   club_card: {
     stamps: false,
@@ -210,8 +200,7 @@ export const TEMPLATE_FEATURES = Object.freeze({
     visit: true,
     checkin: false,
     redemption: OPTIONAL_FEATURE,
-    membership: OPTIONAL_FEATURE,
-    eventBackgroundImage: false
+    membership: OPTIONAL_FEATURE
   }
 });
 
