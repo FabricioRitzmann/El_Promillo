@@ -236,17 +236,6 @@ function renderCompanyLogoPreview() {
   companyLogoPreview.textContent = businessInitials(name);
 }
 
-function logoExtension(file) {
-  const fromName = String(file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
-  const normalized = fromName === 'jpeg' ? 'jpg' : fromName;
-
-  if (['png', 'jpg', 'webp'].includes(normalized)) {
-    return normalized;
-  }
-
-  return allowedLogoMimeTypes.get(String(file?.type || '').toLowerCase()) || 'png';
-}
-
 function validateLogoFile(file) {
   if (!file) {
     throw new Error('Bitte eine Logo-Datei auswählen.');
@@ -263,8 +252,82 @@ function validateLogoFile(file) {
   }
 }
 
-async function uploadCompanyLogo(file) {
+function imageFromLogoFile(file) {
+  if (window.createImageBitmap) {
+    return createImageBitmap(file).catch(() => imageElementFromLogoFile(file));
+  }
+
+  return imageElementFromLogoFile(file);
+}
+
+function imageElementFromLogoFile(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Logo konnte nicht gelesen werden.'));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Logo konnte nicht als PNG vorbereitet werden.'));
+      }
+    }, 'image/png');
+  });
+}
+
+async function logoFileToAppleSafePng(file) {
   validateLogoFile(file);
+
+  const image = await imageFromLogoFile(file);
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+
+  if (!width || !height) {
+    throw new Error('Logo konnte nicht gelesen werden.');
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('Logo konnte nicht vorbereitet werden.');
+  }
+
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  if (typeof image.close === 'function') {
+    image.close();
+  }
+
+  const pngBlob = await canvasToPngBlob(canvas);
+
+  if (pngBlob.size > maxLogoFileBytes) {
+    throw new Error('Logo ist nach der PNG-Konvertierung zu gross. Maximal 2 MB erlaubt.');
+  }
+
+  return new File([pngBlob], 'company-logo.png', { type: 'image/png' });
+}
+
+async function uploadCompanyLogo(file) {
+  const pngLogoFile = await logoFileToAppleSafePng(file);
   showMessage(accountMessage, 'Firmenlogo wird hochgeladen ...');
 
   if (uploadCompanyLogoButton) {
@@ -275,8 +338,8 @@ async function uploadCompanyLogo(file) {
   try {
     const business = await persistBusiness();
     const previousPath = business.company_logo_path;
-    const objectPath = `${business.id}/${Date.now()}-logo.${logoExtension(file)}`;
-    const uploadResult = await state.client.uploadStorageObject(businessLogoBucket, objectPath, file);
+    const objectPath = `${business.id}/${Date.now()}-logo.png`;
+    const uploadResult = await state.client.uploadStorageObject(businessLogoBucket, objectPath, pngLogoFile);
 
     state.business = (await state.client.updateRows('businesses', {
       logo_url: uploadResult.publicUrl,

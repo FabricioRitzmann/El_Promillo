@@ -13,7 +13,7 @@ type Row = Record<string, any>;
 
 const APPLE_PASS_VERSION_RETRY_LIMIT = 3;
 const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024;
-const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const APPLE_ASSET_ALLOWED_MIME_TYPES = new Set(['image/png']);
 
 const applePassVersionSelect = [
   'id',
