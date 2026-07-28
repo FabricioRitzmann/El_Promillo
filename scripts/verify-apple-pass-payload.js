@@ -69,10 +69,13 @@ assertIncludes(appleProvider, [
   'function passVersionHasTemplateAssets(template: Row',
   'template.logo_url',
   'settings.iconUrl',
+  'settings.eventAppleBackgroundImageUrl',
+  'settings.event_apple_background_image_url',
   'templateAssets.logo',
   'templateAssets.icon',
   'templateAssets.thumbnail',
   'templateAssets.strip',
+  'templateAssets.background',
   'assets = appleAssetsForTemplate(template, options.assets || {}, ensuredCardInstance)',
   'passVersionHasTemplateAssets(template: Row, passVersion: Row | null)'
 ], 'Apple Pass Template-Assets');
@@ -90,11 +93,20 @@ assertIncludes(appleProvider, [
   "files.set('logo@2x.png'",
   "files.set('thumbnail.png'",
   "files.set('strip.png'",
+  "files.set('background.png'",
+  "files.set('background@2x.png'",
+  "files.set('background@3x.png'",
   "files.set('manifest.json'",
   "files.set('signature'",
   'buildPassPackage(passJson, assets)',
   'application/vnd.apple.pkpass'
 ], 'Apple pkpass Paket');
+
+assertIncludes(appleProvider, [
+  "templateType === 'event_card'",
+  'passJson.eventTicket = generic',
+  'passJson.generic = generic'
+], 'Apple Event Ticket Passstil');
 
 assertIncludes(claimApplePass, [
   'passJsonHasAppleWebServiceFields(data.pass_json)',

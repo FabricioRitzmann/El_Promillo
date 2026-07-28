@@ -385,7 +385,9 @@ Logo-/Bildfelder:
 - Karten-Icon/Bild: `card_templates.logo_url`
 - Stempel-Icon: `card_templates.settings.stampIconUrl`
 - Streak-Icon: `card_templates.settings.streakIconUrl`
-- Event-Hintergrundbild: `card_templates.settings.eventBackgroundImageUrl`
+- Apple Event-Hintergrundbild: `card_templates.settings.eventAppleBackgroundImageUrl` -> Apple Pass Asset `background.png`
+- Google Event-Hero-Bild: `card_templates.settings.eventGoogleHeroImageUrl` -> Google EventTicketObject `heroImage`
+- Legacy-Fallback für alte Eventkarten: `card_templates.settings.eventBackgroundImageUrl`
 
 Kartenvorschau:
 

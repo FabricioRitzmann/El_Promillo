@@ -87,6 +87,14 @@ assertIncludes(provider, [
 ], 'Google Object-Type Mapping');
 
 assertIncludes(provider, [
+  'function eventBackgroundImageForTemplate(template: Row)',
+  'settings.eventGoogleHeroImageUrl',
+  'settings.event_google_hero_image_url',
+  'eventObject.heroImage = eventBackgroundImage',
+  'if (!payload.heroImage) {'
+], 'Google Event Ticket Hero Image');
+
+assertIncludes(provider, [
   'function googleObjectIdFor(config: Row, cardInstance: Row)',
   'stored.startsWith(`${config.issuerId}.`)',
   'safeIdSuffix(stored || fallbackValue)',

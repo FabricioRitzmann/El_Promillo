@@ -80,6 +80,8 @@ const editorModeText = byId('editorModeText');
 const templateSubmitButton = byId('templateSubmitButton');
 const stampIconUpload = byId('stampIconUpload');
 const streakIconUpload = byId('streakIconUpload');
+const eventAppleBackgroundUpload = byId('eventAppleBackgroundUpload');
+const eventGoogleHeroImageUpload = byId('eventGoogleHeroImageUpload');
 const editorQrPanel = byId('editorQrPanel');
 const editorQrHint = byId('editorQrHint');
 const editorQrImage = byId('editorQrImage');
@@ -391,6 +393,8 @@ function loadTemplateIntoForm(template) {
   setTemplateField('event_start_time', settings.eventStartTime || '');
   setTemplateField('event_end_time', settings.eventEndTime || '');
   setTemplateField('event_location', settings.eventLocation || '');
+  setTemplateField('event_apple_background_image_url', settings.eventAppleBackgroundImageUrl || settings.eventBackgroundImageUrl || '');
+  setTemplateField('event_google_hero_image_url', settings.eventGoogleHeroImageUrl || settings.eventBackgroundImageUrl || '');
   setTemplateField('coupon_title', settings.couponTitle || '');
   setTemplateField('discount_value', settings.discountValue || '');
   setTemplateField('coupon_valid_until', settings.couponValidUntil || '');
@@ -447,6 +451,12 @@ function templateSettingsFromForm(formData, templateType) {
     eventStartTime: String(formData.get('event_start_time') || '').trim(),
     eventEndTime: String(formData.get('event_end_time') || '').trim(),
     eventLocation: String(formData.get('event_location') || '').trim(),
+    eventAppleBackgroundImageUrl: templateType === 'event_card'
+      ? String(formData.get('event_apple_background_image_url') || '').trim()
+      : '',
+    eventGoogleHeroImageUrl: templateType === 'event_card'
+      ? String(formData.get('event_google_hero_image_url') || '').trim()
+      : '',
     couponTitle: String(formData.get('coupon_title') || '').trim(),
     discountValue: String(formData.get('discount_value') || '').trim(),
     couponValidUntil: String(formData.get('coupon_valid_until') || '').trim(),
@@ -1942,6 +1952,14 @@ async function initEditor() {
 
   streakIconUpload?.addEventListener('change', (event) => {
     handleAssetUpload(event, 'streak_icon_url', 'streak-icon').catch((error) => showMessage(editorMessage, error.message, 'error'));
+  });
+
+  eventAppleBackgroundUpload?.addEventListener('change', (event) => {
+    handleAssetUpload(event, 'event_apple_background_image_url', 'event-apple-background').catch((error) => showMessage(editorMessage, error.message, 'error'));
+  });
+
+  eventGoogleHeroImageUpload?.addEventListener('change', (event) => {
+    handleAssetUpload(event, 'event_google_hero_image_url', 'event-google-hero').catch((error) => showMessage(editorMessage, error.message, 'error'));
   });
 
   optionalFeaturePanel?.addEventListener('input', handleOptionalFeatureToggle);

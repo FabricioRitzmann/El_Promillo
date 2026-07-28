@@ -828,6 +828,22 @@ function businessLogoUrlForTemplate(template: Row) {
   return stringValue(business?.logo_url || template.business_logo_url || template.company_logo_url || template.logo_url);
 }
 
+function eventBackgroundImageForTemplate(template: Row) {
+  const settings = settingsForTemplate(template);
+
+  if (normalizeTemplateType(template) !== 'event_card') {
+    return null;
+  }
+
+  return imageValue(
+    settings.eventGoogleHeroImageUrl
+      || settings.event_google_hero_image_url
+      || settings.eventBackgroundImageUrl
+      || settings.event_background_image_url,
+    'Eventbild'
+  );
+}
+
 function cardEmblemImageForObject(cardInstance: Row) {
   return imageValue(
     supabaseCardEmblemUrl(cardInstance, Deno.env.get('SUPABASE_URL') || ''),
@@ -842,7 +858,10 @@ function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
     return payload;
   }
 
-  payload.heroImage = emblemImage;
+  if (!payload.heroImage) {
+    payload.heroImage = emblemImage;
+  }
+
   payload.imageModulesData = [
     {
       id: 'card_emblem',
@@ -928,6 +947,7 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
   const statusPatch = statusPatchPayload(template, cardInstance, objectType);
 
   if (objectType === 'eventTicketObject') {
+    const eventBackgroundImage = eventBackgroundImageForTemplate(template);
     const ticketNumber = stringValue(metadata.ticket_number || cardCode);
     const ticketType = stringValue(metadata.ticket_type || settings.ticketType || template.card_name || 'Standard');
     const holderName = stringValue(metadata.ticket_holder_name || metadata.customer_name);
@@ -952,6 +972,10 @@ function buildObjectPayload(config: Row, template: Row, cardInstance: Row, objec
       },
       textModulesData: statusPatch.textModulesData
     };
+
+    if (eventBackgroundImage) {
+      eventObject.heroImage = eventBackgroundImage;
+    }
 
     if (holderName) {
       eventObject.ticketHolderName = holderName;

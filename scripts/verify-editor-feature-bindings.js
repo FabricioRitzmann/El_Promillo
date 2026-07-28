@@ -50,12 +50,14 @@ assert(
   'Editor muss das Eventbild als eigenes matrixgesteuertes Feature anzeigen.'
 );
 assert(
-  editorHtml.includes('name="event_background_image_url"'),
-  'Editor muss die Eventbild-URL speichern können.'
+  editorHtml.includes('name="event_apple_background_image_url"')
+    && editorHtml.includes('name="event_google_hero_image_url"'),
+  'Editor muss Apple-background.png und Google-heroImage getrennt speichern können.'
 );
 assert(
-  editorJs.includes('eventBackgroundImageUrl'),
-  'Editor muss die Eventbild-URL in den Template-Settings speichern.'
+  editorJs.includes('eventAppleBackgroundImageUrl')
+    && editorJs.includes('eventGoogleHeroImageUrl'),
+  'Editor muss Apple- und Google-Eventbild-URLs in den Template-Settings speichern.'
 );
 assert(
   editorHtml.includes('data-feature-group="notifications"') && editorHtml.includes('name="notification_message"'),

@@ -33,7 +33,7 @@ Ein schlankes, lokal startbares MVP für eine mandantenfähige digitale Wallet-K
 - Kartenübersicht als Tabelle; Klick auf eine Karte lädt sie in den Editor
 - Dashboard-Bereich für ausgestellte Kundenkarten mit aktuellem Status, Karten-ID, Guthaben und matrixbasiertem Fortschritt
 - Supabase Storage Uploads für Karten-Icon, Stempel-Icon und Streak-Icon
-- Eventkarten haben ein matrixgesteuertes Event-Hintergrundbild mit Upload, Live-Vorschau und Wallet-Vorbereitung
+- Eventkarten haben matrixgesteuerte Wallet-Bilder mit getrennten Uploads für Apple `background.png` und Google `heroImage`, inklusive Live-Vorschau und Legacy-Fallback für alte Eventbild-Settings
 - Push-Vorbereitung und Freifelder sind als matrixgesteuerte Editor-Bereiche abgebildet; Freifelder erscheinen nur bei Templates mit `customFields = true`
 - QR-Code pro Template für `/claim.html?token=<public_claim_token>`; alte `/claim.html?template=<template_id>` Links bleiben als Fallback gültig
 - PDF-Download pro Template als A4/A5 über `GET /api/templates/:templateId/qr.pdf?format=a4|a5`

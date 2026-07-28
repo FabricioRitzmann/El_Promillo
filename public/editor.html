@@ -215,6 +215,24 @@
               </label>
             </div>
 
+            <div class="feature-fields" data-feature-group="eventBackgroundImage" hidden>
+              <label data-feature-setting="eventBackgroundImage">Apple Event-Hintergrund hochladen
+                <input id="eventAppleBackgroundUpload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <label data-feature-setting="eventBackgroundImage">Apple <code>background.png</code>-URL
+                <input name="event_apple_background_image_url" type="url" placeholder="Hochformat, wird im Apple Event Ticket als background.png eingebunden">
+              </label>
+              <label data-feature-setting="eventBackgroundImage">Google Event-Hero hochladen
+                <input id="eventGoogleHeroImageUpload" type="file" accept="image/png,image/jpeg,image/webp">
+              </label>
+              <label data-feature-setting="eventBackgroundImage">Google <code>heroImage</code>-URL
+                <input name="event_google_hero_image_url" type="url" placeholder="Querformat, wird im Google EventTicketObject als heroImage gesetzt">
+              </label>
+              <p class="form-hint" data-feature-setting="eventBackgroundImage">
+                Wird nur bei Eventkarten verwendet. Apple Wallet nutzt <code>background.png</code>, Google Wallet nutzt <code>heroImage</code>.
+              </p>
+            </div>
+
             <div class="feature-fields" data-feature-group="redemption" hidden>
               <label class="check-row" data-optional-toggle="redemption">
                 <input name="redemption_enabled" type="checkbox">

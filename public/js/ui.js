@@ -290,6 +290,7 @@ function walletFieldSetHtml(fields, className = '') {
 }
 
 export function walletPreviewHtml(template, card = null) {
+  const settings = templateSettings(template);
   const business = {
     name: template.business_name,
     business_name: template.business_name,
@@ -303,9 +304,15 @@ export function walletPreviewHtml(template, card = null) {
   const primaryFieldsHtml = walletFieldSetHtml(passFields.primaryFields, 'wallet-pass-primary-fields');
   const secondaryFieldsHtml = walletFieldSetHtml(passFields.secondaryFields, 'wallet-pass-secondary-fields');
   const auxiliaryFieldsHtml = walletFieldSetHtml(passFields.auxiliaryFields, 'wallet-pass-auxiliary-fields');
+  const eventBackgroundImageUrl = normalizeTemplateType(template) === 'event_card' && featureEnabled(template, 'eventBackgroundImage')
+    ? settings.eventAppleBackgroundImageUrl || settings.eventGoogleHeroImageUrl || settings.eventBackgroundImageUrl
+    : '';
+  const eventBackgroundStyle = eventBackgroundImageUrl
+    ? ` background-image: linear-gradient(rgba(91, 52, 35, 0.28), rgba(91, 52, 35, 0.28)), url('${escapeCssUrl(eventBackgroundImageUrl)}'); background-size: cover; background-position: center;`
+    : '';
 
   return `
-    <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');">
+    <div class="wallet-preview" style="--card-bg: ${escapeHtml(template.primary_color || '#fffdf9')}; --card-fg: ${escapeHtml(template.text_color || '#8b4f2f')}; --card-emblem: url('${escapeCssUrl(cardEmblemUrl)}');${eventBackgroundStyle}">
       <div class="wallet-top">
         <div class="wallet-brand-lockup">
           ${businessLogoMarkup(business, 'wallet-logo-placeholder')}

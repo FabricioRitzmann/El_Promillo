@@ -156,7 +156,7 @@ begin
       '#ffffff',
       'Willkommen beim Demo Event',
       10,
-      '{"notificationsEnabled": true, "eventName": "Demo Night", "eventDate": "2026-09-12", "eventStartTime": "20:00", "eventEndTime": "23:30", "eventLocation": "Demo Club Zürich", "eventBackgroundImageUrl": ""}'::jsonb
+      '{"notificationsEnabled": true, "eventName": "Demo Night", "eventDate": "2026-09-12", "eventStartTime": "20:00", "eventEndTime": "23:30", "eventLocation": "Demo Club Zürich", "eventAppleBackgroundImageUrl": "", "eventGoogleHeroImageUrl": ""}'::jsonb
     ),
     (
       coupon_template_id,

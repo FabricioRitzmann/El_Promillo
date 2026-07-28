@@ -335,6 +335,14 @@ async function buildPassPackage(passJson: Row, assets: Row = {}) {
     files.set('strip@2x.png', strip);
   }
 
+  const background = await assetBytes(assets.backgroundPng || assets.background || assets.backgroundPngBase64);
+
+  if (background) {
+    files.set('background.png', background);
+    files.set('background@2x.png', background);
+    files.set('background@3x.png', background);
+  }
+
   const manifest: Row = {};
 
   for (const [fileName, bytes] of files.entries()) {
@@ -647,6 +655,7 @@ function businessLogoUrlForTemplate(template: Row) {
 
 function appleTemplateAssetUrls(template: Row, cardInstance: Row = {}) {
   const settings = templateSettings(template);
+  const isEventCard = normalizeTemplateType(template) === 'event_card';
   const logoUrl = safeAppleAssetUrl(
     businessLogoUrlForTemplate(template)
       || template.logoUrl
@@ -665,11 +674,20 @@ function appleTemplateAssetUrls(template: Row, cardInstance: Row = {}) {
   const emblemUrl = safeAppleAssetUrl(
     supabaseCardEmblemUrl(cardInstance, Deno.env.get('SUPABASE_URL') || '')
   );
+  const eventBackgroundUrl = isEventCard
+    ? safeAppleAssetUrl(
+      settings.eventAppleBackgroundImageUrl
+        || settings.event_apple_background_image_url
+        || settings.eventBackgroundImageUrl
+        || settings.event_background_image_url
+    )
+    : '';
 
   return {
     logoUrl,
     iconUrl,
-    emblemUrl
+    emblemUrl,
+    eventBackgroundUrl
   };
 }
 
@@ -677,7 +695,7 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
   const assets = explicitAssets && typeof explicitAssets === 'object' && !Array.isArray(explicitAssets)
     ? explicitAssets
     : {};
-  const { logoUrl, iconUrl, emblemUrl } = appleTemplateAssetUrls(template, cardInstance);
+  const { logoUrl, iconUrl, emblemUrl, eventBackgroundUrl } = appleTemplateAssetUrls(template, cardInstance);
   const templateAssets: Row = {};
 
   if (logoUrl) {
@@ -690,7 +708,10 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
     templateAssets.iconPng = iconUrl;
   }
 
-  if (emblemUrl) {
+  if (eventBackgroundUrl) {
+    templateAssets.background = eventBackgroundUrl;
+    templateAssets.backgroundPng = eventBackgroundUrl;
+  } else if (emblemUrl) {
     templateAssets.thumbnail = emblemUrl;
     templateAssets.thumbnailPng = emblemUrl;
     templateAssets.strip = emblemUrl;
@@ -704,9 +725,9 @@ function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardIns
 }
 
 function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
-  const { logoUrl, iconUrl } = appleTemplateAssetUrls(template);
+  const { logoUrl, iconUrl, eventBackgroundUrl } = appleTemplateAssetUrls(template);
 
-  if (!logoUrl && !iconUrl) {
+  if (!logoUrl && !iconUrl && !eventBackgroundUrl) {
     return true;
   }
 
@@ -722,11 +743,16 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
     return false;
   }
 
+  if (eventBackgroundUrl && !stringValue(assets.background || assets.backgroundPng || assets.backgroundPngBase64)) {
+    return false;
+  }
+
   return true;
 }
 
 function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const config = appleConfig();
+  const templateType = normalizeTemplateType(template);
   const serialNumber = stringValue(cardInstance.apple_serial_number || cardInstance.wallet_serial_number || cardInstance.id);
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
@@ -845,9 +871,14 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         messageEncoding: 'iso-8859-1',
         altText: cardCode
       }
-    ],
-    generic
+    ]
   };
+
+  if (templateType === 'event_card') {
+    passJson.eventTicket = generic;
+  } else {
+    passJson.generic = generic;
+  }
 
   if (authenticationToken && configuredHttpsUrl(config.webServiceBaseUrl)) {
     passJson.authenticationToken = authenticationToken;
