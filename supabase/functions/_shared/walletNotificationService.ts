@@ -3751,12 +3751,16 @@ export const walletNotificationService = {
             );
           }
 
-          const patch = job.payload?.patch !== undefined
-            ? job.payload.patch
-            : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType);
-          validateQueueGooglePatch(patch);
+          if (job.update_type === 'business_logo_update') {
+            result = await googleWalletProvider.createObject(cardInstance.card_templates, cardInstance);
+          } else {
+            const patch = job.payload?.patch !== undefined
+              ? job.payload.patch
+              : googleWalletProvider.statusPatch(cardInstance.card_templates, cardInstance, objectType);
+            validateQueueGooglePatch(patch);
 
-          result = await googleWalletProvider.updateObject(objectType, objectId, patch);
+            result = await googleWalletProvider.updateObject(objectType, objectId, patch);
+          }
 
           if (result.ok) {
             await touchGoogleWalletObjectMapping({
