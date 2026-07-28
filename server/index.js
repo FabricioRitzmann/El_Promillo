@@ -1276,6 +1276,11 @@ app.use((req, res, next) => {
 });
 
 if (serveStaticFrontend) {
+  app.use('/public', (req, res) => {
+    const targetPath = req.originalUrl.replace(/^\/public(?=\/|$)/, '') || '/';
+    res.redirect(308, targetPath);
+  });
+
   app.use(express.static(publicDir));
 }
 
