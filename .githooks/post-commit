@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -u
+
+ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+BRANCH="$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+
+if [[ "$BRANCH" != "main" ]]; then
+  exit 0
+fi
+
+if ! "$ROOT_DIR/scripts/create-safe-backup.sh"; then
+  echo "Warnung: Desktop-Backup konnte nicht erstellt werden. Commit bleibt erhalten." >&2
+fi
