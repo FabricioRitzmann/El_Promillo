@@ -18,7 +18,7 @@ const issueApplePassTemplateSelect = [
   'primary_color',
   'text_color',
   'logo_url',
-  'businesses(name,logo_url)',
+  'businesses(name,logo_url,updated_at,company_logo_updated_at)',
   'reward_text',
   'stamps_required',
   'streak_goal',

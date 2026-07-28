@@ -23,7 +23,7 @@ const claimAppleTemplateSelect = [
   'primary_color',
   'text_color',
   'logo_url',
-  'businesses(name,logo_url)',
+  'businesses(name,logo_url,updated_at,company_logo_updated_at)',
   'reward_text',
   'stamps_required',
   'streak_goal',
@@ -149,13 +149,18 @@ function timestampMs(value: unknown) {
 }
 
 function newestSourceTimestamp(cardInstance: Row) {
+  const template = cardInstance.card_templates || {};
+  const business = Array.isArray(template.businesses) ? template.businesses[0] : template.businesses;
+
   return Math.max(
     timestampMs(cardInstance.updated_at),
     timestampMs(cardInstance.customer_cards?.updated_at),
-    timestampMs(cardInstance.card_templates?.updated_at),
+    timestampMs(template.updated_at),
+    timestampMs(business?.updated_at),
+    timestampMs(business?.company_logo_updated_at),
     timestampMs(cardInstance.created_at),
     timestampMs(cardInstance.customer_cards?.created_at),
-    timestampMs(cardInstance.card_templates?.created_at)
+    timestampMs(template.created_at)
   );
 }
 

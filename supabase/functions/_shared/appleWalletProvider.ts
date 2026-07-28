@@ -86,6 +86,7 @@ function safeAppleAssetUrl(value: unknown) {
   }
 
   return parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-assets/')
+    || parsedUrl.pathname.startsWith('/storage/v1/object/public/business-logos/')
     || parsedUrl.pathname.startsWith('/storage/v1/object/public/wallet-emblems/')
     ? parsedUrl.toString()
     : '';
@@ -653,6 +654,12 @@ function businessLogoUrlForTemplate(template: Row) {
   return stringValue(business?.logo_url || template.business_logo_url || template.company_logo_url || template.logo_url);
 }
 
+function assetMatchesTemplateUrl(assetValue: unknown, templateUrl: string) {
+  const asset = stringValue(assetValue);
+
+  return Boolean(asset && (!templateUrl || asset === templateUrl || asset.startsWith('data:')));
+}
+
 function appleTemplateAssetUrls(template: Row, cardInstance: Row = {}) {
   const settings = templateSettings(template);
   const isEventCard = normalizeTemplateType(template) === 'event_card';
@@ -735,7 +742,7 @@ function passVersionHasTemplateAssets(template: Row, passVersion: Row | null) {
     ? passVersion.assets as Row
     : {};
 
-  if (logoUrl && !stringValue(assets.logo || assets.logoPng || assets.logoPngBase64)) {
+  if (logoUrl && !assetMatchesTemplateUrl(assets.logo || assets.logoPng || assets.logoPngBase64, logoUrl)) {
     return false;
   }
 

@@ -8,7 +8,7 @@ import { walletMessageUrlForCard } from './walletMessageLinks.ts';
 type Row = Record<string, any>;
 const MANUAL_WALLET_LOG_SELECT = 'id,owner_id,business_id,card_instance_id,wallet_platform,status,action,request_payload,response_payload,error_message,created_at';
 const OPERATOR_PROFILE_SELECT = 'id,email,display_name,unlock,created_at,updated_at';
-const BUSINESS_SELECT = 'id,owner_id,name,description,address,phone,website,logo_url,created_at,updated_at';
+const BUSINESS_SELECT = 'id,owner_id,name,description,address,phone,website,logo_url,company_logo_path,company_logo_updated_at,created_at,updated_at';
 const CARD_TEMPLATE_SELECT = [
   'id',
   'owner_id',
@@ -21,7 +21,7 @@ const CARD_TEMPLATE_SELECT = [
   'primary_color',
   'text_color',
   'logo_url',
-  'businesses(name,logo_url)',
+  'businesses(name,logo_url,updated_at,company_logo_updated_at)',
   'reward_text',
   'stamps_required',
   'streak_goal',

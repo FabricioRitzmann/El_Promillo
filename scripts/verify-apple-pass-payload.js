@@ -58,6 +58,7 @@ assertIncludes(appleProvider, [
   'function safeAppleAssetUrl(value: unknown)',
   "Deno.env.get('SUPABASE_URL')",
   '/storage/v1/object/public/wallet-assets/',
+  '/storage/v1/object/public/business-logos/',
   '/storage/v1/object/public/wallet-emblems/',
   'supabaseCardEmblemUrl(cardInstance',
   'const APPLE_ASSET_MAX_BYTES = 2 * 1024 * 1024',
@@ -67,6 +68,7 @@ assertIncludes(appleProvider, [
   'bytes.byteLength <= APPLE_ASSET_MAX_BYTES',
   'function appleAssetsForTemplate(template: Row, explicitAssets: Row = {}, cardInstance: Row = {})',
   'function passVersionHasTemplateAssets(template: Row',
+  'function assetMatchesTemplateUrl(assetValue: unknown, templateUrl: string)',
   'template.logo_url',
   'settings.iconUrl',
   'settings.eventAppleBackgroundImageUrl',
@@ -109,6 +111,9 @@ assertIncludes(appleProvider, [
 ], 'Apple Event Ticket Passstil');
 
 assertIncludes(claimApplePass, [
+  'company_logo_updated_at',
+  'timestampMs(business?.updated_at)',
+  'timestampMs(business?.company_logo_updated_at)',
   'passJsonHasAppleWebServiceFields(data.pass_json)',
   'appleWalletProvider.passVersionHasTemplateAssets(cardInstance.card_templates, data)',
   'appleWalletProvider.updatePassFields',
