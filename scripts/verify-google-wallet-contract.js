@@ -91,7 +91,10 @@ assertIncludes(provider, [
   'settings.eventGoogleHeroImageUrl',
   'settings.event_google_hero_image_url',
   'eventObject.heroImage = eventBackgroundImage',
-  'if (!payload.heroImage) {'
+  "appPublicAssetUrl('/assets/el-promillo-google-watermark.png')",
+  'payload.heroImage = watermarkImage',
+  "'el_promillo_watermark'",
+  "return pickPayloadFields(payload, ['logo', 'heroImage', 'imageModulesData'])"
 ], 'Google Event Ticket Hero Image');
 
 assertIncludes(provider, [

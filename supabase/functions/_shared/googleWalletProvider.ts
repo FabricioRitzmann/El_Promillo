@@ -880,21 +880,25 @@ function cardEmblemImageForObject(cardInstance: Row) {
   );
 }
 
-function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
-  const emblemImage = cardEmblemImageForObject(cardInstance);
+function googleWalletWatermarkImage() {
+  return imageValue(appPublicAssetUrl('/assets/el-promillo-google-watermark.png'), 'El Promillo');
+}
 
-  if (!emblemImage) {
+function applyObjectEmblemImages(payload: Row, cardInstance: Row) {
+  const watermarkImage = googleWalletWatermarkImage() || cardEmblemImageForObject(cardInstance);
+
+  if (!watermarkImage) {
     return payload;
   }
 
   if (!payload.heroImage) {
-    payload.heroImage = emblemImage;
+    payload.heroImage = watermarkImage;
   }
 
   payload.imageModulesData = [
     {
-      id: 'card_emblem',
-      mainImage: emblemImage
+      id: 'el_promillo_watermark',
+      mainImage: watermarkImage
     }
   ];
 
@@ -1137,7 +1141,7 @@ function classLogoPatchPayload(payload: Row) {
 }
 
 function objectLogoPatchPayload(payload: Row) {
-  return pickPayloadFields(payload, ['logo']);
+  return pickPayloadFields(payload, ['logo', 'heroImage', 'imageModulesData']);
 }
 
 export const googleWalletProvider = {

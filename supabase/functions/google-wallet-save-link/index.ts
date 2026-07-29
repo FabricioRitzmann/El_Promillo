@@ -768,21 +768,25 @@ function cardEmblemImageForObject(card: Row) {
   );
 }
 
-function applyObjectEmblemImages(payload: Row, card: Row) {
-  const emblemImage = cardEmblemImageForObject(card);
+function googleWalletWatermarkImage() {
+  return imageValue(appPublicAssetUrl('/assets/el-promillo-google-watermark.png'), 'El Promillo');
+}
 
-  if (!emblemImage) {
+function applyObjectEmblemImages(payload: Row, card: Row) {
+  const watermarkImage = googleWalletWatermarkImage() || cardEmblemImageForObject(card);
+
+  if (!watermarkImage) {
     return payload;
   }
 
   if (!payload.heroImage) {
-    payload.heroImage = emblemImage;
+    payload.heroImage = watermarkImage;
   }
 
   payload.imageModulesData = [
     {
-      id: 'card_emblem',
-      mainImage: emblemImage
+      id: 'el_promillo_watermark',
+      mainImage: watermarkImage
     }
   ];
 
