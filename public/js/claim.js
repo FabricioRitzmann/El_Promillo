@@ -16,6 +16,8 @@ let publicConfig = null;
 let currentClaimResult = null;
 let detectedDeviceWallet = 'choice';
 let currentClaimToken = '';
+const CUSTOMER_IDENTITY_STORAGE_KEY = 'wallet_customer_identity:v1';
+let volatileCustomerIdentityToken = '';
 
 function configureWalletButtons() {
   detectedDeviceWallet = detectWalletDevice().wallet;
@@ -144,6 +146,33 @@ function createBrowserWalletObjectId(walletPlatform) {
   return `${walletPlatform}_${randomId}`;
 }
 
+function getCustomerIdentityToken() {
+  if (volatileCustomerIdentityToken) {
+    return volatileCustomerIdentityToken;
+  }
+
+  try {
+    const existingValue = window.localStorage.getItem(CUSTOMER_IDENTITY_STORAGE_KEY);
+
+    if (existingValue) {
+      volatileCustomerIdentityToken = existingValue;
+      return existingValue;
+    }
+
+    const token = `customer_${window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+    window.localStorage.setItem(CUSTOMER_IDENTITY_STORAGE_KEY, token);
+    volatileCustomerIdentityToken = token;
+    return token;
+  } catch {
+    volatileCustomerIdentityToken = `customer_${window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+    return volatileCustomerIdentityToken;
+  }
+}
+
 function claimWalletStorageKey(walletPlatform) {
   return `wallet_cards_claim:${template.id}:${walletPlatform}`;
 }
@@ -201,15 +230,16 @@ async function claimCard(walletPlatform = 'apple') {
 
   let result;
   const walletObjectId = getClaimWalletObjectId(walletPlatform);
+  const customerIdentityToken = getCustomerIdentityToken();
 
   try {
-    result = await claimCardViaEdge(walletPlatform, walletObjectId);
+    result = await claimCardViaEdge(walletPlatform, walletObjectId, customerIdentityToken);
   } catch (error) {
     if (!error.fallbackToLocal) {
       throw error;
     }
 
-    result = await claimCardViaLocalApi(walletPlatform, walletObjectId);
+    result = await claimCardViaLocalApi(walletPlatform, walletObjectId, customerIdentityToken);
   }
 
   rememberClaimWalletObjectId(walletPlatform, result.card?.wallet_object_id || walletObjectId);
@@ -437,7 +467,7 @@ async function createGoogleWalletSaveLink(result) {
 }
 
 
-async function claimCardViaEdge(walletPlatform, walletObjectId) {
+async function claimCardViaEdge(walletPlatform, walletObjectId, customerIdentityToken) {
   const supabaseUrl = publicConfig?.supabase?.url?.replace(/\/$/, '');
   const anonKey = publicConfig?.supabase?.anonKey;
 
@@ -459,7 +489,8 @@ async function claimCardViaEdge(walletPlatform, walletObjectId) {
         templateId: template.id,
         claimToken: currentClaimToken || undefined,
         walletPlatform,
-        walletObjectId
+        walletObjectId,
+        customerIdentityToken
       })
     });
   } catch (error) {
@@ -485,7 +516,7 @@ async function claimCardViaEdge(walletPlatform, walletObjectId) {
   };
 }
 
-async function claimCardViaLocalApi(walletPlatform, walletObjectId) {
+async function claimCardViaLocalApi(walletPlatform, walletObjectId, customerIdentityToken) {
   const response = await fetch(apiUrl('/api/cards/claim'), {
     method: 'POST',
     headers: {
@@ -495,7 +526,8 @@ async function claimCardViaLocalApi(walletPlatform, walletObjectId) {
       templateId: template.id,
       claimToken: currentClaimToken || undefined,
       walletPlatform,
-      walletObjectId
+      walletObjectId,
+      customerIdentityToken
     })
   });
 

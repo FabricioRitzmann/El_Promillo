@@ -550,6 +550,8 @@ async function loadCardByCode(rawCode) {
       { column: 'customer_number', op: 'eq', value: code },
       ...(state.business?.id ? [{ column: 'business_id', op: 'eq', value: state.business.id }] : [])
     ],
+    order: 'last_scanned_at.desc.nullslast,created_at.desc',
+    limit: 1,
     maybeSingle: true
   }).catch(() => null);
 

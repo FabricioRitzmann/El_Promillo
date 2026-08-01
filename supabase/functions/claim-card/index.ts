@@ -14,6 +14,9 @@ const walletEmblemColumnNames = new Set(['resolved_emblem_key', 'resolved_emblem
 
 const CLAIM_WALLET_OBJECT_ID_MAX_LENGTH = 180;
 const CLAIM_WALLET_OBJECT_ID_PATTERN = /^[A-Za-z0-9._:-]+$/;
+const CUSTOMER_IDENTITY_TOKEN_MAX_LENGTH = 180;
+const CUSTOMER_IDENTITY_TOKEN_PATTERN = /^[A-Za-z0-9._:-]+$/;
+const claimCustomerCardSelect = 'id, owner_id, business_id, template_id, customer_profile_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
 
 const claimTemplateSelect = [
   'id',
@@ -131,6 +134,98 @@ function validateWalletObjectId(walletObjectId: string) {
   }
 }
 
+function validateCustomerIdentityToken(identityToken: string) {
+  if (!identityToken) {
+    throw createStructuredError(
+      400,
+      'CUSTOMER_IDENTITY_REQUIRED',
+      'Kundenidentität fehlt.',
+      'Die Claim-Seite muss eine stabile, zufällige Kundenidentität senden, damit mehrere Karten derselben Person dieselbe clubbezogene Kundennummer erhalten.'
+    );
+  }
+
+  if (
+    identityToken.length > CUSTOMER_IDENTITY_TOKEN_MAX_LENGTH
+    || !CUSTOMER_IDENTITY_TOKEN_PATTERN.test(identityToken)
+  ) {
+    throw createStructuredError(
+      400,
+      'CUSTOMER_IDENTITY_INVALID',
+      'Kundenidentität ist ungültig.',
+      'Die Kundenidentität darf maximal 180 Zeichen enthalten und nur Buchstaben, Zahlen, Punkt, Unterstrich, Bindestrich oder Doppelpunkt nutzen.'
+    );
+  }
+}
+
+async function customerIdentityHash(identityToken: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identityToken));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function resolveCustomerProfile(supabaseAdmin: any, template: Row, identityHash: string, preferredProfileId = '') {
+  const { data, error } = await supabaseAdmin
+    .rpc('resolve_customer_profile', {
+      p_owner_id: template.owner_id,
+      p_business_id: template.business_id,
+      p_identity_hash: identityHash,
+      p_preferred_profile_id: preferredProfileId || null
+    })
+    .single();
+
+  if (error || !data) {
+    throw createStructuredError(
+      500,
+      'CUSTOMER_PROFILE_RESOLVE_FAILED',
+      'Kundenprofil konnte nicht bestimmt werden.',
+      error?.message || 'resolve_customer_profile hat kein Kundenprofil zurückgegeben.'
+    );
+  }
+
+  return data;
+}
+
+async function linkCardToCustomerProfile(supabaseAdmin: any, card: Row, profile: Row) {
+  if (card.customer_profile_id === profile.id && card.customer_number === profile.customer_number) {
+    return card;
+  }
+
+  const { data: linkedCard, error: cardError } = await supabaseAdmin
+    .from('customer_cards')
+    .update({ customer_profile_id: profile.id })
+    .eq('id', card.id)
+    .eq('owner_id', card.owner_id)
+    .select(claimCustomerCardSelect)
+    .single();
+
+  if (cardError || !linkedCard) {
+    throw createStructuredError(
+      500,
+      'CUSTOMER_PROFILE_CARD_LINK_FAILED',
+      'Kundenkarte konnte nicht mit dem Kundenprofil verbunden werden.',
+      cardError?.message || 'customer_cards.update hat keine Karte zurückgegeben.'
+    );
+  }
+
+  const { error: instanceError } = await supabaseAdmin
+    .from('card_instances')
+    .update({ customer_id: profile.id })
+    .eq('customer_card_id', card.id)
+    .eq('owner_id', card.owner_id);
+
+  if (instanceError) {
+    throw createStructuredError(
+      500,
+      'CUSTOMER_PROFILE_INSTANCE_LINK_FAILED',
+      'Wallet-Karteninstanz konnte nicht mit dem Kundenprofil verbunden werden.',
+      instanceError.message
+    );
+  }
+
+  return linkedCard;
+}
+
 function isUniqueViolation(error: any) {
   return error?.code === '23505';
 }
@@ -173,10 +268,9 @@ async function findExistingWalletCard(supabaseAdmin: any, platform: string, wall
     return null;
   }
 
-  const selectColumns = 'id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
   const { data, error } = await supabaseAdmin
     .from('customer_cards')
-    .select(selectColumns)
+    .select(claimCustomerCardSelect)
     .eq('wallet_platform', platform)
     .eq('wallet_object_id', walletObjectId)
     .limit(2);
@@ -206,7 +300,7 @@ async function findExistingWalletCard(supabaseAdmin: any, platform: string, wall
 
   const { data: claimKeyMatches, error: claimKeyError } = await supabaseAdmin
     .from('customer_cards')
-    .select(selectColumns)
+    .select(claimCustomerCardSelect)
     .eq('wallet_platform', platform)
     .eq('metadata->>google_wallet_claim_key', walletObjectId)
     .limit(2);
@@ -310,13 +404,26 @@ async function reuseExistingClaimCard(supabaseAdmin: any, template: Row, existin
 async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) {
   const platform = walletPlatform(body.walletPlatform || body.wallet_platform);
   const walletObjectId = stringValue(body.walletObjectId || body.wallet_object_id);
+  const identityToken = stringValue(body.customerIdentityToken || body.customer_identity_token)
+    || `legacy_wallet:${walletObjectId}`;
   validateWalletObjectId(walletObjectId);
+  validateCustomerIdentityToken(identityToken);
+  const identityHash = await customerIdentityHash(identityToken);
 
   const existingCard = await findExistingWalletCard(supabaseAdmin, platform, walletObjectId);
 
   if (existingCard) {
-    return await reuseExistingClaimCard(supabaseAdmin, template, existingCard, platform, walletObjectId);
+    const profile = await resolveCustomerProfile(
+      supabaseAdmin,
+      template,
+      identityHash,
+      existingCard.customer_profile_id
+    );
+    const linkedCard = await linkCardToCustomerProfile(supabaseAdmin, existingCard, profile);
+    return await reuseExistingClaimCard(supabaseAdmin, template, linkedCard, platform, walletObjectId);
   }
+
+  const customerProfile = await resolveCustomerProfile(supabaseAdmin, template, identityHash);
 
   const cardInstanceNumber = generateCardInstanceNumber();
   const customerCode = generateCustomerCode();
@@ -341,6 +448,8 @@ async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) 
       owner_id: template.owner_id,
       business_id: template.business_id,
       template_id: template.id,
+      customer_profile_id: customerProfile.id,
+      customer_number: customerProfile.customer_number,
       card_instance_number: cardInstanceNumber,
       customer_code: customerCode,
       stamp_count: 0,
@@ -356,7 +465,7 @@ async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) 
       cloakroom_active: false,
       metadata
     })
-    .select('id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at')
+    .select(claimCustomerCardSelect)
     .single();
 
   if (cardError) {
@@ -364,7 +473,8 @@ async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) 
       const recoveredCard = await findExistingWalletCard(supabaseAdmin, platform, walletObjectId);
 
       if (recoveredCard) {
-        return await reuseExistingClaimCard(supabaseAdmin, template, recoveredCard, platform, walletObjectId, 'claim_reused_after_unique_conflict');
+        const linkedCard = await linkCardToCustomerProfile(supabaseAdmin, recoveredCard, customerProfile);
+        return await reuseExistingClaimCard(supabaseAdmin, template, linkedCard, platform, walletObjectId, 'claim_reused_after_unique_conflict');
       }
     }
 
@@ -377,6 +487,7 @@ async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) 
     owner_id: template.owner_id,
     business_id: template.business_id,
     template_id: template.id,
+    customer_id: customerProfile.id,
     card_instance_number: card.card_instance_number,
     wallet_platform: platform,
     wallet_object_id: walletObjectId,
