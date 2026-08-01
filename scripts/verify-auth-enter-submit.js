@@ -26,6 +26,7 @@ const authJs = read('public/js/auth.js');
 
 assertIncludes('Auth-Formulare', indexHtml, [
   'id="loginForm"',
+  'id="oneTimeLoginForm"',
   'id="registerForm"',
   '<button class="primary" type="submit">Einloggen</button>',
   '<button class="secondary" type="submit">Account erstellen</button>'
@@ -41,16 +42,19 @@ assertIncludes('Auth Enter-Submit', authJs, [
   'form.requestSubmit();',
   "form.querySelector('button[type=\"submit\"]')?.click();",
   'submitFormOnEnter(loginForm);',
+  'submitFormOnEnter(oneTimeLoginForm);',
   'submitFormOnEnter(registerForm);'
 ]);
 
 assertIncludes('Auth Submit-Handler', authJs, [
   "loginForm?.addEventListener('submit'",
+  "oneTimeLoginForm?.addEventListener('submit'",
   "registerForm?.addEventListener('submit'",
   'event.preventDefault();',
   'client.signIn',
+  'client.requestOperatorMagicLink',
   'validateOperatorEmail',
   'client.registerOperator'
 ]);
 
-console.log('Auth Enter-Submit ist fuer Login und Registrierung statisch abgesichert.');
+console.log('Auth Enter-Submit ist fuer Login, Einmal-Link und Registrierung statisch abgesichert.');

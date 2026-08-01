@@ -15,7 +15,8 @@ const state = {
   client: null,
   session: null,
   profile: null,
-  business: null
+  business: null,
+  magicLogin: false
 };
 
 const businessAccountSelect = [
@@ -39,6 +40,8 @@ const accountMessage = byId('accountMessage');
 const loginDataList = byId('loginDataList');
 const businessForm = byId('accountBusinessForm');
 const passwordChangeForm = byId('passwordChangeForm');
+const passwordChangeHint = byId('passwordChangeHint');
+const currentPasswordField = byId('currentPasswordField');
 const mobileAccountCompanyName = byId('mobileAccountCompanyName');
 const companyLogoPreview = byId('companyLogoPreview');
 const companyLogoUpload = byId('companyLogoUpload');
@@ -174,8 +177,8 @@ function validateBusinessPayload(payload) {
   }
 }
 
-function validatePasswordChangePayload({ currentPassword, newPassword, repeatPassword }) {
-  if (!currentPassword) {
+function validatePasswordChangePayload({ currentPassword, newPassword, repeatPassword }, { requireCurrentPassword = true } = {}) {
+  if (requireCurrentPassword && !currentPassword) {
     throw new Error('Bitte das aktuelle Passwort eingeben.');
   }
 
@@ -187,9 +190,34 @@ function validatePasswordChangePayload({ currentPassword, newPassword, repeatPas
     throw new Error('Die neuen Passwörter stimmen nicht überein.');
   }
 
-  if (currentPassword === newPassword) {
+  if (currentPassword && currentPassword === newPassword) {
     throw new Error('Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.');
   }
+}
+
+function isMagicLoginMode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('magic_login') === '1' && state.session?.auth_flow === 'magiclink';
+}
+
+function configurePasswordChangeMode() {
+  const currentPasswordInput = passwordChangeForm?.elements?.current_password;
+
+  if (!currentPasswordInput || !currentPasswordField || !passwordChangeHint) {
+    return;
+  }
+
+  currentPasswordField.hidden = state.magicLogin;
+  currentPasswordInput.required = !state.magicLogin;
+
+  if (state.magicLogin) {
+    currentPasswordInput.value = '';
+    passwordChangeHint.textContent = 'Du bist mit einem einmaligen Login-Link angemeldet. Lege jetzt direkt ein neues Passwort fest.';
+    showMessage(accountMessage, 'Einmaliger Login erfolgreich. Du kannst jetzt ein neues Passwort festlegen.', 'success');
+    return;
+  }
+
+  passwordChangeHint.textContent = 'Das aktuelle Passwort wird zuerst geprüft. Danach wird das neue Passwort direkt in Supabase Auth gespeichert.';
 }
 
 async function persistBusiness(extraPayload = {}) {
@@ -225,7 +253,7 @@ async function saveBusiness(event) {
 
 async function changePassword(event) {
   event.preventDefault();
-  showMessage(accountMessage, 'Aktuelles Passwort wird geprüft ...');
+  showMessage(accountMessage, state.magicLogin ? 'Neues Passwort wird gespeichert ...' : 'Aktuelles Passwort wird geprüft ...');
 
   const formData = new FormData(passwordChangeForm);
   const payload = {
@@ -234,29 +262,39 @@ async function changePassword(event) {
     repeatPassword: String(formData.get('new_password_repeat') || '')
   };
 
-  validatePasswordChangePayload(payload);
+  validatePasswordChangePayload(payload, { requireCurrentPassword: !state.magicLogin });
 
-  const email = state.session?.user?.email || state.profile?.email;
+  if (!state.magicLogin) {
+    const email = state.session?.user?.email || state.profile?.email;
 
-  if (!email) {
-    throw new Error('Login-E-Mail konnte nicht ermittelt werden.');
-  }
+    if (!email) {
+      throw new Error('Login-E-Mail konnte nicht ermittelt werden.');
+    }
 
-  try {
-    const refreshedSession = await state.client.signIn({
-      email,
-      password: payload.currentPassword
-    });
+    try {
+      const refreshedSession = await state.client.signIn({
+        email,
+        password: payload.currentPassword
+      });
 
-    state.session = refreshedSession;
-  } catch {
-    throw new Error('Das aktuelle Passwort ist nicht korrekt.');
+      state.session = refreshedSession;
+    } catch {
+      throw new Error('Das aktuelle Passwort ist nicht korrekt.');
+    }
   }
 
   showMessage(accountMessage, 'Neues Passwort wird gespeichert ...');
   await state.client.updatePassword(payload.newPassword);
   state.session = await state.client.ensureSession();
+  state.session = {
+    ...state.session,
+    auth_flow: ''
+  };
+  state.client.storeSession(state.session);
+  state.magicLogin = false;
+  window.history.replaceState(null, document.title, window.location.pathname);
   passwordChangeForm.reset();
+  configurePasswordChangeMode();
   renderLoginData();
   showMessage(accountMessage, 'Passwort wurde geändert.', 'success');
 }
@@ -393,9 +431,11 @@ async function initAccount() {
   state.client = context.client;
   state.session = context.session;
   state.profile = context.profile;
+  state.magicLogin = isMagicLoginMode();
 
   renderLoginData();
   await loadBusiness();
+  configurePasswordChangeMode();
 
   businessForm?.addEventListener('submit', (event) => {
     saveBusiness(event).catch((error) => showMessage(accountMessage, error.message, 'error'));

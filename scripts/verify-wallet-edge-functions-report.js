@@ -33,6 +33,7 @@ const requiredFunctions = [
   'get-wallet-message',
   'claim-apple-pass',
   'register-operator',
+  'request-operator-magic-link',
   'send-operator-verification-email',
   'create-topup-payment-session',
   'confirm-topup-payment',

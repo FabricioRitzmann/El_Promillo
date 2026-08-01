@@ -53,9 +53,9 @@
         </article>
 
         <form id="passwordChangeForm" class="panel account-panel">
-          <h2>Passwort ändern</h2>
-          <p class="muted">Das aktuelle Passwort wird zuerst geprüft. Danach wird das neue Passwort direkt in Supabase Auth gespeichert.</p>
-          <label>Aktuelles Passwort
+          <h2>Passwort festlegen oder ändern</h2>
+          <p id="passwordChangeHint" class="muted">Das aktuelle Passwort wird zuerst geprüft. Danach wird das neue Passwort direkt in Supabase Auth gespeichert.</p>
+          <label id="currentPasswordField">Aktuelles Passwort
             <input name="current_password" type="password" autocomplete="current-password" required>
           </label>
           <label>Neues Passwort

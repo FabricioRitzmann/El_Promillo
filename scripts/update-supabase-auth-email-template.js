@@ -33,7 +33,7 @@ function parseArgs(argv) {
     dryRun: false,
     projectRef: process.env.SUPABASE_PROJECT_REF || '',
     templatePath: defaultTemplatePath,
-    subject: 'Dein El Promillo Zugang ist freigeschaltet',
+    subject: 'Dein einmaliger El Promillo Login-Link',
     siteUrl: process.env.AUTH_SITE_URL || process.env.APP_PUBLIC_BASE_URL || 'https://el-promillo.ch',
     redirects: [],
     mergeRedirects: true,

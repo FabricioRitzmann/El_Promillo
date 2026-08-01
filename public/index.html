@@ -17,7 +17,7 @@
           <h1>Betreiberzugang</h1>
         </div>
 
-        <div id="authMessage" class="message" hidden></div>
+        <div id="authMessage" class="message" role="status" aria-live="polite" hidden></div>
 
         <div class="auth-grid">
           <form id="loginForm" class="panel">
@@ -30,32 +30,20 @@
             </label>
             <div class="button-row wrap">
               <button class="primary" type="submit">Einloggen</button>
-              <button id="showForgotPasswordButton" class="secondary" type="button">Passwort vergessen</button>
+              <button id="showOneTimeLoginButton" class="secondary" type="button">Ohne Passwort einloggen</button>
             </div>
           </form>
 
-          <form id="forgotPasswordForm" class="panel" hidden>
-            <h2>Passwort zurücksetzen</h2>
-            <p class="muted">Du erhältst eine E-Mail von Supabase mit einem Link zum Setzen eines neuen Passworts.</p>
+          <form id="oneTimeLoginForm" class="panel" hidden>
+            <h2>Einmalig einloggen</h2>
+            <p class="muted">Wir senden dir einen einmal verwendbaren Login-Link. Danach kannst du im Kundenprofil ein neues Passwort festlegen.</p>
             <label>E-Mail
               <input name="email" type="email" autocomplete="email" required>
             </label>
             <div class="button-row wrap">
-              <button class="primary" type="submit">Reset-Link senden</button>
-              <button id="cancelForgotPasswordButton" class="secondary" type="button">Abbrechen</button>
+              <button class="primary" type="submit">Login-Link senden</button>
+              <button id="cancelOneTimeLoginButton" class="secondary" type="button">Abbrechen</button>
             </div>
-          </form>
-
-          <form id="resetPasswordForm" class="panel" hidden>
-            <h2>Neues Passwort setzen</h2>
-            <p class="muted">Bitte wähle ein neues Passwort für deinen Betreiberzugang.</p>
-            <label>Neues Passwort
-              <input name="password" type="password" autocomplete="new-password" minlength="6" required>
-            </label>
-            <label>Neues Passwort wiederholen
-              <input name="password_repeat" type="password" autocomplete="new-password" minlength="6" required>
-            </label>
-            <button class="primary" type="submit">Passwort speichern</button>
           </form>
 
           <form id="registerForm" class="panel">

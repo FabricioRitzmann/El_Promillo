@@ -15,6 +15,7 @@ const expectedNoJwtFunctions = new Set([
   'claim-apple-pass',
   'google-wallet-save-link',
   'register-operator',
+  'request-operator-magic-link',
   'send-operator-verification-email',
   'create-topup-payment-session',
   'confirm-topup-payment',
@@ -77,6 +78,15 @@ const publicClaimGuards = {
     'email_confirm: !requireEmailVerification',
     'unlock: false',
     'enforcePublicClaimRateLimit(supabaseAdmin, request, \'register-operator\''
+  ],
+  'request-operator-magic-link': [
+    ".from('operator_profiles')",
+    ".select('id,email,unlock')",
+    'supabaseAdmin.auth.admin.getUserById(profile.id)',
+    'OPERATOR_ACCOUNT_NOT_FOUND',
+    'OPERATOR_ACCOUNT_NOT_APPROVED',
+    'shouldCreateUser: false',
+    "enforcePublicClaimRateLimit(supabaseAdmin, request, 'request-operator-magic-link'"
   ],
   'send-operator-verification-email': [
     'OPERATOR_VERIFICATION_CRON_SECRET',

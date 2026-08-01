@@ -85,6 +85,7 @@ export class SupabaseRestClient {
       expires_in: expiresIn,
       expires_at: Math.floor(Date.now() / 1000) + expiresIn,
       token_type: params.get('token_type') || 'bearer',
+      auth_flow: params.get('type') || '',
       user: await this.fetchUser(accessToken)
     };
 
@@ -185,22 +186,19 @@ export class SupabaseRestClient {
     return data;
   }
 
-  async resetPasswordForEmail(email, redirectTo) {
-    const url = new URL(`${this.supabaseUrl}/auth/v1/recover`);
-
-    if (redirectTo) {
-      url.searchParams.set('redirect_to', redirectTo);
-    }
-
-    const response = await fetch(url.toString(), {
+  async requestOperatorMagicLink(email, redirectTo) {
+    const response = await fetch(`${this.supabaseUrl}/functions/v1/request-operator-magic-link`, {
       method: 'POST',
       headers: this.baseHeaders(false),
-      body: JSON.stringify({ email })
+      body: JSON.stringify({
+        email,
+        redirectTo
+      })
     });
     const data = await parseResponse(response);
 
     if (!response.ok) {
-      throw new Error(data?.error_description || data?.msg || data?.message || 'Passwort-Zurücksetzung konnte nicht gestartet werden.');
+      throw new Error(data?.error_reason || data?.error_message || 'Einmaliger Login-Link konnte nicht angefordert werden.');
     }
 
     return data;
@@ -210,7 +208,7 @@ export class SupabaseRestClient {
     const session = await this.ensureSession();
 
     if (!session?.access_token) {
-      throw new Error('Bitte öffne den Passwort-Link erneut oder logge dich neu ein.');
+      throw new Error('Bitte öffne den Login-Link erneut oder logge dich neu ein.');
     }
 
     const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
