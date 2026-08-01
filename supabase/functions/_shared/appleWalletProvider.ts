@@ -479,6 +479,16 @@ function cardCodeFor(cardInstance: Row) {
   );
 }
 
+function customerNumberFor(cardInstance: Row) {
+  return stringValue(
+    cardInstance.customer_number
+      || cardInstance.customer_cards?.customer_number
+      || cardInstance.customer_cards?.metadata?.customer_number
+      || cardInstance.metadata?.customer_number
+      || cardCodeFor(cardInstance)
+  );
+}
+
 function walletFeatureRows(template: Row, cardInstance: Row) {
   const settings = templateSettings(template);
   const customer = cardInstance.customer_cards || {};
@@ -763,6 +773,7 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
   const serialNumber = stringValue(cardInstance.apple_serial_number || cardInstance.wallet_serial_number || cardInstance.id);
   const authenticationToken = stringValue(cardInstance.customer_cards?.pass_authentication_token || cardInstance.authentication_token);
   const cardCode = cardCodeFor(cardInstance);
+  const customerNumber = customerNumberFor(cardInstance);
   const latestMessage = stringValue(fields.latestMessage || fields.message || cardInstance.customer_cards?.metadata?.latest_wallet_message);
   const messageUrl = stringValue(fields.messageUrl || cardInstance.customer_cards?.metadata?.latest_wallet_message_url);
   const featureRows = walletFeatureRows(template, cardInstance);
@@ -808,9 +819,9 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
     ],
     secondaryFields: [
       {
-        key: 'cardId',
-        label: 'Karten-ID',
-        value: cardCode
+        key: 'customerNumber',
+        label: 'Kunden-Nr.',
+        value: customerNumber
       },
       {
         key: 'type',
@@ -831,6 +842,11 @@ function buildPassJson(template: Row, cardInstance: Row, fields: Row = {}) {
         label: 'Nachricht öffnen',
         value: messageUrl,
         attributedValue: messageUrl ? '<a href="' + htmlEscape(messageUrl) + '">Nachricht öffnen</a>' : ''
+      },
+      {
+        key: 'customerNumberBack',
+        label: 'Kunden-Nr.',
+        value: customerNumber
       },
       {
         key: 'cardIdBack',

@@ -64,6 +64,7 @@ const customerCardDashboardSelect = [
   'business_id',
   'template_id',
   'card_instance_number',
+  'customer_number',
   'customer_code',
   'status',
   'stamp_count',
@@ -411,10 +412,11 @@ function renderCustomerCards() {
   const rows = state.customerCards.map((card) => {
     const template = card.card_templates || {};
     const cardNumber = card.card_instance_number || card.metadata?.card_instance_number || card.customer_code;
+    const customerNumber = card.customer_number || card.metadata?.customer_number || cardNumber;
     const featureSummary = cardFeatureRows(template, card)
       .map((row) => `${row.label}: ${row.value}`)
       .join(' · ');
-    const scannerUrl = pagePath(`scanner.html?code=${encodeURIComponent(cardNumber)}`);
+    const scannerUrl = pagePath(`scanner.html?code=${encodeURIComponent(customerNumber)}`);
 
     return `
       <tr class="cards-table-row" data-scanner-url="${escapeHtml(scannerUrl)}">
@@ -422,8 +424,8 @@ function renderCustomerCards() {
           <div class="card-title-cell">
             ${logoUrl ? `<img class="card-table-icon" src="${escapeHtml(logoUrl)}" alt="">` : '<span class="card-table-icon card-table-icon-empty"></span>'}
             <div>
-              <strong>${escapeHtml(cardNumber)}</strong>
-              <span>${escapeHtml(card.customer_code || '-')}</span>
+              <strong>${escapeHtml(customerNumber)}</strong>
+              <span>Karten-ID: ${escapeHtml(cardNumber)}</span>
             </div>
           </div>
         </td>
@@ -437,8 +439,8 @@ function renderCustomerCards() {
             class="action-select"
             data-card-action
             data-scanner-url="${escapeHtml(scannerUrl)}"
-            data-card-code="${escapeHtml(cardNumber)}"
-            aria-label="Aktionen für Kundenkarte ${escapeHtml(cardNumber)}"
+            data-card-code="${escapeHtml(customerNumber)}"
+            aria-label="Aktionen für Kundenkarte ${escapeHtml(customerNumber)}"
           >
             <option value="">Aktionen</option>
             <option value="scanner">Im Scanner öffnen</option>
@@ -454,7 +456,7 @@ function renderCustomerCards() {
       <table class="cards-table">
         <thead>
           <tr>
-            <th>Karten-ID</th>
+            <th>Kunden-Nr.</th>
             <th>Template</th>
             <th>Typ</th>
             <th>Status</th>

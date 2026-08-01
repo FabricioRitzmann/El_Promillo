@@ -65,6 +65,7 @@ const customerCardScannerSelect = [
   'business_id',
   'template_id',
   'card_instance_number',
+  'customer_number',
   'customer_code',
   'status',
   'stamp_count',
@@ -176,6 +177,7 @@ function renderCard() {
   const template = card.card_templates || {};
   const walletPlatform = card.wallet_platform || card.metadata?.wallet_platform || '';
   const cardInstanceNumber = card.card_instance_number || card.metadata?.card_instance_number || card.customer_code;
+  const customerNumber = card.customer_number || card.metadata?.customer_number || cardInstanceNumber;
   const previewCard = {
     ...card,
     ...cardInstance,
@@ -193,6 +195,7 @@ function renderCard() {
     ? '<button type="button" class="secondary" data-action="download-apple-pass">Aktuelle Wallet-Datei laden</button>'
     : '';
   const detailItems = [
+    `<div><dt>Kunden-Nr.</dt><dd>${escapeHtml(customerNumber)}</dd></div>`,
     `<div><dt>Karten-ID</dt><dd>${escapeHtml(cardInstanceNumber)}</dd></div>`,
     `<div><dt>Kundencode</dt><dd>${escapeHtml(card.customer_code)}</dd></div>`,
     `<div><dt>Status</dt><dd>${escapeHtml(card.status)}</dd></div>`,
@@ -508,10 +511,21 @@ async function loadCardByCode(rawCode) {
   let card = await state.client.selectRows('customer_cards', {
     select: customerCardScannerSelect,
     filters: [
-      { column: 'customer_code', op: 'eq', value: code }
+      { column: 'customer_number', op: 'eq', value: code },
+      ...(state.business?.id ? [{ column: 'business_id', op: 'eq', value: state.business.id }] : [])
     ],
     maybeSingle: true
-  });
+  }).catch(() => null);
+
+  if (!card) {
+    card = await state.client.selectRows('customer_cards', {
+      select: customerCardScannerSelect,
+      filters: [
+        { column: 'customer_code', op: 'eq', value: code }
+      ],
+      maybeSingle: true
+    });
+  }
 
   if (!card) {
     card = await state.client.selectRows('customer_cards', {

@@ -383,6 +383,169 @@ alter table public.customer_cards
 add constraint customer_cards_balance_cents_check
 check (balance_cents >= 0);
 
+-- Clubbezogene, gut lesbare Kundennummern fuer Garderobe und Service.
+-- Jeder Business-Nummernkreis beginnt bei A001 und laeuft nach A999 mit B001
+-- weiter. I und O werden zur Vermeidung von Verwechslungen ausgelassen; nach
+-- Z999 folgen AA001, AB001 usw.
+create table if not exists public.customer_number_counters (
+  scope_key text primary key,
+  owner_id uuid not null references public.operator_profiles(id) on delete cascade,
+  business_id uuid references public.businesses(id) on delete cascade,
+  last_value bigint not null default 0 check (last_value >= 0),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.format_customer_number(sequence_value bigint)
+returns text
+language plpgsql
+immutable
+set search_path = public
+as $$
+declare
+  alphabet constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  alphabet_size constant integer := 24;
+  block_value bigint;
+  number_value integer;
+  letter_index integer;
+  prefix text := '';
+begin
+  if sequence_value is null or sequence_value < 1 then
+    raise exception 'CUSTOMER_NUMBER_SEQUENCE_INVALID: Sequenz muss groesser als 0 sein.';
+  end if;
+
+  block_value := ((sequence_value - 1) / 999) + 1;
+  number_value := ((sequence_value - 1) % 999) + 1;
+
+  while block_value > 0 loop
+    letter_index := ((block_value - 1) % alphabet_size)::integer + 1;
+    prefix := substr(alphabet, letter_index, 1) || prefix;
+    block_value := (block_value - 1) / alphabet_size;
+  end loop;
+
+  return prefix || lpad(number_value::text, 3, '0');
+end;
+$$;
+
+alter table public.customer_cards
+add column if not exists customer_number text;
+
+with numbered_cards as (
+  select
+    id,
+    row_number() over (
+      partition by coalesce('business:' || business_id::text, 'owner:' || owner_id::text)
+      order by created_at, id
+    ) as sequence_value
+  from public.customer_cards
+  where customer_number is null or customer_number = ''
+)
+update public.customer_cards as card
+set customer_number = public.format_customer_number(numbered_cards.sequence_value)
+from numbered_cards
+where card.id = numbered_cards.id;
+
+update public.customer_cards
+set metadata = jsonb_set(
+  coalesce(metadata, '{}'::jsonb),
+  '{customer_number}',
+  to_jsonb(customer_number),
+  true
+)
+where customer_number is not null
+  and metadata->>'customer_number' is distinct from customer_number;
+
+insert into public.customer_number_counters (scope_key, owner_id, business_id, last_value)
+select
+  coalesce('business:' || business_id::text, 'owner:' || owner_id::text) as scope_key,
+  min(owner_id::text)::uuid as owner_id,
+  business_id,
+  count(*)::bigint as last_value
+from public.customer_cards
+group by coalesce('business:' || business_id::text, 'owner:' || owner_id::text), business_id
+on conflict (scope_key) do update
+set
+  last_value = greatest(public.customer_number_counters.last_value, excluded.last_value),
+  updated_at = now();
+
+create or replace function public.assign_customer_number()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  next_value bigint;
+  number_scope_key text;
+begin
+  if new.customer_number is null or btrim(new.customer_number) = '' then
+    number_scope_key := coalesce(
+      'business:' || new.business_id::text,
+      'owner:' || new.owner_id::text
+    );
+
+    insert into public.customer_number_counters (
+      scope_key,
+      owner_id,
+      business_id,
+      last_value,
+      updated_at
+    ) values (
+      number_scope_key,
+      new.owner_id,
+      new.business_id,
+      1,
+      now()
+    )
+    on conflict (scope_key) do update
+    set
+      last_value = public.customer_number_counters.last_value + 1,
+      updated_at = now()
+    returning last_value into next_value;
+
+    new.customer_number := public.format_customer_number(next_value);
+  else
+    new.customer_number := upper(btrim(new.customer_number));
+  end if;
+
+  new.metadata := jsonb_set(
+    coalesce(new.metadata, '{}'::jsonb),
+    '{customer_number}',
+    to_jsonb(new.customer_number),
+    true
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists assign_customer_number_on_customer_cards on public.customer_cards;
+create trigger assign_customer_number_on_customer_cards
+before insert or update of customer_number on public.customer_cards
+for each row execute function public.assign_customer_number();
+
+alter table public.customer_cards
+alter column customer_number set not null;
+
+alter table public.customer_cards
+drop constraint if exists customer_cards_customer_number_format_check;
+
+alter table public.customer_cards
+add constraint customer_cards_customer_number_format_check
+check (customer_number ~ '^[A-HJ-NP-Z]+[0-9]{3}$');
+
+create unique index if not exists customer_cards_business_customer_number_key
+on public.customer_cards (business_id, customer_number)
+where business_id is not null;
+
+create unique index if not exists customer_cards_owner_customer_number_key
+on public.customer_cards (owner_id, customer_number)
+where business_id is null;
+
+alter table public.customer_number_counters enable row level security;
+
+revoke all on table public.customer_number_counters from anon, authenticated;
+grant all on table public.customer_number_counters to service_role;
+
 create table if not exists public.card_instances (
   id uuid primary key default gen_random_uuid(),
   customer_card_id uuid unique references public.customer_cards(id) on delete cascade,

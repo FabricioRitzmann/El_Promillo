@@ -258,6 +258,7 @@ export function publicOperatorCard(card: Row = {}) {
     id: card.id,
     template_id: card.template_id,
     card_instance_number: card.card_instance_number,
+    customer_number: card.customer_number || card.metadata?.customer_number,
     customer_code: card.customer_code,
     status: card.status,
     stamp_count: card.stamp_count,

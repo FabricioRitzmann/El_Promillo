@@ -42,6 +42,7 @@ const googleCustomerCardSelect = [
   'business_id',
   'template_id',
   'card_instance_number',
+  'customer_number',
   'customer_code',
   'status',
   'stamp_count',
@@ -580,9 +581,9 @@ function cardFeatureRows(template: Row, card: Row) {
   }
 
   rows.push({
-    id: 'card-id',
-    header: 'Karten-ID',
-    body: stringValue(card.card_instance_number || card.customer_code)
+    id: 'customer-number',
+    header: 'Kunden-Nr.',
+    body: stringValue(card.customer_number || card.metadata?.customer_number || card.card_instance_number || card.customer_code)
   });
 
   return rows;
@@ -806,7 +807,7 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
       programName: stringValue(template.card_name || businessNameForTemplate(template, 'Kundenkarte')) || 'Kundenkarte',
       programLogo: logo || fallbackLogoImage('Programm-Logo'),
       accountNameLabel: 'Kunde',
-      accountIdLabel: 'Karten-ID',
+      accountIdLabel: 'Kunden-Nr.',
       rewardsTierLabel: 'Status',
       hexBackgroundColor: cleanHexColor(template.primary_color)
     };
@@ -887,6 +888,7 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
 
 function buildObjectPayload(template: Row, card: Row, objectId: string, classId: string, objectType: string) {
   const cardCode = stringValue(card.card_instance_number || card.customer_code);
+  const customerNumber = stringValue(card.customer_number || card.metadata?.customer_number || cardCode);
   const rows = cardFeatureRows(template, card);
   const settings = templateSettings(template);
   const metadata = card.metadata && typeof card.metadata === 'object' ? card.metadata : {};
@@ -981,8 +983,8 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
       id: objectId,
       classId,
       state: 'ACTIVE',
-      accountId: cardCode,
-      accountName: stringValue(card.metadata?.customer_name || card.customer_code || cardCode),
+      accountId: customerNumber,
+      accountName: stringValue(card.metadata?.customer_name || customerNumber),
       loyaltyPoints: {
         label: primaryStatusRow.header,
         balance: {

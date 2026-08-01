@@ -47,6 +47,7 @@ const updateAppleCustomerCardSelect = [
   'business_id',
   'template_id',
   'card_instance_number',
+  'customer_number',
   'customer_code',
   'status',
   'stamp_count',

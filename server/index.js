@@ -55,6 +55,7 @@ const localOperatorCardSelect = [
   'business_id',
   'template_id',
   'card_instance_number',
+  'customer_number',
   'customer_code',
   'status',
   'stamp_count',
@@ -1677,6 +1678,7 @@ function publicClaimCard(card = {}) {
     id: card.id,
     template_id: card.template_id,
     card_instance_number: card.card_instance_number,
+    customer_number: card.customer_number || metadata.customer_number,
     customer_code: card.customer_code,
     status: card.status,
     stamp_count: card.stamp_count,
@@ -1690,6 +1692,7 @@ function publicClaimCard(card = {}) {
     cloakroom_active: card.cloakroom_active,
     metadata: {
       card_instance_number: metadata.card_instance_number,
+      customer_number: card.customer_number || metadata.customer_number,
       balance_cents: metadata.balance_cents,
       cloakroom_active: metadata.cloakroom_active,
       template_type: metadata.template_type,
@@ -1762,6 +1765,7 @@ function publicOperatorCard(card = {}) {
     id: card.id,
     template_id: card.template_id,
     card_instance_number: card.card_instance_number,
+    customer_number: card.customer_number || card.metadata?.customer_number,
     customer_code: card.customer_code,
     status: card.status,
     stamp_count: card.stamp_count,
@@ -1786,7 +1790,7 @@ function publicOperatorCard(card = {}) {
   };
 }
 
-const claimCustomerCardSelect = 'id, owner_id, business_id, template_id, card_instance_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
+const claimCustomerCardSelect = 'id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
 
 function isUniqueViolation(error) {
   return error?.code === '23505';
@@ -2011,7 +2015,7 @@ app.post('/api/cards/claim', async (req, res) => {
     const { data: card, error: insertError } = await supabaseAdmin
       .from('customer_cards')
       .insert(cardToInsert)
-      .select('id, owner_id, business_id, template_id, card_instance_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at')
+      .select('id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at')
       .single();
 
     if (insertError) {

@@ -192,6 +192,9 @@ function walletPreviewPassFields(template, card, business) {
     || card?.metadata?.card_instance_number
     || card?.customer_code
     || 'Karten-ID';
+  const customerNumber = card?.customer_number
+    || card?.metadata?.customer_number
+    || cardInstanceNumber;
   const latestMessage = compactWalletText(card?.metadata?.latest_wallet_message || card?.latest_wallet_message);
   const latestMessagePreview = compactWalletPreviewText(latestMessage);
   const headerField = latestMessage
@@ -247,9 +250,9 @@ function walletPreviewPassFields(template, card, business) {
     ],
     secondaryFields: [
       {
-        key: 'cardId',
-        label: 'Karten-ID',
-        value: cardInstanceNumber
+        key: 'customerNumber',
+        label: 'Kunden-Nr.',
+        value: customerNumber
       },
       {
         key: 'type',

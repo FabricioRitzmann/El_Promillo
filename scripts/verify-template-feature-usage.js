@@ -90,7 +90,7 @@ assertAll('public/js/claim.js', 'Public Wallet Download Page', [
   'createGoogleWalletSaveLink',
   'createTopupPaymentSession',
   'safeGoogleWalletSaveUrl',
-  'escapeHtml(cardCode)',
+  'escapeHtml(customerNumber)',
   'topupPanelHtml',
   "featureEnabled(template, 'balance')",
   'template.settings?.minTopupCents',

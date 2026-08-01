@@ -551,6 +551,16 @@ function cardCodeFor(cardInstance: Row) {
   );
 }
 
+function customerNumberFor(cardInstance: Row) {
+  return stringValue(
+    cardInstance.customer_number
+      || cardInstance.customer_cards?.customer_number
+      || cardInstance.customer_cards?.metadata?.customer_number
+      || cardInstance.metadata?.customer_number
+      || cardCodeFor(cardInstance)
+  );
+}
+
 function cardFeatureRows(template: Row, cardInstance: Row) {
   const settings = templateSettings(template);
   const customer = cardInstance.customer_cards || {};
@@ -718,9 +728,9 @@ function statusModules(template: Row, cardInstance: Row, extraRows: Array<{ id: 
     ...extraRows,
     ...cardFeatureRows(template, cardInstance),
     {
-      id: 'card-id',
-      header: 'Karten-ID',
-      body: cardCodeFor(cardInstance)
+      id: 'customer-number',
+      header: 'Kunden-Nr.',
+      body: customerNumberFor(cardInstance)
     }
   ];
 
@@ -749,8 +759,8 @@ function statusPatchPayload(template: Row, cardInstance: Row, objectType = objec
   const primaryStatusRow = cardFeatureRows(template, cardInstance)[0];
 
   if (objectType === 'loyaltyObject' && primaryStatusRow) {
-    patch.accountId = cardCodeFor(cardInstance);
-    patch.accountName = stringValue(cardInstance.customer_cards?.metadata?.customer_name || cardInstance.customer_cards?.customer_code || cardCodeFor(cardInstance));
+    patch.accountId = customerNumberFor(cardInstance);
+    patch.accountName = stringValue(cardInstance.customer_cards?.metadata?.customer_name || customerNumberFor(cardInstance));
     patch.loyaltyPoints = {
       label: primaryStatusRow.header,
       balance: {
@@ -918,7 +928,7 @@ function buildClassPayload(template: Row, objectType: string, classId: string) {
       programName: stringValue(template.card_name || businessNameForTemplate(template, 'Kundenkarte')) || 'Kundenkarte',
       programLogo: logo || fallbackLogoImage('Programm-Logo'),
       accountNameLabel: 'Kunde',
-      accountIdLabel: 'Karten-ID',
+      accountIdLabel: 'Kunden-Nr.',
       rewardsTierLabel: 'Status',
       hexBackgroundColor: stringValue(template.primary_color || '#fffdf9')
     };

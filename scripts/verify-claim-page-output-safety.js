@@ -41,7 +41,7 @@ assertIncludes(claim, [
 
 assertIncludes(claim, [
   'const cardCode = result.card?.card_instance_number || result.card?.customer_code || \'\';',
-  '<p class="customer-code">${escapeHtml(cardCode)}</p>',
+  '<p class="customer-code">${escapeHtml(customerNumber)}</p>',
   'resultPanel.insertAdjacentHTML(\'beforeend\'',
   '<a class="button primary" href="${escapeHtml(saveUrl)}">In Google Wallet speichern</a>',
 ], 'Claim Result Escaping');

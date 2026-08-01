@@ -215,12 +215,13 @@ async function claimCard(walletPlatform = 'apple') {
   rememberClaimWalletObjectId(walletPlatform, result.card?.wallet_object_id || walletObjectId);
 
   const cardCode = result.card?.card_instance_number || result.card?.customer_code || '';
+  const customerNumber = result.card?.customer_number || result.card?.metadata?.customer_number || cardCode;
 
   resultPanel.hidden = false;
   resultPanel.innerHTML = `
     <h2>${result.reused ? 'Karte gefunden' : 'Karte erstellt'}</h2>
-    <p class="customer-code">${escapeHtml(cardCode)}</p>
-    <p class="muted">Diese Karten-ID ist eindeutig und kann im Scanner verwendet werden.</p>
+    <p class="customer-code">${escapeHtml(customerNumber)}</p>
+    <p class="muted">Diese Kundennummer gehört zum Club und kann für die Garderobe verwendet werden.</p>
     ${walletPlatform === 'apple' ? '<button id="downloadApplePassButton" class="primary" type="button">Wallet-Datei laden</button>' : ''}
     ${topupPanelHtml(result)}
   `;

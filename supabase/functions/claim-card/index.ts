@@ -144,6 +144,7 @@ function publicClaimCard(card: Row) {
     id: card.id,
     template_id: card.template_id,
     card_instance_number: card.card_instance_number,
+    customer_number: card.customer_number || metadata.customer_number,
     customer_code: card.customer_code,
     status: card.status,
     stamp_count: card.stamp_count,
@@ -157,6 +158,7 @@ function publicClaimCard(card: Row) {
     cloakroom_active: card.cloakroom_active,
     metadata: {
       card_instance_number: metadata.card_instance_number,
+      customer_number: card.customer_number || metadata.customer_number,
       balance_cents: metadata.balance_cents,
       cloakroom_active: metadata.cloakroom_active,
       template_type: metadata.template_type,
@@ -171,7 +173,7 @@ async function findExistingWalletCard(supabaseAdmin: any, platform: string, wall
     return null;
   }
 
-  const selectColumns = 'id, owner_id, business_id, template_id, card_instance_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
+  const selectColumns = 'id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at';
   const { data, error } = await supabaseAdmin
     .from('customer_cards')
     .select(selectColumns)
@@ -354,7 +356,7 @@ async function createCardInstance(supabaseAdmin: any, template: Row, body: Row) 
       cloakroom_active: false,
       metadata
     })
-    .select('id, owner_id, business_id, template_id, card_instance_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at')
+    .select('id, owner_id, business_id, template_id, card_instance_number, customer_number, customer_code, status, stamp_count, streak_count, vip_status, pass_serial_number, wallet_platform, wallet_object_id, wallet_serial_number, balance_cents, currency, cloakroom_active, metadata, created_at')
     .single();
 
   if (cardError) {
