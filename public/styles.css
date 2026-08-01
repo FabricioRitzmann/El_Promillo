@@ -55,6 +55,16 @@
   font-family: var(--font-ui);
 }
 
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.16s;
+  animation-timing-function: ease-out;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -148,6 +158,10 @@ button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
   box-shadow: none;
+}
+
+button.is-busy {
+  cursor: progress;
 }
 
 .primary {
@@ -578,6 +592,42 @@ textarea {
   margin-bottom: 1rem;
   box-shadow: var(--shadow-soft);
   overflow-wrap: anywhere;
+}
+
+.message-slot {
+  position: fixed;
+  z-index: calc(var(--z-modal) - 1);
+  right: var(--page-padding-x);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  width: min(26rem, calc(100vw - (var(--page-padding-x) * 2)));
+  min-height: 0;
+  margin: 0;
+  transition: opacity 0.14s ease, background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.message-slot.info,
+.message-slot.success {
+  background: #f7ecdc;
+}
+
+.message-slot.warning {
+  background: #f7ead7;
+}
+
+.message-slot.error {
+  background: #fff1ee;
+}
+
+.message-slot.is-empty,
+.message-slot:empty {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.is-updating {
+  pointer-events: none;
+  opacity: 0.72;
+  transition: opacity 0.14s ease;
 }
 
 .message.warning {
@@ -2189,9 +2239,18 @@ textarea {
   display: grid;
   place-items: center;
   padding: var(--page-padding-x);
-  background: rgba(29, 29, 31, 0.42);
-  backdrop-filter: blur(12px);
+  background: rgba(29, 29, 31, 0.52);
   overscroll-behavior: contain;
+}
+
+/* Solid surfaces avoid costly full-panel blur repaints on mobile devices. */
+.panel,
+.table-panel,
+.claim-panel,
+.kpi-card,
+.chart-card,
+.modal-panel {
+  backdrop-filter: none;
 }
 
 .modal-panel {
@@ -2358,6 +2417,21 @@ body:has(.modal-backdrop:not([hidden])) {
 
   75% {
     transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  @view-transition {
+    navigation: none;
   }
 }
 

@@ -2,7 +2,7 @@ import { requireLogin } from './guards.js';
 import { appUrl, apiUrl } from './config.js';
 import { pagePath } from './path.js';
 import { imageFileToPngUnderLimit } from './imageUploadOptimizer.js';
-import { byId, escapeHtml, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
+import { byId, escapeHtml, renderBusinessHeader, setButtonBusy, showMessage, walletPreviewHtml } from './ui.js';
 import {
   CLUB_FEATURE_DEFAULTS,
   OPTIONAL_FEATURE,
@@ -118,6 +118,8 @@ const walletAppleUnregisteredCount = byId('walletAppleUnregisteredCount');
 const walletNotificationHistory = byId('walletNotificationHistory');
 const assetBucket = 'wallet-assets';
 const maxAssetFileBytes = 2 * 1024 * 1024;
+let editorPreviewFrame = 0;
+let optionalFeatureToggleSignature = '';
 const maxAssetSourceFileBytes = 25 * 1024 * 1024;
 const assetUploadFrames = {
   'event-apple-background': { width: 1000, height: 1500, backgroundColor: '#fffdf9' },
@@ -345,7 +347,13 @@ function updateEditorModeUi() {
   }
 
   if (templateSubmitButton) {
-    templateSubmitButton.textContent = isEditing ? 'Aenderungen speichern' : 'Template speichern';
+    const submitLabel = isEditing ? 'Aenderungen speichern' : 'Template speichern';
+
+    if (templateSubmitButton.dataset.busy === 'true') {
+      templateSubmitButton.dataset.idleLabel = submitLabel;
+    } else {
+      templateSubmitButton.textContent = submitLabel;
+    }
   }
 }
 
@@ -528,6 +536,17 @@ function renderEditorPreview() {
     business_logo_url: state.business?.logo_url || ''
   });
   renderEditorQrPanel();
+}
+
+function scheduleEditorPreview() {
+  if (editorPreviewFrame) {
+    return;
+  }
+
+  editorPreviewFrame = requestAnimationFrame(() => {
+    editorPreviewFrame = 0;
+    renderEditorPreview();
+  });
 }
 
 function renderEditorQrPanel() {
@@ -1688,6 +1707,7 @@ function renderOptionalFeatureToggles(draft) {
   const optionalFeatures = Object.entries(getTemplateFeatures(draft))
     .filter(([featureName, value]) => (isClubCard || featureName !== 'cloakroom') && value === OPTIONAL_FEATURE)
     .map(([featureName]) => featureName);
+  const toggleSignature = `${normalizeTemplateType(draft)}:${optionalFeatures.join(',')}`;
   const activeOptionalCount = optionalFeatures.filter((featureName) => featureEnabled(draft, featureName)).length;
   const title = optionalFeaturePanel.querySelector('.optional-feature-title');
 
@@ -1698,6 +1718,11 @@ function renderOptionalFeatureToggles(draft) {
   if (clubFeatureSpaceWarning) {
     clubFeatureSpaceWarning.hidden = !isClubCard || activeOptionalCount < 4;
   }
+  if (toggleSignature === optionalFeatureToggleSignature) {
+    return;
+  }
+
+  optionalFeatureToggleSignature = toggleSignature;
   optionalFeatureToggles.innerHTML = optionalFeatures.map((featureName) => {
     const checked = featureEnabled(draft, featureName);
     const isLocked = lockedEditorFeatures.has(featureName);
@@ -1758,8 +1783,7 @@ function updateConditionalTemplateFields() {
     element.hidden = !templateSupportsReward(draft);
   });
 
-  renderEditorPreview();
-  renderWalletNotificationsPanel().catch(() => {});
+  scheduleEditorPreview();
 }
 
 function handleOptionalFeatureToggle(event) {
@@ -1882,72 +1906,79 @@ async function loadNotificationTemplates() {
 
 async function saveTemplate(event) {
   event.preventDefault();
+  if (templateSubmitButton?.dataset.busy === 'true') {
+    return;
+  }
+
+  setButtonBusy(templateSubmitButton, true, state.templateId ? 'Wird aktualisiert ...' : 'Wird gespeichert ...');
   showMessage(editorMessage, state.templateId ? 'Karte wird aktualisiert ...' : 'Template wird gespeichert ...');
 
-  const draft = templateDraftFromForm();
+  try {
+    const draft = templateDraftFromForm();
 
-  if (
-    lockedEditorTemplateTypes.has(draft.template_type)
-    && normalizeTemplateType(state.template || '') !== draft.template_type
-  ) {
-    showMessage(editorMessage, 'Die Eventkarte ist sichtbar, aber noch nicht freigegeben.', 'error');
-    return;
+    if (
+      lockedEditorTemplateTypes.has(draft.template_type)
+      && normalizeTemplateType(state.template || '') !== draft.template_type
+    ) {
+      showMessage(editorMessage, 'Die Eventkarte ist sichtbar, aber noch nicht freigegeben.', 'error');
+      return;
+    }
+
+    if (!draft.business_name || !draft.card_name) {
+      showMessage(editorMessage, 'Geschäftsname und Kartenname sind Pflichtfelder.', 'error');
+      return;
+    }
+
+    if (!state.business?.id) {
+      showMessage(editorMessage, 'Bitte zuerst auf der Konto-Seite deine Firmendaten speichern, damit diese Karte einem Business zugeordnet werden kann.', 'error');
+      return;
+    }
+
+    const payload = {
+      ...draft,
+      business_id: state.business.id,
+      is_active: true
+    };
+
+    if (state.templateId) {
+      const rows = await state.client.updateRows('card_templates', payload, [
+        { column: 'id', op: 'eq', value: state.templateId },
+        { column: 'owner_id', op: 'eq', value: state.session.user.id }
+      ]);
+
+      state.template = rows[0] || { ...state.template, ...payload };
+      state.notificationTemplates = state.notificationTemplates.map((template) => (
+        template.id === state.template.id ? state.template : template
+      ));
+      scheduleEditorPreview();
+      renderWalletNotificationsPanel().catch(() => {});
+      showMessage(editorMessage, 'Karte aktualisiert. Der QR-Code bleibt gleich.', 'success');
+      return;
+    }
+
+    const rows = await state.client.insertRows('card_templates', {
+      ...payload,
+      owner_id: state.session.user.id
+    });
+    const createdTemplate = rows[0];
+
+    if (createdTemplate?.id) {
+      state.templateId = createdTemplate.id;
+      state.template = createdTemplate;
+      state.notificationTemplates = [
+        createdTemplate,
+        ...state.notificationTemplates.filter((template) => template.id !== createdTemplate.id)
+      ];
+      window.history.replaceState({}, '', pagePath(`editor.html?template=${encodeURIComponent(createdTemplate.id)}`));
+      updateEditorModeUi();
+      updateConditionalTemplateFields();
+      renderWalletNotificationsPanel().catch(() => {});
+    }
+
+    showMessage(editorMessage, 'Template erstellt. Es erscheint jetzt in der Dashboard-Übersicht.', 'success');
+  } finally {
+    setButtonBusy(templateSubmitButton, false);
   }
-
-  if (!draft.business_name || !draft.card_name) {
-    showMessage(editorMessage, 'Geschäftsname und Kartenname sind Pflichtfelder.', 'error');
-    return;
-  }
-
-  if (!state.business?.id) {
-    showMessage(editorMessage, 'Bitte zuerst auf der Konto-Seite deine Firmendaten speichern, damit diese Karte einem Business zugeordnet werden kann.', 'error');
-    return;
-  }
-
-  const payload = {
-    ...draft,
-    business_id: state.business.id,
-    is_active: true
-  };
-
-  if (state.templateId) {
-    const rows = await state.client.updateRows('card_templates', payload, [
-      { column: 'id', op: 'eq', value: state.templateId },
-      { column: 'owner_id', op: 'eq', value: state.session.user.id }
-    ]);
-
-    state.template = rows[0] || { ...state.template, ...payload };
-    state.notificationTemplates = state.notificationTemplates.map((template) => (
-      template.id === state.template.id ? state.template : template
-    ));
-    loadTemplateIntoForm(state.template);
-    updateConditionalTemplateFields();
-    renderWalletNotificationsPanel().catch(() => {});
-    showMessage(editorMessage, 'Karte aktualisiert. Der QR-Code bleibt gleich.', 'success');
-    return;
-  }
-
-  const rows = await state.client.insertRows('card_templates', {
-    ...payload,
-    owner_id: state.session.user.id
-  });
-  const createdTemplate = rows[0];
-
-  if (createdTemplate?.id) {
-    state.templateId = createdTemplate.id;
-    state.template = createdTemplate;
-    state.notificationTemplates = [
-      createdTemplate,
-      ...state.notificationTemplates.filter((template) => template.id !== createdTemplate.id)
-    ];
-    window.history.replaceState({}, '', pagePath(`editor.html?template=${encodeURIComponent(createdTemplate.id)}`));
-    updateEditorModeUi();
-    loadTemplateIntoForm(createdTemplate);
-    updateConditionalTemplateFields();
-    renderWalletNotificationsPanel().catch(() => {});
-  }
-
-  showMessage(editorMessage, 'Template erstellt. Es erscheint jetzt in der Dashboard-Übersicht.', 'success');
 }
 
 async function initEditor() {
@@ -1964,10 +1995,8 @@ async function initEditor() {
   templateForm?.addEventListener('submit', (event) => {
     saveTemplate(event).catch((error) => showMessage(editorMessage, error.message, 'error'));
   });
-  templateForm?.addEventListener('input', updateConditionalTemplateFields);
+  templateForm?.addEventListener('input', scheduleEditorPreview);
   templateForm?.addEventListener('change', updateConditionalTemplateFields);
-
-  templateType?.addEventListener('change', updateConditionalTemplateFields);
 
   stampIconUpload?.addEventListener('change', (event) => {
     handleAssetUpload(event, 'stamp_icon_url', 'stamp-icon').catch((error) => showMessage(editorMessage, error.message, 'error'));

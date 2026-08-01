@@ -1,7 +1,7 @@
 import { requireLogin } from './guards.js';
 import { apiUrl } from './config.js';
 import { pagePath } from './path.js';
-import { byId, cardTypeLabel, escapeHtml, normalizeCode, renderBusinessHeader, showMessage, walletPreviewHtml } from './ui.js';
+import { byId, cardTypeLabel, escapeHtml, normalizeCode, renderBusinessHeader, setButtonBusy, showMessage, walletPreviewHtml } from './ui.js';
 import { cardEmblemMeta } from './cardEmblems.js';
 import { activeFeatureLabels, featureEnabled, normalizeScannerAction, normalizeTemplateType, scannerAccessHighlights, validateScannerAction } from './templateFeatures.js';
 
@@ -21,7 +21,8 @@ const state = {
   scanCanvasContext: null,
   business: null,
   pendingDemographicsAction: null,
-  pendingDemographicsPayload: null
+  pendingDemographicsPayload: null,
+  actionPending: false
 };
 
 const JSQR_CDN_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
@@ -617,9 +618,9 @@ function readEditedCard() {
   return updates;
 }
 
-async function saveCard() {
+async function saveCard(triggerButton) {
   const updates = readEditedCard();
-  await runScannerAction('manual_update', { updates });
+  await runScannerAction('manual_update', { updates }, triggerButton);
 }
 
 async function callScannerActionApi(action, payload = {}) {
@@ -772,6 +773,11 @@ function applyScannerActionResult(result) {
 
 async function continuePendingDemographics(event) {
   event.preventDefault();
+  const submitButton = event.submitter || demographicsForm?.querySelector('button[type="submit"]');
+
+  if (submitButton?.dataset.busy === 'true') {
+    return;
+  }
 
   if (!state.pendingDemographicsAction) {
     hideDemographicsModal();
@@ -790,33 +796,51 @@ async function continuePendingDemographics(event) {
   }
 
   showMessage(demographicsMessage, 'Erstscan wird gespeichert ...');
+  setButtonBusy(submitButton, true, 'Wird gespeichert ...');
 
   const action = state.pendingDemographicsAction;
   const payload = {
     ...state.pendingDemographicsPayload,
     demographics
   };
-  const result = await callScannerActionApi(action, payload);
+  try {
+    const result = await callScannerActionApi(action, payload);
 
-  if (result.requires_demographics) {
-    showMessage(demographicsMessage, result.message || 'Demografie-Daten fehlen noch.', 'error');
-    return;
+    if (result.requires_demographics) {
+      showMessage(demographicsMessage, result.message || 'Demografie-Daten fehlen noch.', 'error');
+      return;
+    }
+
+    state.pendingDemographicsAction = null;
+    state.pendingDemographicsPayload = null;
+    hideDemographicsModal();
+    applyScannerActionResult(result);
+    showMessage(
+      scannerMessage,
+      result.emblem_update?.queued
+        ? 'Erstscan gespeichert. Wallet-Update für das neue Emblem wurde vorgemerkt.'
+        : 'Erstscan gespeichert und Aktion ausgeführt.',
+      'success'
+    );
+  } finally {
+    setButtonBusy(submitButton, false);
   }
-
-  state.pendingDemographicsAction = null;
-  state.pendingDemographicsPayload = null;
-  hideDemographicsModal();
-  applyScannerActionResult(result);
-  showMessage(
-    scannerMessage,
-    result.emblem_update?.queued
-      ? 'Erstscan gespeichert. Wallet-Update für das neue Emblem wurde vorgemerkt.'
-      : 'Erstscan gespeichert und Aktion ausgeführt.',
-    'success'
-  );
 }
 
-async function runScannerAction(action, payload = {}) {
+function setScannerActionBusy(busy, triggerButton) {
+  if (busy) {
+    setButtonBusy(triggerButton, true, 'Wird gespeichert ...');
+  } else {
+    setButtonBusy(triggerButton, false);
+  }
+
+  cardPanel?.classList.toggle('is-updating', busy);
+  cardPanel?.querySelectorAll('button[data-action]').forEach((button) => {
+    button.disabled = busy;
+  });
+}
+
+async function runScannerAction(action, payload = {}, triggerButton = null) {
   const template = state.currentCard?.card_templates || {};
   const validation = validateScannerAction(template, action);
   const actionToSend = action === 'manual_update' ? action : validation.action;
@@ -826,22 +850,33 @@ async function runScannerAction(action, payload = {}) {
     return;
   }
 
-  showMessage(scannerMessage, 'Scanner-Aktion wird gespeichert ...');
-  const result = await callScannerActionApi(actionToSend, payload);
-
-  if (result.requires_demographics) {
-    showDemographicsModal(result, actionToSend, payload);
+  if (state.actionPending) {
     return;
   }
 
-  applyScannerActionResult(result);
-  showMessage(
-    scannerMessage,
-    result.emblem_update?.queued
-      ? 'Scanner-Aktion gespeichert. Wallet-Update für das neue Emblem wurde vorgemerkt.'
-      : 'Scanner-Aktion gespeichert. Die Wallet-Datei enthält beim erneuten Laden den aktuellen Supabase-Stand.',
-    'success'
-  );
+  state.actionPending = true;
+  setScannerActionBusy(true, triggerButton);
+  showMessage(scannerMessage, 'Scanner-Aktion wird gespeichert ...');
+  try {
+    const result = await callScannerActionApi(actionToSend, payload);
+
+    if (result.requires_demographics) {
+      showDemographicsModal(result, actionToSend, payload);
+      return;
+    }
+
+    applyScannerActionResult(result);
+    showMessage(
+      scannerMessage,
+      result.emblem_update?.queued
+        ? 'Scanner-Aktion gespeichert. Wallet-Update für das neue Emblem wurde vorgemerkt.'
+        : 'Scanner-Aktion gespeichert. Die Wallet-Datei enthält beim erneuten Laden den aktuellen Supabase-Stand.',
+      'success'
+    );
+  } finally {
+    state.actionPending = false;
+    setScannerActionBusy(false, triggerButton);
+  }
 }
 
 function showBlockedScannerAction(validation) {
@@ -1098,7 +1133,7 @@ async function initScanner() {
     }
 
     if (button.dataset.action === 'save') {
-      saveCard().catch(showScannerActionError);
+      saveCard(button).catch(showScannerActionError);
       return;
     }
 
@@ -1138,7 +1173,7 @@ async function initScanner() {
       payload.membershipExpiresAt = byId('membershipExpiresAt')?.value || null;
     }
 
-    runScannerAction(button.dataset.action, payload).catch(showScannerActionError);
+    runScannerAction(button.dataset.action, payload, button).catch(showScannerActionError);
   });
 
   const initialCode = new URLSearchParams(window.location.search).get('code');
