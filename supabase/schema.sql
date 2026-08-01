@@ -426,6 +426,27 @@ begin
 end;
 $$;
 
+-- Eine Kundennummer gehoert zu einer Person innerhalb eines Clubs und nicht
+-- zu einer einzelnen Wallet-Karte. Mehrere Karten/Template-Downloads koennen
+-- deshalb dasselbe customer_profile und dieselbe Kundennummer verwenden.
+create table if not exists public.customer_profiles (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.operator_profiles(id) on delete cascade,
+  business_id uuid references public.businesses(id) on delete cascade,
+  customer_number text not null,
+  identity_hash text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint customer_profiles_customer_number_format_check
+    check (customer_number ~ '^[A-HJ-NP-Z]+[0-9]{3}$'),
+  constraint customer_profiles_identity_hash_format_check
+    check (identity_hash ~ '^[a-f0-9]{64}$')
+);
+
+alter table public.customer_cards
+add column if not exists customer_profile_id uuid references public.customer_profiles(id) on delete restrict;
+
 alter table public.customer_cards
 add column if not exists customer_number text;
 
@@ -443,6 +464,36 @@ update public.customer_cards as card
 set customer_number = public.format_customer_number(numbered_cards.sequence_value)
 from numbered_cards
 where card.id = numbered_cards.id;
+
+insert into public.customer_profiles (
+  id,
+  owner_id,
+  business_id,
+  customer_number,
+  identity_hash,
+  metadata,
+  created_at,
+  updated_at
+)
+select
+  card.id,
+  card.owner_id,
+  card.business_id,
+  card.customer_number,
+  md5('legacy-customer-profile:' || card.id::text)
+    || md5('legacy-customer-profile-2:' || card.id::text),
+  jsonb_build_object('identity_source', 'legacy_card_backfill'),
+  card.created_at,
+  coalesce(card.updated_at, card.created_at, now())
+from public.customer_cards card
+where card.customer_number is not null
+on conflict (id) do nothing;
+
+update public.customer_cards card
+set customer_profile_id = profile.id
+from public.customer_profiles profile
+where card.customer_profile_id is null
+  and profile.id = card.id;
 
 update public.customer_cards
 set metadata = jsonb_set(
@@ -476,8 +527,22 @@ as $$
 declare
   next_value bigint;
   number_scope_key text;
+  profile_row public.customer_profiles%rowtype;
 begin
-  if new.customer_number is null or btrim(new.customer_number) = '' then
+  if new.customer_profile_id is not null then
+    select *
+    into profile_row
+    from public.customer_profiles
+    where id = new.customer_profile_id;
+
+    if profile_row.id is null
+      or profile_row.owner_id is distinct from new.owner_id
+      or profile_row.business_id is distinct from new.business_id then
+      raise exception 'CUSTOMER_PROFILE_SCOPE_MISMATCH: Kundenprofil passt nicht zu Betreiber und Club.';
+    end if;
+
+    new.customer_number := profile_row.customer_number;
+  elsif new.customer_number is null or btrim(new.customer_number) = '' then
     number_scope_key := coalesce(
       'business:' || new.business_id::text,
       'owner:' || new.owner_id::text
@@ -518,9 +583,141 @@ begin
 end;
 $$;
 
+create or replace function public.resolve_customer_profile(
+  p_owner_id uuid,
+  p_business_id uuid,
+  p_identity_hash text,
+  p_preferred_profile_id uuid default null
+)
+returns public.customer_profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  profile_row public.customer_profiles%rowtype;
+  next_value bigint;
+  number_scope_key text;
+begin
+  if p_owner_id is null then
+    raise exception 'CUSTOMER_PROFILE_OWNER_REQUIRED: Betreiber fehlt.';
+  end if;
+
+  p_identity_hash := lower(btrim(coalesce(p_identity_hash, '')));
+  if p_identity_hash !~ '^[a-f0-9]{64}$' then
+    raise exception 'CUSTOMER_PROFILE_IDENTITY_INVALID: Identitaets-Hash ist ungueltig.';
+  end if;
+
+  select *
+  into profile_row
+  from public.customer_profiles
+  where owner_id = p_owner_id
+    and business_id is not distinct from p_business_id
+    and identity_hash = p_identity_hash
+  limit 1;
+
+  if profile_row.id is not null then
+    return profile_row;
+  end if;
+
+  if p_preferred_profile_id is not null then
+    select *
+    into profile_row
+    from public.customer_profiles
+    where id = p_preferred_profile_id
+      and owner_id = p_owner_id
+      and business_id is not distinct from p_business_id
+      and coalesce(metadata->>'identity_source', '') = 'legacy_card_backfill'
+    for update;
+
+    if profile_row.id is not null then
+      begin
+        update public.customer_profiles
+        set
+          identity_hash = p_identity_hash,
+          metadata = (coalesce(metadata, '{}'::jsonb) - 'identity_source')
+            || jsonb_build_object('identity_source', 'browser_token'),
+          updated_at = now()
+        where id = profile_row.id
+        returning * into profile_row;
+
+        return profile_row;
+      exception when unique_violation then
+        select *
+        into profile_row
+        from public.customer_profiles
+        where owner_id = p_owner_id
+          and business_id is not distinct from p_business_id
+          and identity_hash = p_identity_hash
+        limit 1;
+
+        if profile_row.id is not null then
+          return profile_row;
+        end if;
+      end;
+    end if;
+  end if;
+
+  number_scope_key := coalesce(
+    'business:' || p_business_id::text,
+    'owner:' || p_owner_id::text
+  );
+
+  insert into public.customer_number_counters (
+    scope_key,
+    owner_id,
+    business_id,
+    last_value,
+    updated_at
+  ) values (
+    number_scope_key,
+    p_owner_id,
+    p_business_id,
+    1,
+    now()
+  )
+  on conflict (scope_key) do update
+  set
+    last_value = public.customer_number_counters.last_value + 1,
+    updated_at = now()
+  returning last_value into next_value;
+
+  begin
+    insert into public.customer_profiles (
+      owner_id,
+      business_id,
+      customer_number,
+      identity_hash,
+      metadata
+    ) values (
+      p_owner_id,
+      p_business_id,
+      public.format_customer_number(next_value),
+      p_identity_hash,
+      jsonb_build_object('identity_source', 'browser_token')
+    )
+    returning * into profile_row;
+  exception when unique_violation then
+    select *
+    into profile_row
+    from public.customer_profiles
+    where owner_id = p_owner_id
+      and business_id is not distinct from p_business_id
+      and identity_hash = p_identity_hash
+    limit 1;
+  end;
+
+  if profile_row.id is null then
+    raise exception 'CUSTOMER_PROFILE_CREATE_FAILED: Kundenprofil konnte nicht erstellt werden.';
+  end if;
+
+  return profile_row;
+end;
+$$;
+
 drop trigger if exists assign_customer_number_on_customer_cards on public.customer_cards;
 create trigger assign_customer_number_on_customer_cards
-before insert or update of customer_number on public.customer_cards
+before insert or update of customer_number, customer_profile_id on public.customer_cards
 for each row execute function public.assign_customer_number();
 
 alter table public.customer_cards
@@ -533,15 +730,41 @@ alter table public.customer_cards
 add constraint customer_cards_customer_number_format_check
 check (customer_number ~ '^[A-HJ-NP-Z]+[0-9]{3}$');
 
-create unique index if not exists customer_cards_business_customer_number_key
+drop index if exists public.customer_cards_business_customer_number_key;
+drop index if exists public.customer_cards_owner_customer_number_key;
+
+create index if not exists customer_cards_business_customer_number_idx
 on public.customer_cards (business_id, customer_number)
 where business_id is not null;
 
-create unique index if not exists customer_cards_owner_customer_number_key
+create index if not exists customer_cards_owner_customer_number_idx
 on public.customer_cards (owner_id, customer_number)
 where business_id is null;
 
+create unique index if not exists customer_profiles_business_identity_key
+on public.customer_profiles (business_id, identity_hash)
+where business_id is not null;
+
+create unique index if not exists customer_profiles_owner_identity_key
+on public.customer_profiles (owner_id, identity_hash)
+where business_id is null;
+
+create unique index if not exists customer_profiles_business_number_key
+on public.customer_profiles (business_id, customer_number)
+where business_id is not null;
+
+create unique index if not exists customer_profiles_owner_number_key
+on public.customer_profiles (owner_id, customer_number)
+where business_id is null;
+
+alter table public.customer_profiles enable row level security;
+
 alter table public.customer_number_counters enable row level security;
+
+revoke all on table public.customer_profiles from anon, authenticated;
+grant all on table public.customer_profiles to service_role;
+revoke all on function public.resolve_customer_profile(uuid, uuid, text, uuid) from public, anon, authenticated;
+grant execute on function public.resolve_customer_profile(uuid, uuid, text, uuid) to service_role;
 
 revoke all on table public.customer_number_counters from anon, authenticated;
 grant all on table public.customer_number_counters to service_role;
@@ -582,6 +805,24 @@ create table if not exists public.card_instances (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.card_instances
+add column if not exists customer_id uuid;
+
+update public.card_instances instance
+set customer_id = card.customer_profile_id
+from public.customer_cards card
+where instance.customer_card_id = card.id
+  and card.customer_profile_id is not null
+  and instance.customer_id is distinct from card.customer_profile_id;
+
+alter table public.card_instances
+drop constraint if exists card_instances_customer_id_fkey;
+
+alter table public.card_instances
+add constraint card_instances_customer_id_fkey
+foreign key (customer_id) references public.customer_profiles(id) on delete restrict
+not valid;
 
 drop trigger if exists validate_card_instances_features on public.card_instances;
 

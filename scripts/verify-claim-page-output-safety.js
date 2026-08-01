@@ -25,6 +25,8 @@ const claim = read('public/js/claim.js');
 const contextDoc = read('docs/WALLET_INTEGRATION_CONTEXT.md');
 const readme = read('README.md');
 const packageJson = read('package.json');
+const schema = read('supabase/schema.sql');
+const claimCardEdge = read('supabase/functions/claim-card/index.ts');
 
 assertIncludes(claim, [
   'import { byId, escapeHtml, showMessage, walletPreviewHtml } from \'./ui.js\';',
@@ -45,6 +47,29 @@ assertIncludes(claim, [
   'resultPanel.insertAdjacentHTML(\'beforeend\'',
   '<a class="button primary" href="${escapeHtml(saveUrl)}">In Google Wallet speichern</a>',
 ], 'Claim Result Escaping');
+
+assertIncludes(claim, [
+  "const CUSTOMER_IDENTITY_STORAGE_KEY = 'wallet_customer_identity:v1';",
+  'function getCustomerIdentityToken()',
+  'customerIdentityToken',
+  'claimCardViaEdge(walletPlatform, walletObjectId, customerIdentityToken)',
+  'claimCardViaLocalApi(walletPlatform, walletObjectId, customerIdentityToken)'
+], 'Stabile Kundenidentität über mehrere Karten');
+
+assertIncludes(schema, [
+  'create table if not exists public.customer_profiles',
+  'create or replace function public.resolve_customer_profile(',
+  'customer_profile_id uuid references public.customer_profiles(id)',
+  'create unique index if not exists customer_profiles_business_identity_key',
+  'create unique index if not exists customer_profiles_business_number_key'
+], 'Clubbezogene Kundenprofile');
+
+assertIncludes(claimCardEdge, [
+  "crypto.subtle.digest('SHA-256'",
+  ".rpc('resolve_customer_profile'",
+  'customer_profile_id: customerProfile.id',
+  'customer_id: customerProfile.id'
+], 'Gehashtes Kundenprofil im Edge Claim');
 
 assertIncludes(claim, [
   'function amountInputValue(value, fallback = \'\')',

@@ -439,7 +439,7 @@ function renderCustomerCards() {
             class="action-select"
             data-card-action
             data-scanner-url="${escapeHtml(scannerUrl)}"
-            data-card-code="${escapeHtml(customerNumber)}"
+            data-card-code="${escapeHtml(cardNumber)}"
             aria-label="Aktionen für Kundenkarte ${escapeHtml(customerNumber)}"
           >
             <option value="">Aktionen</option>
