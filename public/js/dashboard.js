@@ -13,7 +13,8 @@ const state = {
   customerCards: [],
   statisticsLoaded: false,
   currentStatistics: null,
-  chartViews: {}
+  chartViews: {},
+  lastScansExpanded: false
 };
 
 const businessDashboardSelect = [
@@ -196,7 +197,6 @@ const CHART_DEFINITIONS = [
   ['first_vs_repeat', 'Erstbesuche vs. Wiederholungen'],
   ['template_type_distribution', 'Kartentyp-Verteilung'],
   ['club_feature_distribution', 'Clubkarten-Modul-Nutzung'],
-  ['club_feature_combinations', 'Clubkarten-Kombinationen'],
   ['weekday_hour_heatmap', 'Besucher-Heatmap']
 ];
 const CHART_EMPTY_TEXT = 'Für den gewählten Zeitraum sind noch keine Scans vorhanden.';
@@ -1170,7 +1170,7 @@ function StatisticsChart(chartKey, viewType, items, charts = {}) {
 
 function chartCard(chartKey, title, items, charts = {}) {
   const currentView = currentChartView(chartKey);
-  const isWide = ['scans_over_time', 'gender_age_matrix', 'weekday_hour_heatmap'].includes(chartKey);
+  const isWide = ['gender_age_matrix', 'weekday_hour_heatmap'].includes(chartKey);
 
   return `
     <div class="chart-card ${isWide ? 'chart-card-wide' : ''}" data-chart-key="${escapeHtml(chartKey)}">
@@ -1246,16 +1246,33 @@ function renderLastScans(rows = []) {
   }
 
   const chartKey = 'last_scans';
-  const currentView = currentChartView(chartKey);
+  const isExpanded = state.lastScansExpanded;
+  const toggleLabel = isExpanded ? 'Letzte Scans schliessen' : 'Letzte Scans öffnen';
 
   lastScansTable.innerHTML = `
-    <div class="chart-card chart-card-wide" data-chart-key="${escapeHtml(chartKey)}">
-      <div class="chart-card-header">
-        <h3>Letzte Scans</h3>
-        ${ChartViewSwitcher(chartKey, currentView)}
+    <div class="chart-card chart-card-wide last-scans-card${isExpanded ? '' : ' is-collapsed'}" data-chart-key="${escapeHtml(chartKey)}">
+      <div class="chart-card-header last-scans-header">
+        <div class="last-scans-title-block">
+          <h3>Letzte Scans</h3>
+          <span>${escapeHtml(`${rows.length} Einträge`)}</span>
+        </div>
+        <div class="chart-card-controls">
+          <button
+            class="last-scans-toggle"
+            type="button"
+            data-toggle-last-scans
+            aria-expanded="${isExpanded ? 'true' : 'false'}"
+            aria-label="${escapeHtml(toggleLabel)}"
+            title="${escapeHtml(toggleLabel)}"
+          >
+            <span aria-hidden="true">v</span>
+          </button>
+        </div>
       </div>
-      <div class="stats-table-wrap">${renderLastScansTable(rows)}</div>
-      <button class="text-button chart-copy-button" type="button" data-copy-chart-values="${escapeHtml(chartKey)}">Werte kopieren</button>
+      <div class="last-scans-panel"${isExpanded ? '' : ' hidden'}>
+        <div class="stats-table-wrap">${renderLastScansTable(rows)}</div>
+        <button class="text-button chart-copy-button" type="button" data-copy-chart-values="${escapeHtml(chartKey)}">Werte kopieren</button>
+      </div>
     </div>
   `;
 }
@@ -1298,6 +1315,17 @@ function handleStatsChartCopyClick(event) {
 
   copyChartValues(button.dataset.copyChartValues)
     .catch((error) => showMessage(statsMessage, error.message || 'Werte konnten nicht kopiert werden.', 'error'));
+}
+
+function handleLastScansToggleClick(event) {
+  const toggleButton = event.target.closest('[data-toggle-last-scans]');
+
+  if (!toggleButton) {
+    return;
+  }
+
+  state.lastScansExpanded = !state.lastScansExpanded;
+  renderVisitorStatistics(state.currentStatistics || {});
 }
 
 async function loadVisitorStatistics() {
@@ -1345,6 +1373,7 @@ async function initDashboard() {
   lastScansTable?.addEventListener('change', handleStatsChartViewChange);
   statsCharts?.addEventListener('click', handleStatsChartCopyClick);
   lastScansTable?.addEventListener('click', handleStatsChartCopyClick);
+  lastScansTable?.addEventListener('click', handleLastScansToggleClick);
 
   templateList?.addEventListener('change', (event) => {
     const actionSelect = event.target.closest('[data-template-action]');
