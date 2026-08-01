@@ -7,6 +7,7 @@ import {
   byId,
   escapeHtml,
   renderBusinessHeader,
+  setButtonBusy,
   showMessage
 } from './ui.js';
 import { imageFileToPngUnderLimit } from './imageUploadOptimizer.js';
@@ -47,6 +48,8 @@ const companyLogoPreview = byId('companyLogoPreview');
 const companyLogoUpload = byId('companyLogoUpload');
 const uploadCompanyLogoButton = byId('uploadCompanyLogoButton');
 const removeCompanyLogoButton = byId('removeCompanyLogoButton');
+const businessSaveButton = businessForm?.querySelector('button[type="submit"]');
+const passwordSaveButton = passwordChangeForm?.querySelector('button[type="submit"]');
 const businessLogoBucket = 'business-logos';
 const maxLogoFileBytes = 2 * 1024 * 1024;
 const maxLogoSourceFileBytes = 25 * 1024 * 1024;
@@ -220,7 +223,7 @@ function configurePasswordChangeMode() {
   passwordChangeHint.textContent = 'Das aktuelle Passwort wird zuerst geprüft. Danach wird das neue Passwort direkt in Supabase Auth gespeichert.';
 }
 
-async function persistBusiness(extraPayload = {}) {
+async function persistBusiness(extraPayload = {}, { refillForm = true } = {}) {
   const payload = {
     ...businessPayloadFromForm(),
     ...extraPayload
@@ -239,64 +242,86 @@ async function persistBusiness(extraPayload = {}) {
     }, { select: businessAccountSelect });
 
   state.business = rows[0];
-  fillBusinessForm();
+  if (refillForm) {
+    fillBusinessForm();
+  } else {
+    renderBusinessHeader(state.business || {});
+    renderMobileAccountSummary();
+  }
   return state.business;
 }
 
 async function saveBusiness(event) {
   event.preventDefault();
+  if (businessSaveButton?.dataset.busy === 'true') {
+    return;
+  }
+
+  setButtonBusy(businessSaveButton, true);
   showMessage(accountMessage, 'Kontodaten werden gespeichert ...');
 
-  await persistBusiness();
-  showMessage(accountMessage, 'Kontodaten gespeichert.', 'success');
+  try {
+    await persistBusiness({}, { refillForm: false });
+    showMessage(accountMessage, 'Kontodaten gespeichert.', 'success');
+  } finally {
+    setButtonBusy(businessSaveButton, false);
+  }
 }
 
 async function changePassword(event) {
   event.preventDefault();
-  showMessage(accountMessage, state.magicLogin ? 'Neues Passwort wird gespeichert ...' : 'Aktuelles Passwort wird geprüft ...');
-
-  const formData = new FormData(passwordChangeForm);
-  const payload = {
-    currentPassword: String(formData.get('current_password') || ''),
-    newPassword: String(formData.get('new_password') || ''),
-    repeatPassword: String(formData.get('new_password_repeat') || '')
-  };
-
-  validatePasswordChangePayload(payload, { requireCurrentPassword: !state.magicLogin });
-
-  if (!state.magicLogin) {
-    const email = state.session?.user?.email || state.profile?.email;
-
-    if (!email) {
-      throw new Error('Login-E-Mail konnte nicht ermittelt werden.');
-    }
-
-    try {
-      const refreshedSession = await state.client.signIn({
-        email,
-        password: payload.currentPassword
-      });
-
-      state.session = refreshedSession;
-    } catch {
-      throw new Error('Das aktuelle Passwort ist nicht korrekt.');
-    }
+  if (passwordSaveButton?.dataset.busy === 'true') {
+    return;
   }
 
-  showMessage(accountMessage, 'Neues Passwort wird gespeichert ...');
-  await state.client.updatePassword(payload.newPassword);
-  state.session = await state.client.ensureSession();
-  state.session = {
-    ...state.session,
-    auth_flow: ''
-  };
-  state.client.storeSession(state.session);
-  state.magicLogin = false;
-  window.history.replaceState(null, document.title, window.location.pathname);
-  passwordChangeForm.reset();
-  configurePasswordChangeMode();
-  renderLoginData();
-  showMessage(accountMessage, 'Passwort wurde geändert.', 'success');
+  setButtonBusy(passwordSaveButton, true);
+  showMessage(accountMessage, state.magicLogin ? 'Neues Passwort wird gespeichert ...' : 'Aktuelles Passwort wird geprüft ...');
+  try {
+    const formData = new FormData(passwordChangeForm);
+    const payload = {
+      currentPassword: String(formData.get('current_password') || ''),
+      newPassword: String(formData.get('new_password') || ''),
+      repeatPassword: String(formData.get('new_password_repeat') || '')
+    };
+
+    validatePasswordChangePayload(payload, { requireCurrentPassword: !state.magicLogin });
+
+    if (!state.magicLogin) {
+      const email = state.session?.user?.email || state.profile?.email;
+
+      if (!email) {
+        throw new Error('Login-E-Mail konnte nicht ermittelt werden.');
+      }
+
+      try {
+        const refreshedSession = await state.client.signIn({
+          email,
+          password: payload.currentPassword
+        });
+
+        state.session = refreshedSession;
+      } catch {
+        throw new Error('Das aktuelle Passwort ist nicht korrekt.');
+      }
+    }
+
+    showMessage(accountMessage, 'Neues Passwort wird gespeichert ...');
+    await state.client.updatePassword(payload.newPassword);
+    state.session = await state.client.ensureSession();
+    state.session = {
+      ...state.session,
+      auth_flow: ''
+    };
+    state.client.storeSession(state.session);
+    state.magicLogin = false;
+    window.history.replaceState(null, document.title, window.location.pathname);
+    passwordChangeForm.reset();
+    configurePasswordChangeMode();
+    renderLoginData();
+    showMessage(accountMessage, 'Passwort wurde geändert.', 'success');
+  } finally {
+    setButtonBusy(passwordSaveButton, false);
+  }
 }
 
 function renderCompanyLogoPreview() {

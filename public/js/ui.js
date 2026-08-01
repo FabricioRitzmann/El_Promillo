@@ -3,6 +3,7 @@ import { cardEmblemImageUrl, cardEmblemMeta } from './cardEmblems.js';
 import { assetPath } from './path.js';
 
 const appBrandMarkUrl = assetPath('assets/el-promillo-emblem-cutout.png');
+const messageSlotTimers = new WeakMap();
 
 export function byId(id) {
   return document.getElementById(id);
@@ -23,7 +24,58 @@ export function showMessage(element, message, type = 'info') {
 
   element.textContent = message || '';
   element.className = `message ${type}`;
-  element.hidden = !message;
+  if (element.dataset.messageSlot === 'true') {
+    const previousTimer = messageSlotTimers.get(element);
+
+    if (previousTimer) {
+      clearTimeout(previousTimer);
+      messageSlotTimers.delete(element);
+    }
+
+    element.hidden = false;
+    element.classList.add('message-slot');
+    element.classList.toggle('is-empty', !message);
+
+    if (message && type === 'success') {
+      const timer = setTimeout(() => {
+        element.textContent = '';
+        element.className = 'message message-slot is-empty';
+        messageSlotTimers.delete(element);
+      }, 3200);
+      messageSlotTimers.set(element, timer);
+    }
+  } else {
+    element.hidden = !message;
+  }
+}
+
+export function setButtonBusy(button, busy, busyLabel = 'Wird gespeichert ...') {
+  if (!button) {
+    return;
+  }
+
+  if (busy) {
+    if (button.dataset.busy === 'true') {
+      return;
+    }
+
+    button.dataset.busy = 'true';
+    button.dataset.idleLabel = button.textContent || '';
+    button.style.minInlineSize = `${Math.ceil(button.getBoundingClientRect().width)}px`;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.classList.add('is-busy');
+    button.textContent = busyLabel;
+    return;
+  }
+
+  button.textContent = button.dataset.idleLabel || button.textContent;
+  button.disabled = false;
+  button.removeAttribute('aria-busy');
+  button.classList.remove('is-busy');
+  button.style.minInlineSize = '';
+  delete button.dataset.busy;
+  delete button.dataset.idleLabel;
 }
 
 export function escapeHtml(value) {
