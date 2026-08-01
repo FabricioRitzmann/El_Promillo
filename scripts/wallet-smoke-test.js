@@ -23,6 +23,7 @@ const publicFunctionChecks = [
   'claim-apple-pass',
   'google-wallet-save-link',
   'register-operator',
+  'request-operator-magic-link',
   'send-operator-verification-email',
   'create-topup-payment-session',
   'confirm-topup-payment',

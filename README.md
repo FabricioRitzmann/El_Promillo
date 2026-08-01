@@ -379,19 +379,21 @@ SUPABASE_ACCESS_TOKEN=<dein-supabase-token> npm run auth-email:unlock-only
 
 Das Script gibt keine Secret-Werte aus. SMTP-Zugangsdaten werden nicht im Repository gepflegt; sie müssen entweder im Supabase Dashboard unter `Authentication` -> `Emails`/`SMTP Settings` eingetragen werden oder separat über die Supabase Management API gesetzt werden, wenn Host, Benutzer, Passwort, Port und Absendername vollständig vorliegen.
 
-## Passwort vergessen und Passwort ändern
+## Einmaliger Login-Link und Passwort ändern
 
-Der Loginbereich enthält eine Passwort-vergessen-Funktion. Sie ruft Supabase Auth Password Recovery auf und sendet eine Reset-Mail an die angegebene Betreiber-E-Mail. Der Redirect zeigt zurück auf:
+Der Loginbereich enthält anstelle des früheren Password-Recovery-Formulars die Funktion `Ohne Passwort einloggen`. Die öffentliche Edge Function `request-operator-magic-link` prüft zuerst serverseitig, ob zur eingegebenen Adresse sowohl ein Betreiberprofil als auch der zugehörige Supabase-Auth-User existieren und ob `operator_profiles.unlock=true` gesetzt ist. Erst danach fordert sie über Supabase Auth einen Magic Link an (`shouldCreateUser: false`). Der Redirect zeigt direkt auf das Kundenprofil:
 
 ```text
-index.html?recovery=1
+account.html?magic_login=1
 ```
 
-Nach dem Klick auf den Supabase-Link erkennt die Login-Seite den Recovery-Flow, speichert das neue Passwort über Supabase Auth und leitet danach je nach Freischaltung ins Dashboard, in den Scanner oder auf die Warteseite.
+Nach dem Klick übernimmt die App die Supabase-Sitzung aus dem Link und meldet den Betreiber an. Freigeschaltete Betreiber landen im Kundenprofil und können dort direkt ein neues Passwort festlegen. Nicht freigeschaltete Betreiber bleiben weiterhin durch die bestehende Freischaltungsprüfung gesperrt.
 
-Die Kontoseite enthält zusätzlich `Passwort ändern`. Dort muss der Betreiber zuerst das aktuelle Passwort eingeben; die App prüft es per Supabase-Login und speichert danach das neue Passwort direkt über Supabase Auth.
+Bei einer unbekannten Adresse zeigt das Formular ausdrücklich an, dass kein offizieller El Promillo Account gefunden wurde, und empfiehlt, Schreibweise und hinterlegte Registrierungsadresse zu prüfen. Ein vorhandener, aber noch nicht freigeschalteter Account erhält eine eigene Freischaltungsmeldung. Diese bewusste Produktentscheidung macht den Accountstatus im Loginformular erkennbar; zum Schutz gegen automatisiertes Durchprobieren begrenzt die Function Anfragen standardmässig auf 8 pro Stunde und Browser-/Netzwerk-Fingerabdruck. Konfigurierbar ist dies über `OPERATOR_MAGIC_LINK_RATE_LIMIT` und `OPERATOR_MAGIC_LINK_RATE_LIMIT_WINDOW_SECONDS`.
 
-Wichtig für Free-Tier: Password Recovery ist mit Supabase Auth nutzbar. Wenn das Projekt den Supabase-Default-Mailprovider verwendet, kann die Reset-Mail bei neuen Free-Tier-Projekten aber nicht frei gebrandet werden. Für eigene Betreffzeilen, HTML, Signatur oder Absender wie `Fabricio@el-promillo.ch` ist Custom SMTP oder Supabase Pro nötig.
+Die vereinfachte Passwortsetzung wird nur aktiviert, wenn sowohl der Redirect-Parameter als auch eine echte Magic-Link-Sitzung vorliegen. Bei einem normalen Login muss der Betreiber weiterhin zuerst das aktuelle Passwort eingeben; die App prüft es per Supabase-Login und speichert danach das neue Passwort direkt über Supabase Auth.
+
+Die Magic-Link-Redirect-URL muss in der Supabase Auth Redirect-Allowlist enthalten sein. Das mitgelieferte Auth-Konfigurationsscript erlaubt bereits die App-Unterpfade über `/**`. Für eigene Betreffzeilen, HTML, Signatur und einen kontrollierten Absender wie `Fabricio@el-promillo.ch` sollte Custom SMTP verwendet werden; das reduziert gleichzeitig die Abhängigkeit vom Supabase-Standardversand.
 
 ## Kein PassKit im aktiven Wallet-Pfad
 
@@ -835,6 +837,7 @@ supabase functions deploy get-public-template
 supabase functions deploy get-wallet-message
 supabase functions deploy claim-apple-pass
 supabase functions deploy register-operator
+supabase functions deploy request-operator-magic-link
 supabase functions deploy send-operator-verification-email
 supabase functions deploy create-topup-payment-session
 supabase functions deploy confirm-topup-payment
@@ -966,6 +969,8 @@ GET /api/templates/:templateId/qr.pdf?format=a5
 10. Bestehende Karten können in der Kartenübersicht angeklickt und auf `/editor.html?template=<template_id>` bearbeitet werden.
 11. Im Editor steht bei gespeicherten Templates die Kartenvorschau links und der separate Claim-QR rechts.
 12. Kunde scannt QR-Code, öffnet `/claim.html?token=<public_claim_token>` und erhält je nach Gerät den passenden Wallet-Pfad: Apple über `claim-card` plus `claim-apple-pass`, Google über `claim-card` plus `google-wallet-save-link`, Samsung über `samsung-wallet-add-link`; bestehende alte `/claim.html?template=<template_id>` Links bleiben gültig, spätere Samsung Update-/Cancel-Aktionen laufen geschützt über `update-samsung-wallet-pass`.
+
+Kundennummern werden clubbezogen am `customer_profiles`-Datensatz vergeben, nicht an der einzelnen Wallet-Karte. Die Claim-Seite erzeugt einmalig eine zufällige Browser-Kundenidentität, die für alle Karten des Kunden wiederverwendet und im Backend ausschließlich als SHA-256-Hash gespeichert wird. `resolve_customer_profile(...)` liefert innerhalb eines Clubs für denselben Hash immer dasselbe Profil und dieselbe Nummer (A001, A002, …); verschiedene Clubs behalten getrennte Nummernkreise. `customer_cards.customer_profile_id` und `card_instances.customer_id` verbinden beliebig viele Apple-/Google-Karten mit diesem Profil, während `card_instance_number` und `customer_code` weiterhin jede konkrete Karte eindeutig identifizieren.
 13. Jede ausgestellte Karte bekommt eine sichtbare, eindeutige Karten-ID (`card_instance_number`).
 14. Betreiber scannt die Kundenkarte unter `/scanner.html` oder gibt Kundencode bzw. Karten-ID manuell ein.
 15. Betreiber sieht im Scanner nur Aktionen, die zur Matrix des Templates passen.

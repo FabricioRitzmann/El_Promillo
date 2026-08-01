@@ -23,6 +23,9 @@ verify_jwt = false
 [functions.register-operator]
 verify_jwt = false
 
+[functions.request-operator-magic-link]
+verify_jwt = false
+
 [functions.send-operator-verification-email]
 verify_jwt = false
 
