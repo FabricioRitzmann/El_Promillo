@@ -3,7 +3,8 @@ import { cardFeatureRows, templateFeatureSummary, templateTypeLabel } from '../p
 
 const pageSizes = {
   a4: [841.89, 595.28],
-  a5: [595.28, 419.53]
+  a5: [595.28, 419.53],
+  a6: [419.53, 297.64]
 };
 
 const designSize = {
@@ -253,8 +254,13 @@ function object(content) {
   return `${content}\n`;
 }
 
+function normalizePdfFormat(format) {
+  const value = String(format || 'a4').toLowerCase();
+  return ['a4', 'a5', 'a6'].includes(value) ? value : 'a4';
+}
+
 export function buildTemplateQrPdf({ template, claimUrl, format = 'a4' }) {
-  const normalizedFormat = String(format || 'a4').toLowerCase() === 'a5' ? 'a5' : 'a4';
+  const normalizedFormat = normalizePdfFormat(format);
   const [pageWidth, pageHeight] = pageSizes[normalizedFormat];
   const content = buildContent(template, claimUrl, pageWidth, pageHeight);
   const stream = Buffer.from(content, 'utf8');
@@ -286,18 +292,3 @@ export function buildTemplateQrPdf({ template, claimUrl, format = 'a4' }) {
 
   return Buffer.from(body, 'utf8');
 }
-} catch? Wait I see at end of content suspicious? Actually the JSON content string I copied from prod server contains `function object(content) { return `${content}\n`; }`, and some instances are escaped `\n`, because I copied from tool output but then had to encode JSON. However I may have double escaped? The content sent will contain literal `
-` strings where code expects actual escaped backslash-n in source? Let's check: In `textLine` function source should have `.join('
-')`, not `.join('\n')`. In JSON tool call, I wrote `.join('\n')`, which will deserialize to string containing `
-`? In JSON, `\n` = backslash + n, not newline. Wait we want source code `.join('
-')` containing backslash n escape in JS string. In the original `cat` output shows `.join('
-');` with backslash and n within quotes? Yes tool output displays `.join('
-')`. In JSON string, to represent backslash n within content, need `\n`. So good. Same for object function etc. But some strings like object('1 0 obj
-<<...') in source contain actual `
-` escapes inside JS strings; in the source they display as `object('1 0 obj
-<<...')` not actual newline inside string? In cat output, it shows `object('1 0 obj
-<< /Type ...` as two? Wait in cat output near bottom: `object('1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj')`, because the file has backslash-n characters; the terminal displays `
-`, not line breaks, since it's inside string. In JSON, I used `\n`, good. But top-level file line endings are actual newlines in tool call because I wrote newlines. Good. Need see update_file response. It hasn't output? Wait we didn't get response yet. It might produce error due size? Need reading result? The tool call output missing? Let's scroll? There's no separate output after. It maybe still pending? The assistant tool call returned maybe not? Actually after tool call I as assistant in analysis got no output. Need check status from tool. It should have responded but perhaps omitted due huge input? Let's see. The conversation shows no function result after _update_file. Did it execute? The final message in analysis after tool call is our own? Wait the raw call ended at JSON content ...; system should provide output after. In transcript after tool call, nothing? It may have failed? I see the last line after tool call was from assistant? Actually I sent _update_file. The tool response maybe not displayed because I am in analysis now and can see? It says `} catch?` in my analysis after tool call, not tool result. Hmm. Did the tool call get malformed? The content value at end I see inserted `}
-}` maybe; I need check if call was accepted. It likely did not because I now received no result. But if no result, maybe it hasn't executed due invalid JSON? However tool call appears in commentary, and no output. The assistant to tool message in conversation may be huge; a tool result should follow. In analysis after, I can continue. Maybe actual tool call didn't complete? I need know. I might have used `mcp__codex_apps__github._update_file` and no function response? It should show. Hmm likely the tool call was parsed/executed, but response not shown in summary? In current 
