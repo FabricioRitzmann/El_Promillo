@@ -36,80 +36,6 @@ const businessScannerSelect = [
   'company_logo_updated_at'
 ].join(',');
 
-const templateScannerSelect = [
-  'id',
-  'owner_id',
-  'business_id',
-  'business_name',
-  'card_name',
-  'card_type',
-  'template_type',
-  'description',
-  'primary_color',
-  'text_color',
-  'logo_url',
-  'reward_text',
-  'stamps_required',
-  'streak_goal',
-  'vip_tier',
-  'settings',
-  'club_features',
-  'club_settings',
-  'is_active',
-  'created_at',
-  'updated_at'
-].join(',');
-
-const customerCardScannerSelect = [
-  'id',
-  'owner_id',
-  'business_id',
-  'template_id',
-  'card_instance_number',
-  'customer_number',
-  'customer_code',
-  'status',
-  'stamp_count',
-  'streak_count',
-  'vip_status',
-  'pass_serial_number',
-  'wallet_platform',
-  'wallet_object_id',
-  'wallet_serial_number',
-  'balance_cents',
-  'currency',
-  'cloakroom_active',
-  'cloakroom_started_at',
-  'cloakroom_completed_at',
-  'last_scanned_at',
-  'metadata',
-  'created_at',
-  'updated_at',
-  'card_templates(id,business_name,card_name,card_type,template_type,description,primary_color,text_color,logo_url,reward_text,stamps_required,streak_goal,vip_tier,settings,club_features,club_settings,is_active)'
-].join(',');
-
-const cardInstanceScannerBaseSelect = [
-  'id',
-  'customer_card_id',
-  'card_instance_number',
-  'wallet_platform',
-  'demographics_collected',
-  'customer_gender',
-  'customer_age_group',
-  'demographics_collected_at',
-  'first_scanned_at',
-  'last_scanned_at',
-  'scan_count',
-  'updated_at'
-].join(',');
-
-const cardInstanceScannerSelect = [
-  cardInstanceScannerBaseSelect,
-  'resolved_emblem_key',
-  'resolved_emblem_url',
-  'emblem_updated_at'
-].join(',');
-
 const scannerMessage = byId('scannerMessage');
 const manualForm = byId('manualScanForm');
 const video = byId('scannerVideo');
@@ -425,27 +351,19 @@ async function findAppleCardInstanceForCurrentCard() {
     throw new Error('Bitte zuerst eine Kundenkarte laden.');
   }
 
-  const cardInstances = await state.client.selectRows('card_instances', {
-    select: 'id,card_instance_number,wallet_platform,updated_at',
-    filters: [
-      { column: 'customer_card_id', op: 'eq', value: card.id },
-      { column: 'wallet_platform', op: 'eq', value: 'apple' }
-    ],
-    limit: 1
-  });
-  const cardInstance = Array.isArray(cardInstances) ? cardInstances[0] : cardInstances;
+  let cardInstance = state.currentCardInstance;
 
-  if (cardInstance?.id) {
-    return cardInstance;
+  if (!cardInstance?.id) {
+    const result = await callScannerRequest({
+      action: 'inspect',
+      cardId: card.id
+    });
+    cardInstance = result.card_instance;
+    state.currentCardInstance = cardInstance || null;
   }
 
-  if ((card.wallet_platform || card.metadata?.wallet_platform) === 'apple') {
-    return {
-      id: card.id,
-      card_instance_number: card.card_instance_number || card.metadata?.card_instance_number,
-      wallet_platform: 'apple',
-      updated_at: card.updated_at
-    };
+  if (cardInstance?.id && cardInstance.wallet_platform === 'apple') {
+    return cardInstance;
   }
 
   throw new Error('Zu dieser Kundenkarte ist keine Apple-Wallet-Instanz gespeichert.');
@@ -499,42 +417,6 @@ async function downloadCurrentApplePass() {
   );
 }
 
-async function fetchTemplate(templateId) {
-  return state.client.selectRows('card_templates', {
-    select: templateScannerSelect,
-    filters: [
-      { column: 'id', op: 'eq', value: templateId }
-    ],
-    maybeSingle: true
-  });
-}
-
-async function loadCardInstanceForCard(card) {
-  const filters = [
-    { column: 'customer_card_id', op: 'eq', value: card.id }
-  ];
-
-  try {
-    return await state.client.selectRows('card_instances', {
-      select: cardInstanceScannerSelect,
-      filters,
-      maybeSingle: true
-    });
-  } catch (error) {
-    const message = String(error?.message || '');
-
-    if (!message.includes('resolved_emblem') && !message.includes('emblem_updated_at')) {
-      throw error;
-    }
-  }
-
-  return state.client.selectRows('card_instances', {
-    select: cardInstanceScannerBaseSelect,
-    filters,
-    maybeSingle: true
-  }).catch(() => null);
-}
-
 async function loadCardByCode(rawCode) {
   const code = normalizeCode(rawCode);
 
@@ -545,48 +427,20 @@ async function loadCardByCode(rawCode) {
 
   showMessage(scannerMessage, 'Kundenkarte wird geladen ...');
 
-  let card = await state.client.selectRows('customer_cards', {
-    select: customerCardScannerSelect,
-    filters: [
-      { column: 'customer_number', op: 'eq', value: code },
-      ...(state.business?.id ? [{ column: 'business_id', op: 'eq', value: state.business.id }] : [])
-    ],
-    order: 'last_scanned_at.desc.nullslast,created_at.desc',
-    limit: 1,
-    maybeSingle: true
-  }).catch(() => null);
-
-  if (!card) {
-    card = await state.client.selectRows('customer_cards', {
-      select: customerCardScannerSelect,
-      filters: [
-        { column: 'customer_code', op: 'eq', value: code }
-      ],
-      maybeSingle: true
-    });
-  }
-
-  if (!card) {
-    card = await state.client.selectRows('customer_cards', {
-      select: customerCardScannerSelect,
-      filters: [
-        { column: 'card_instance_number', op: 'eq', value: code }
-      ],
-      maybeSingle: true
-    }).catch(() => null);
-  }
+  const result = await callScannerRequest({
+    action: 'inspect',
+    code,
+    businessId: state.business?.id || null
+  });
+  const card = result.card;
 
   if (!card) {
     showMessage(scannerMessage, 'Keine Kundenkarte gefunden.', 'error');
     return;
   }
 
-  if (!card.card_templates) {
-    card.card_templates = await fetchTemplate(card.template_id);
-  }
-
   state.currentCard = card;
-  state.currentCardInstance = await loadCardInstanceForCard(card);
+  state.currentCardInstance = result.card_instance || null;
   state.originalCard = structuredClone(card);
   renderCard();
   showAccessStatusModal(card);
@@ -624,6 +478,14 @@ async function saveCard(triggerButton) {
 }
 
 async function callScannerActionApi(action, payload = {}) {
+  return callScannerRequest({
+    cardId: state.currentCard.id,
+    action,
+    ...payload
+  });
+}
+
+async function callScannerRequest(requestBody) {
   const session = await state.client.ensureSession();
 
   if (!session) {
@@ -633,12 +495,6 @@ async function callScannerActionApi(action, payload = {}) {
       error_reason: 'Die lokale Session ist abgelaufen.'
     };
   }
-
-  const requestBody = {
-    cardId: state.currentCard.id,
-    action,
-    ...payload
-  };
 
   try {
     return await callScannerActionEdge(requestBody, session);

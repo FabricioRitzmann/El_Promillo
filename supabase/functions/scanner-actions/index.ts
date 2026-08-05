@@ -443,6 +443,7 @@ async function loadCardInstanceForScan(supabaseAdmin: any, card: Row) {
       'business_id',
       'template_id',
       'card_instance_number',
+      'wallet_platform',
       'demographics_collected',
       'customer_gender',
       'customer_age_group',
@@ -450,7 +451,11 @@ async function loadCardInstanceForScan(supabaseAdmin: any, card: Row) {
       'demographics_collected_by',
       'first_scanned_at',
       'last_scanned_at',
-      'scan_count'
+      'scan_count',
+      'resolved_emblem_key',
+      'resolved_emblem_url',
+      'emblem_updated_at',
+      'updated_at'
     ].join(','))
     .eq('customer_card_id', card.id)
     .maybeSingle();
@@ -490,15 +495,17 @@ function demographicsRequiredPayload(card: Row, instance: Row, template: Row, ac
   };
 }
 
-async function loadCard(supabaseAdmin: any, body: Row) {
+async function loadCard(supabaseAdmin: any, body: Row, ownerId: string) {
   const cardId = stringValue(body.cardId || body.card_id || body.customerCardId || body.customer_card_id);
   const code = stringValue(body.customer_code || body.customerCode || body.cardInstanceNumber || body.card_instance_number || body.code);
+  const businessId = stringValue(body.businessId || body.business_id);
 
   if (cardId) {
     const { data, error } = await supabaseAdmin
       .from('customer_cards')
       .select(scannerActionsCardSelect)
       .eq('id', cardId)
+      .eq('owner_id', ownerId)
       .maybeSingle();
 
     if (error) {
@@ -517,9 +524,33 @@ async function loadCard(supabaseAdmin: any, body: Row) {
     );
   }
 
+  let customerNumberQuery = supabaseAdmin
+    .from('customer_cards')
+    .select(scannerActionsCardSelect)
+    .eq('owner_id', ownerId)
+    .eq('customer_number', code);
+
+  if (businessId) {
+    customerNumberQuery = customerNumberQuery.eq('business_id', businessId);
+  }
+
+  const { data: byCustomerNumber, error: customerNumberError } = await customerNumberQuery
+    .order('last_scanned_at', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (customerNumberError) {
+    throw customerNumberError;
+  }
+
+  if (byCustomerNumber) {
+    return byCustomerNumber;
+  }
+
   const { data: byCustomerCode, error: customerCodeError } = await supabaseAdmin
     .from('customer_cards')
     .select(scannerActionsCardSelect)
+    .eq('owner_id', ownerId)
     .eq('customer_code', code)
     .maybeSingle();
 
@@ -534,6 +565,7 @@ async function loadCard(supabaseAdmin: any, body: Row) {
   const { data: byInstanceNumber, error: instanceNumberError } = await supabaseAdmin
     .from('customer_cards')
     .select(scannerActionsCardSelect)
+    .eq('owner_id', ownerId)
     .eq('card_instance_number', code)
     .maybeSingle();
 
@@ -1393,7 +1425,7 @@ Deno.serve(async (request) => {
       }
     });
     const user = await requireAuthenticatedOperator(supabaseAdmin, request);
-    const card = await loadCard(supabaseAdmin, body);
+    const card = await loadCard(supabaseAdmin, body, user.id);
 
     if (!card) {
       throw createStructuredError(
@@ -1426,6 +1458,32 @@ Deno.serve(async (request) => {
 
     const now = new Date().toISOString();
     const action = stringValue(body.action);
+    const cardInstanceBeforeScan = await loadCardInstanceForScan(supabaseAdmin, card);
+
+    if (action === 'inspect') {
+      return json({
+        ok: true,
+        action: 'inspect',
+        card: publicOperatorCard(card),
+        card_instance: {
+          id: cardInstanceBeforeScan.id,
+          card_instance_number: cardInstanceBeforeScan.card_instance_number,
+          wallet_platform: cardInstanceBeforeScan.wallet_platform,
+          demographics_collected: cardInstanceBeforeScan.demographics_collected,
+          customer_gender: cardInstanceBeforeScan.customer_gender,
+          customer_age_group: cardInstanceBeforeScan.customer_age_group,
+          demographics_collected_at: cardInstanceBeforeScan.demographics_collected_at,
+          first_scanned_at: cardInstanceBeforeScan.first_scanned_at,
+          last_scanned_at: cardInstanceBeforeScan.last_scanned_at,
+          scan_count: cardInstanceBeforeScan.scan_count,
+          resolved_emblem_key: cardInstanceBeforeScan.resolved_emblem_key,
+          resolved_emblem_url: cardInstanceBeforeScan.resolved_emblem_url,
+          emblem_updated_at: cardInstanceBeforeScan.emblem_updated_at,
+          updated_at: cardInstanceBeforeScan.updated_at
+        }
+      });
+    }
+
     let preflightAction = action;
 
     if (action !== 'manual_update') {
@@ -1438,7 +1496,6 @@ Deno.serve(async (request) => {
       preflightAction = validation.action;
     }
 
-    const cardInstanceBeforeScan = await loadCardInstanceForScan(supabaseAdmin, card);
     const demographics = normalizeDemographics(body.demographics || body);
 
     if (!cardInstanceBeforeScan.demographics_collected && !demographics) {

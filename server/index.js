@@ -704,6 +704,7 @@ async function loadLocalCardInstanceForScan(card) {
       'business_id',
       'template_id',
       'card_instance_number',
+      'wallet_platform',
       'demographics_collected',
       'customer_gender',
       'customer_age_group',
@@ -711,7 +712,11 @@ async function loadLocalCardInstanceForScan(card) {
       'demographics_collected_by',
       'first_scanned_at',
       'last_scanned_at',
-      'scan_count'
+      'scan_count',
+      'resolved_emblem_key',
+      'resolved_emblem_url',
+      'emblem_updated_at',
+      'updated_at'
     ].join(','))
     .eq('customer_card_id', card.id)
     .maybeSingle();
@@ -2191,10 +2196,12 @@ app.post('/api/cards/claim', async (req, res) => {
 app.post('/api/scanner/actions', async (req, res) => {
   try {
     const user = await requireAuthenticatedOperator(req);
-    const cardId = req.body?.cardId;
+    const cardId = String(req.body?.cardId || '').trim();
+    const code = String(req.body?.code || req.body?.customer_code || req.body?.cardInstanceNumber || '').trim();
+    const businessId = String(req.body?.businessId || req.body?.business_id || '').trim();
     const action = String(req.body?.action || 'manual_update');
 
-    if (!cardId) {
+    if (!cardId && !code) {
       throw createStructuredError(
         400,
         'CARD_ID_REQUIRED',
@@ -2203,11 +2210,50 @@ app.post('/api/scanner/actions', async (req, res) => {
       );
     }
 
-    const { data: card, error: cardError } = await supabaseAdmin
-      .from('customer_cards')
-      .select(localOperatorCardSelect)
-      .eq('id', cardId)
-      .single();
+    let card = null;
+    let cardError = null;
+
+    if (cardId) {
+      ({ data: card, error: cardError } = await supabaseAdmin
+        .from('customer_cards')
+        .select(localOperatorCardSelect)
+        .eq('id', cardId)
+        .eq('owner_id', user.id)
+        .maybeSingle());
+    } else {
+      let customerNumberQuery = supabaseAdmin
+        .from('customer_cards')
+        .select(localOperatorCardSelect)
+        .eq('owner_id', user.id)
+        .eq('customer_number', code);
+
+      if (businessId) {
+        customerNumberQuery = customerNumberQuery.eq('business_id', businessId);
+      }
+
+      ({ data: card, error: cardError } = await customerNumberQuery
+        .order('last_scanned_at', { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle());
+
+      if (!cardError && !card) {
+        ({ data: card, error: cardError } = await supabaseAdmin
+          .from('customer_cards')
+          .select(localOperatorCardSelect)
+          .eq('owner_id', user.id)
+          .eq('customer_code', code)
+          .maybeSingle());
+      }
+
+      if (!cardError && !card) {
+        ({ data: card, error: cardError } = await supabaseAdmin
+          .from('customer_cards')
+          .select(localOperatorCardSelect)
+          .eq('owner_id', user.id)
+          .eq('card_instance_number', code)
+          .maybeSingle());
+      }
+    }
 
     if (cardError || !card) {
       throw createStructuredError(
@@ -2239,6 +2285,33 @@ app.post('/api/scanner/actions', async (req, res) => {
     }
 
     const now = new Date().toISOString();
+    const cardInstanceBeforeScan = await loadLocalCardInstanceForScan(card);
+
+    if (action === 'inspect') {
+      res.json({
+        ok: true,
+        action: 'inspect',
+        card: publicOperatorCard(card),
+        card_instance: {
+          id: cardInstanceBeforeScan.id,
+          card_instance_number: cardInstanceBeforeScan.card_instance_number,
+          wallet_platform: cardInstanceBeforeScan.wallet_platform,
+          demographics_collected: cardInstanceBeforeScan.demographics_collected,
+          customer_gender: cardInstanceBeforeScan.customer_gender,
+          customer_age_group: cardInstanceBeforeScan.customer_age_group,
+          demographics_collected_at: cardInstanceBeforeScan.demographics_collected_at,
+          first_scanned_at: cardInstanceBeforeScan.first_scanned_at,
+          last_scanned_at: cardInstanceBeforeScan.last_scanned_at,
+          scan_count: cardInstanceBeforeScan.scan_count,
+          resolved_emblem_key: cardInstanceBeforeScan.resolved_emblem_key,
+          resolved_emblem_url: cardInstanceBeforeScan.resolved_emblem_url,
+          emblem_updated_at: cardInstanceBeforeScan.emblem_updated_at,
+          updated_at: cardInstanceBeforeScan.updated_at
+        }
+      });
+      return;
+    }
+
     let preflightAction = action;
 
     if (action !== 'manual_update') {
@@ -2251,7 +2324,6 @@ app.post('/api/scanner/actions', async (req, res) => {
       preflightAction = validation.action;
     }
 
-    const cardInstanceBeforeScan = await loadLocalCardInstanceForScan(card);
     const demographics = normalizeDemographics(req.body?.demographics || req.body);
 
     if (!cardInstanceBeforeScan.demographics_collected && !demographics) {
