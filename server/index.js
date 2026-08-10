@@ -123,6 +123,10 @@ function claimToken(value) {
   return /^[a-f0-9]{36}$/.test(token) ? token : '';
 }
 
+function publicClaimSource(value) {
+  return String(value || '').trim() === 'wallet_share' ? 'wallet_share' : 'direct_qr';
+}
+
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
 }
@@ -2274,6 +2278,7 @@ app.post('/api/cards/claim', async (req, res) => {
     const walletObjectId = String(req.body?.walletObjectId || req.body?.wallet_object_id || '').trim();
     const customerIdentityToken = String(req.body?.customerIdentityToken || req.body?.customer_identity_token || '').trim()
       || `legacy_wallet:${walletObjectId}`;
+    const claimSource = publicClaimSource(req.body?.claimSource || req.body?.claim_source);
     validateWalletObjectId(walletObjectId);
     validateCustomerIdentityToken(customerIdentityToken);
     const identityHash = crypto.createHash('sha256').update(customerIdentityToken).digest('hex');
@@ -2303,7 +2308,7 @@ app.post('/api/cards/claim', async (req, res) => {
     if (existingCard) {
       const customerProfile = await resolveLocalCustomerProfile(template, identityHash, existingCard.customer_profile_id);
       const linkedCard = await linkLocalCardToCustomerProfile(existingCard, customerProfile);
-      const reusedCard = await reuseExistingClaimCard(linkedCard, template, walletPlatform, walletObjectId, 'public_claim_page');
+      const reusedCard = await reuseExistingClaimCard(linkedCard, template, walletPlatform, walletObjectId, claimSource);
 
       res.json({
         reused: true,
@@ -2337,11 +2342,12 @@ app.post('/api/cards/claim', async (req, res) => {
       balance_cents: 0,
       currency: template.settings?.currency || 'CHF',
       cloakroom_active: false,
+      claim_source: claimSource,
       metadata: {
         card_instance_number: cardInstanceNumber,
         balance_cents: 0,
         cloakroom_active: false,
-        claim_source: 'local_claim_api',
+        claim_source: claimSource,
         ...(walletPlatform === 'google' ? { google_wallet_claim_key: walletObjectId } : {})
       }
     };
@@ -2363,7 +2369,7 @@ app.post('/api/cards/claim', async (req, res) => {
 
         if (recoveredCard) {
           const linkedCard = await linkLocalCardToCustomerProfile(recoveredCard, customerProfile);
-          const reusedCard = await reuseExistingClaimCard(linkedCard, template, walletPlatform, walletObjectId, 'public_claim_page', 'claim_reused_after_unique_conflict');
+          const reusedCard = await reuseExistingClaimCard(linkedCard, template, walletPlatform, walletObjectId, claimSource, 'claim_reused_after_unique_conflict');
 
           res.json({
             reused: true,

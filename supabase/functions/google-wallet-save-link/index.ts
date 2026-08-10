@@ -8,6 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { featureEnabled, normalizeTemplateType, templateSettings } from '../_shared/templateFeatures.ts';
 import { enforcePublicClaimRateLimit } from '../_shared/publicRateLimit.ts';
 import { supabaseCardEmblemUrl } from '../_shared/cardEmblems.ts';
+import { publicTemplateCreationUrl, publicTemplateShareLabel } from '../_shared/publicTemplateLinks.ts';
 
 type Row = Record<string, any>;
 
@@ -31,6 +32,7 @@ const googleTemplateSelect = [
   'settings',
   'club_features',
   'club_settings',
+  'public_claim_token',
   'is_active',
   'created_at',
   'updated_at'
@@ -886,6 +888,22 @@ function buildClassPayload(template: Row, classId: string, objectType: string) {
   return classPayload;
 }
 
+function applyPublicShareLink(payload: Row, template: Row) {
+  const shareUrl = publicTemplateCreationUrl(template);
+
+  if (shareUrl) {
+    payload.linksModuleData = {
+      uris: [{
+        id: 'public_template_share',
+        uri: shareUrl,
+        description: publicTemplateShareLabel(template)
+      }]
+    };
+  }
+
+  return payload;
+}
+
 function buildObjectPayload(template: Row, card: Row, objectId: string, classId: string, objectType: string) {
   const cardCode = stringValue(card.card_instance_number || card.customer_code);
   const customerNumber = stringValue(card.customer_number || card.metadata?.customer_number || cardCode);
@@ -945,7 +963,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
       };
     }
 
-    return applyObjectEmblemImages(eventObject, card);
+    return applyPublicShareLink(applyObjectEmblemImages(eventObject, card), template);
   }
 
   if (objectType === 'offerObject') {
@@ -970,7 +988,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
       offerObject.validTimeInterval = validTimeInterval;
     }
 
-    return applyObjectEmblemImages(offerObject, card);
+    return applyPublicShareLink(applyObjectEmblemImages(offerObject, card), template);
   }
 
   if (objectType === 'loyaltyObject') {
@@ -1003,7 +1021,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
       }))
     };
 
-    return applyObjectEmblemImages(loyaltyObject, card);
+    return applyPublicShareLink(applyObjectEmblemImages(loyaltyObject, card), template);
   }
 
   const objectPayload: Row = {
@@ -1033,7 +1051,7 @@ function buildObjectPayload(template: Row, card: Row, objectId: string, classId:
     objectPayload.logo = logo;
   }
 
-  return applyObjectEmblemImages(objectPayload, card);
+  return applyPublicShareLink(applyObjectEmblemImages(objectPayload, card), template);
 }
 
 function buildGoogleWalletPayload(config: ReturnType<typeof googleWalletConfig>, template: Row, card: Row, objectId: string, classId = googleClassId(config, template)) {
