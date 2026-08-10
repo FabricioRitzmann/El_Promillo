@@ -724,6 +724,7 @@ function rewardVisible(template: Row, cardInstance: Row) {
 
 function statusModules(template: Row, cardInstance: Row, extraRows: Array<{ id: string; header: string; body: string }> = []) {
   const rewardText = rewardTextForTemplate(template);
+  const settings = templateSettings(template);
   const rows = [
     ...extraRows,
     ...cardFeatureRows(template, cardInstance),
@@ -733,6 +734,10 @@ function statusModules(template: Row, cardInstance: Row, extraRows: Array<{ id: 
       body: customerNumberFor(cardInstance)
     }
   ];
+
+  if (settings.visitCounterEnabled === true && settings.visitCounterWalletVisible === true) {
+    rows.unshift({ id: 'lifetime-visits', header: 'Besuche', body: String(numberValue(cardInstance.lifetime_visits, 0)) });
+  }
 
   if (rewardVisible(template, cardInstance)) {
     rows.push({
