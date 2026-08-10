@@ -52,8 +52,8 @@ assertIncludes(claim, [
   "const CUSTOMER_IDENTITY_STORAGE_KEY = 'wallet_customer_identity:v1';",
   'function getCustomerIdentityToken()',
   'customerIdentityToken',
-  'claimCardViaEdge(walletPlatform, walletObjectId, customerIdentityToken)',
-  'claimCardViaLocalApi(walletPlatform, walletObjectId, customerIdentityToken)'
+  'claimCardViaEdge(walletPlatform, walletObjectId, customerIdentityToken, crmRegistration)',
+  'claimCardViaLocalApi(walletPlatform, walletObjectId, customerIdentityToken, crmRegistration)'
 ], 'Stabile Kundenidentität über mehrere Karten');
 
 assertIncludes(schema, [

@@ -21,6 +21,7 @@
     <nav class="app-tabbar" aria-label="Hauptbereiche">
       <a class="app-tab" href="dashboard.html#dashboardOverview">Dashboard</a>
       <a class="app-tab" href="dashboard.html#visitorStatistics">Besucherstatistik</a>
+      <a id="accountCrmNav" class="app-tab" href="crm.html" hidden>Gäste</a>
       <a class="app-tab" href="scanner.html">Scanner</a>
       <a class="app-tab app-tab-account is-active" href="account.html" aria-current="page" aria-label="Konto">
         <svg class="account-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -128,6 +129,18 @@
             </label>
           </div>
           <p class="muted">Diese Koordinaten werden für standortbasierte Wallet-Benachrichtigungen im Editor automatisch übernommen.</p>
+        </div>
+
+        <div class="account-location-block guest-crm-settings">
+          <h2>Guest CRM / Member CRM</h2>
+          <p class="muted">Aktiviert den optionalen Gäste-Bereich für personalisierte Karten. Einfache Loyalty Cards funktionieren unabhängig davon weiter.</p>
+          <label class="choice-card">
+            <input name="guest_crm_enabled" type="checkbox">
+            <span>Guest CRM aktivieren</span>
+          </label>
+          <label>Zeitraum für „aktiver Gast“ (Tage)
+            <input name="crm_active_guest_days" type="number" min="1" max="3650" value="30">
+          </label>
         </div>
 
         <div class="account-location-block guest-scan-settings">

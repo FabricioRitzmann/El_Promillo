@@ -21,6 +21,7 @@ const state = {
   scanCanvas: null,
   scanCanvasContext: null,
   business: null,
+  guestProfile: null,
   guestRestrictions: { active: [], history: [], permissions: {} },
   guestInformation: { regular_information: null, notes: [], settings: {}, permissions: {} },
   operatorRole: '',
@@ -42,7 +43,8 @@ const businessScannerSelect = [
   'logo_url',
   'company_logo_path',
   'company_logo_updated_at',
-  'app_theme'
+  'app_theme',
+  'guest_crm_enabled'
 ].join(',');
 
 const scannerMessage = byId('scannerMessage');
@@ -484,6 +486,7 @@ function renderCard() {
     </div>
     <div class="button-row wrap">
       ${quickActions.join('')}
+      ${state.business?.guest_crm_enabled && state.guestProfile?.id ? `<a class="button secondary" href="${escapeHtml(pagePath(`crm.html?guest=${encodeURIComponent(state.guestProfile.id)}`))}">CRM-Profil</a>` : ''}
       <button type="button" class="primary" data-action="save">Speichern</button>
       ${appleWalletButton}
     </div>
@@ -717,6 +720,7 @@ function applyRestrictionResult(result) {
   state.guestRestrictions = result.guest_restrictions || state.guestRestrictions;
   state.guestInformation = result.guest_information || state.guestInformation;
   state.operatorRole = result.operator_role || state.operatorRole;
+  state.guestProfile = result.guest_profile || state.guestProfile;
   state.restrictionAcknowledged = !(state.guestRestrictions.active || []).length;
   renderCard();
 }
@@ -872,6 +876,7 @@ async function loadCardByCode(rawCode) {
   state.currentCardInstance = result.card_instance || null;
   state.guestRestrictions = result.guest_restrictions || { active: [], history: [], permissions: {} };
   state.guestInformation = result.guest_information || { regular_information: null, notes: [], settings: {}, permissions: {} };
+  state.guestProfile = result.guest_profile || null;
   state.operatorRole = result.operator_role || '';
   state.restrictionAcknowledged = !(state.guestRestrictions.active || []).length;
   state.pendingRestrictionAction = null;
@@ -1061,6 +1066,7 @@ function applyScannerActionResult(result) {
   state.guestRestrictions = result.guest_restrictions || state.guestRestrictions;
   state.guestInformation = result.guest_information || state.guestInformation;
   state.operatorRole = result.operator_role || state.operatorRole;
+  state.guestProfile = result.guest_profile || state.guestProfile;
   state.originalCard = structuredClone(state.currentCard);
   renderCard();
 }
